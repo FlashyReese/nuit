@@ -1,6 +1,7 @@
 {
     "pack": {
         "description": "Single sprite animated square textured skybox",
-        "pack_format": 9
+        "pack_format": 9,
+		"supported_formats": { "min_inclusive": 9, "max_inclusive": 32 }
     }
 }
