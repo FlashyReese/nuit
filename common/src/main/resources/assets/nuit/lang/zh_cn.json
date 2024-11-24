@@ -1,0 +1,8 @@
+{
+  "category.nuit": "Nuit",
+  "key.nuit.toggle": "开关 Nuit",
+  "nuit.message.enabled": "Nuit 已开启!",
+  "nuit.message.disabled": "Nuit 已关闭!",
+  "key.nuit.toggle.debug_hud": "开关测试信息栏",
+  "key.nuit.toggle.debug_screen": "开关测试界面"
+}
