@@ -23,56 +23,37 @@ dependencies {
 
 ```java
 // Verify that Nuit is present
-if(FabricLoader.getInstance().
-
-isModLoaded("Nuit")){
-        // Verify Nuit's API feature set
-        if(NuitApi.
-
-getInstance().
-
-getApiVersion() ==0){
+if (FabricLoader.getInstance().isModLoaded("Nuit")) {
+    // Verify Nuit's API feature set
+    if (NuitApi.getInstance().getApiVersion() == 0) {
         // Enables Nuit
-        NuitApi.
+        NuitApi.getInstance().setEnabled(true);
+        
+        // Clear loaded skyboxes
+        NuitApi.getInstance().clearSkyboxes();
 
-getInstance().
-
-setEnabled(true);
-// Clear loaded skyboxes
-        NuitApi.
-
-getInstance().
-
-clearSkyboxes();
-
-// Adds a temporary skybox
-        NuitApi.
-
-getInstance().
-
-addSkybox(Identifier.of("my_mod", "my_temporary_skybox"), /*JsonObject or Skybox implementation*/);
+        // Adds a temporary skybox
+        NuitApi.getInstance().addSkybox(ResourceLocation.fromNamespaceAndPath("my_mod", "my_temporary_skybox"), /*JsonObject or Skybox implementation*/);
+        
         // Adds a permanent skybox
-        NuitApi.
-
-getInstance().
-
-addPermanentSkybox(Identifier.of("my_mod", "my_permanent_skybox"), /*Skybox implementation*/);
-        }
-        }
+        NuitApi.getInstance().addPermanentSkybox(ResourceLocation.fromNamespaceAndPath("my_mod", "my_permanent_skybox"), /*Skybox implementation*/);
+    }
+}
 ```
 
 ### Skybox Implementation
 
 ```java
+import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.Skybox;
-import io.github.amerebagatelle.mods.nuit.mixin.skybox.WorldRendererAccess;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix4f;
+import io.github.amerebagatelle.mods.nuit.mixin.skybox.SkyRendererAccess;
+import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.FogParameters;
+import org.joml.Matrix4f;
 
 public class MyModSkybox implements Skybox {
     @Override
-    public void render(WorldRendererAccess worldRendererAccess, MatrixStack matrices, Matrix4f matrix4f, float tickDelta, Camera camera, boolean thickFog) {
+    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, Camera camera, FogParameters fogParameters, Runnable fogCallback) {
         // Render our own skybox implementation here
     }
 

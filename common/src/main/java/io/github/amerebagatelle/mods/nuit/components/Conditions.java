@@ -15,6 +15,7 @@ public class Conditions {
             Condition.create(MinMaxEntry.CODEC).optionalFieldOf("yRanges", Condition.of()).forGetter(Conditions::getYRanges),
             Condition.create(MinMaxEntry.CODEC).optionalFieldOf("zRanges", Condition.of()).forGetter(Conditions::getZRanges)
     ).apply(instance, Conditions::new));
+
     private final Condition<ResourceLocation> biomes;
     private final Condition<ResourceLocation> worlds;
     private final Condition<ResourceLocation> dimensions;

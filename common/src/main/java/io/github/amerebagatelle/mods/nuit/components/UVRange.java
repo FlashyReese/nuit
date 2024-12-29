@@ -11,6 +11,7 @@ public class UVRange {
             CodecUtils.getClampedFloat(0F, 1.0F).optionalFieldOf("maxU", 1.0F).forGetter(UVRange::getMaxU),
             CodecUtils.getClampedFloat(0F, 1.0F).optionalFieldOf("maxV", 1.0F).forGetter(UVRange::getMaxV)
     ).apply(instance, UVRange::new));
+
     private final float minU;
     private final float minV;
     private final float maxU;

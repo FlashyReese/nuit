@@ -1,6 +1,8 @@
 package io.github.amerebagatelle.mods.nuit.util;
 
 import com.google.common.collect.Range;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.NuitSkybox;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.Skybox;
@@ -26,7 +28,6 @@ public class Utils {
             new UVRange(2.0F / 3.0F, 1.0F / 2.0F, 1, 1), // east
             new UVRange(0, 1.0F / 2.0F, 1.0F / 3.0F, 1) // west
     };
-
 
     /**
      * Maps input intersection to output intersection, does so by taking in input and output UV ranges and then mapping the input intersection to the output intersection.
@@ -127,6 +128,29 @@ public class Utils {
             }
         } else {
             return 0D;
+        }
+    }
+
+    /**
+     * Rotates the faces of the vertexes for the skybox
+     *
+     * @param poseStack
+     * @param face
+     */
+    public static void rotateSkyBoxByFace(PoseStack poseStack, int face) {
+        if (face == 1) {
+            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+        } else if (face == 2) {
+            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        } else if (face == 3) {
+            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+        } else if (face == 4) {
+            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
+        } else if (face == 5) {
+            poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
+            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
         }
     }
 
@@ -297,8 +321,8 @@ public class Utils {
         RGB destination = initialFogColor;
 
         for (Skybox skybox : skyboxList) {
-            if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().getFog().isModifyColors()) {
-                RGB source = nuitSkybox.getProperties().getFog();
+            if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().fog().isModifyColors()) {
+                RGB source = nuitSkybox.getProperties().fog();
 
                 float sourceAlphaInv = 1f - nuitSkybox.getAlpha();
                 destination = new RGB(
@@ -315,9 +339,9 @@ public class Utils {
     public static float alphaBlendFogDensity(List<Skybox> skyboxList, float initialFogDensity) {
         float destination = initialFogDensity;
         for (Skybox skybox : skyboxList) {
-            if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().getFog().isModifyDensity()) {
+            if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().fog().isModifyDensity()) {
                 float sourceAlphaInv = 1f - nuitSkybox.getAlpha();
-                destination = (nuitSkybox.getProperties().getFog().getDensity() * nuitSkybox.getAlpha()) + (destination * sourceAlphaInv);
+                destination = (nuitSkybox.getProperties().fog().getDensity() * nuitSkybox.getAlpha()) + (destination * sourceAlphaInv);
             }
         }
         return destination;

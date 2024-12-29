@@ -13,6 +13,7 @@ public class Blend {
             Codec.STRING.optionalFieldOf("type", "").forGetter(Blend::getType),
             Blender.CODEC.optionalFieldOf("blender", Blender.normal()).forGetter(Blend::getBlender)
     ).apply(instance, Blend::new));
+
     private final String type;
     private final Blender blender;
 

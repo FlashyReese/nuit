@@ -73,6 +73,6 @@ public final class NuitNeoForge {
 
     @SubscribeEvent
     public void registerClientReloadListener(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener((pPreparationBarrier, pResourceManager, pPreparationsProfiler, pReloadProfiler, pBackgroundExecutor, pGameExecutor) -> NuitClient.skyboxResourceListener().reload(pPreparationBarrier, pResourceManager, pPreparationsProfiler, pReloadProfiler, pBackgroundExecutor, pGameExecutor));
+        event.registerReloadListener((pPreparationBarrier, pResourceManager, pPreparationsProfiler, pReloadProfiler) -> NuitClient.skyboxResourceListener().reload(pPreparationBarrier, pResourceManager, pPreparationsProfiler, pReloadProfiler));
     }
 }

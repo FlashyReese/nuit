@@ -43,8 +43,7 @@ public class SkyboxType<T extends Skybox> {
             }
             return id.toString().replace('_', '-');
         });
-
-
+        
         OVERWORLD = new SkyboxType<>("overworld", 1, OverworldSkybox.CODEC);
         END = new SkyboxType<>("end", 1, EndSkybox.CODEC);
 

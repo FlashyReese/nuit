@@ -34,19 +34,19 @@ public class DefaultHandler {
     }
 
     public static void addConditions(Conditions conditions) {
-        for (ResourceLocation location : conditions.getBiomes().getEntries()) {
-            if (!concatConditions.getBiomes().getEntries().contains(location))
-                concatConditions.getBiomes().getEntries().add(location);
+        for (ResourceLocation location : conditions.getBiomes().entries()) {
+            if (!concatConditions.getBiomes().entries().contains(location))
+                concatConditions.getBiomes().entries().add(location);
         }
 
-        for (ResourceLocation resourceLocation : conditions.getWorlds().getEntries()) {
-            if (!concatConditions.getWorlds().getEntries().contains(resourceLocation))
-                concatConditions.getWorlds().getEntries().add(resourceLocation);
+        for (ResourceLocation resourceLocation : conditions.getWorlds().entries()) {
+            if (!concatConditions.getWorlds().entries().contains(resourceLocation))
+                concatConditions.getWorlds().entries().add(resourceLocation);
         }
 
-        for (ResourceLocation resource : conditions.getDimensions().getEntries()) {
-            if (!concatConditions.getDimensions().getEntries().contains(resource))
-                concatConditions.getDimensions().getEntries().add(resource);
+        for (ResourceLocation resource : conditions.getDimensions().entries()) {
+            if (!concatConditions.getDimensions().entries().contains(resource))
+                concatConditions.getDimensions().entries().add(resource);
         }
     }
 
@@ -72,7 +72,7 @@ public class DefaultHandler {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
         Objects.requireNonNull(client.player);
-        return !concatConditions.getBiomes().getEntries().contains(client.level.registryAccess().registryOrThrow(Registries.BIOME).getKey(client.level.getBiome(client.player.blockPosition()).value()));
+        return !concatConditions.getBiomes().entries().contains(client.level.registryAccess().lookupOrThrow(Registries.BIOME).getKey(client.level.getBiome(client.player.blockPosition()).value()));
     }
 
     /**
@@ -81,7 +81,7 @@ public class DefaultHandler {
     public static boolean checkFallbackWorlds() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return !concatConditions.getWorlds().getEntries().contains(client.level.dimensionType().effectsLocation());
+        return !concatConditions.getWorlds().entries().contains(client.level.dimensionType().effectsLocation());
     }
 
     /**
@@ -90,7 +90,7 @@ public class DefaultHandler {
     public static boolean checkFallbackDimensions() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return !concatConditions.getDimensions().getEntries().contains(client.level.dimension().location());
+        return !concatConditions.getDimensions().entries().contains(client.level.dimension().location());
     }
 
     /**

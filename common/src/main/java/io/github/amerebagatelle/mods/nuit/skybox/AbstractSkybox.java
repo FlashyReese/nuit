@@ -68,40 +68,40 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     @Override
     public float updateAlpha() {
-        long currentTime = Objects.requireNonNull(Minecraft.getInstance().level).getDayTime() % this.properties.getFade().getDuration();
+        long currentTime = Objects.requireNonNull(Minecraft.getInstance().level).getDayTime() % this.properties.fade().duration();
 
         boolean condition = this.checkConditions();
 
         float fadeAlpha = 1f;
-        if (this.properties.getFade().isAlwaysOn()) {
-            this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.getTransitionInDuration() : this.properties.getTransitionOutDuration(), condition);
+        if (this.properties.fade().alwaysOn()) {
+            this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(), condition);
         } else {
-            if (this.properties.getFade().getDuration() <= NuitClient.config().generalSettings.fadeCacheDuration) {
+            if (this.properties.fade().duration() <= NuitClient.config().generalSettings.fadeCacheDuration) {
                 fadeAlpha = this.cachedKeyFrames.computeIfAbsent(currentTime, time -> {
-                    Tuple<Long, Long> keyFrames = Utils.findClosestKeyframes(this.properties.getFade().getKeyFrames(), time).orElseThrow();
+                    Tuple<Long, Long> keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), time).orElseThrow();
                     return Utils.calculateInterpolatedAlpha(
                             time,
-                            this.properties.getFade().getDuration(),
+                            this.properties.fade().duration(),
                             keyFrames.getA(),
                             keyFrames.getB(),
-                            this.properties.getFade().getKeyFrames().get(keyFrames.getA()),
-                            this.properties.getFade().getKeyFrames().get(keyFrames.getB())
+                            this.properties.fade().keyFrames().get(keyFrames.getA()),
+                            this.properties.fade().keyFrames().get(keyFrames.getB())
                     );
                 });
             } else {
-                Tuple<Long, Long> keyFrames = Utils.findClosestKeyframes(this.properties.getFade().getKeyFrames(), currentTime).orElseThrow();
+                Tuple<Long, Long> keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), currentTime).orElseThrow();
                 fadeAlpha = Utils.calculateInterpolatedAlpha(
                         currentTime,
-                        this.properties.getFade().getDuration(),
+                        this.properties.fade().duration(),
                         keyFrames.getA(),
                         keyFrames.getB(),
-                        this.properties.getFade().getKeyFrames().get(keyFrames.getA()),
-                        this.properties.getFade().getKeyFrames().get(keyFrames.getB())
+                        this.properties.fade().keyFrames().get(keyFrames.getA()),
+                        this.properties.fade().keyFrames().get(keyFrames.getB())
                 );
             }
 
             if ((this.lastTime == currentTime - 1 || this.lastTime == currentTime) && !this.unexpectedConditionTransition) { // Check if time is ticking or if time is same (doDaylightCycle gamerule)
-                this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.getTransitionInDuration() : this.properties.getTransitionOutDuration(), condition);
+                this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(), condition);
             } else {
                 this.unexpectedConditionTransition = true;
                 this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, NuitClient.config().generalSettings.unexpectedTransitionDuration, condition);
@@ -132,9 +132,9 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
         Objects.requireNonNull(client.player);
-        return this.conditions.getBiomes().getEntries().isEmpty() || this.conditions.getBiomes().isExcludes() ^ (
-                this.conditions.getBiomes().getEntries().contains(client.level.getBiome(client.player.blockPosition()).unwrapKey().orElseThrow().location()) ||
-                        this.conditions.getBiomes().getEntries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackBiomes());
+        return this.conditions.getBiomes().entries().isEmpty() || this.conditions.getBiomes().excludes() ^ (
+                this.conditions.getBiomes().entries().contains(client.level.getBiome(client.player.blockPosition()).unwrapKey().orElseThrow().location()) ||
+                        this.conditions.getBiomes().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackBiomes());
     }
 
     /**
@@ -143,9 +143,9 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected boolean checkDimensions() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return this.conditions.getDimensions().getEntries().isEmpty() || this.conditions.getBiomes().isExcludes() ^ (
-                this.conditions.getDimensions().getEntries().contains(client.level.dimension().location()) ||
-                        this.conditions.getDimensions().getEntries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackDimensions());
+        return this.conditions.getDimensions().entries().isEmpty() || this.conditions.getBiomes().excludes() ^ (
+                this.conditions.getDimensions().entries().contains(client.level.dimension().location()) ||
+                        this.conditions.getDimensions().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackDimensions());
     }
 
     /**
@@ -154,9 +154,9 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected boolean checkWorlds() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return this.conditions.getWorlds().getEntries().isEmpty() || this.conditions.getBiomes().isExcludes() ^ (
-                this.conditions.getWorlds().getEntries().contains(client.level.dimensionType().effectsLocation()) ||
-                        this.conditions.getWorlds().getEntries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackWorlds());
+        return this.conditions.getWorlds().entries().isEmpty() || this.conditions.getBiomes().excludes() ^ (
+                this.conditions.getWorlds().entries().contains(client.level.dimensionType().effectsLocation()) ||
+                        this.conditions.getWorlds().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackWorlds());
     }
 
     /*
@@ -168,12 +168,12 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         Camera camera = client.gameRenderer.getMainCamera();
 
-        if (this.conditions.getEffects().getEntries().isEmpty()) {
+        if (this.conditions.getEffects().entries().isEmpty()) {
             // Vanilla checks
             boolean thickFog = client.level.effects().isFoggyAt(Mth.floor(camera.getPosition().x()), Mth.floor(camera.getPosition().y())) || client.gui.getBossOverlay().shouldCreateWorldFog();
             if (thickFog) {
                 // Render skybox in thick fog, enabled by default
-                return this.properties.getFog().isShowInDenseFog();
+                return this.properties.fog().isShowInDenseFog();
             }
 
             FogType cameraSubmersionType = camera.getFluidInCamera();
@@ -184,7 +184,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         } else {
             if (camera.getEntity() instanceof LivingEntity livingEntity) {
-                return (this.conditions.getEffects().isExcludes() ^ this.conditions.getEffects().getEntries().stream().noneMatch(identifier -> client.level.registryAccess().registryOrThrow(Registries.MOB_EFFECT).get(identifier) != null && livingEntity.hasEffect(client.level.registryAccess().registryOrThrow(Registries.MOB_EFFECT).wrapAsHolder(client.level.registryAccess().registryOrThrow(Registries.MOB_EFFECT).get(identifier)))));
+                return (this.conditions.getEffects().excludes() ^ this.conditions.getEffects().entries().stream().noneMatch(resourceLocation -> client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).isPresent() && livingEntity.hasEffect(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).get().value()))));
             }
         }
         return true;
@@ -195,7 +195,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     protected boolean checkXRanges() {
         double playerX = Objects.requireNonNull(Minecraft.getInstance().player).getX();
-        return Utils.checkRanges(playerX, this.conditions.getXRanges().getEntries(), this.conditions.getXRanges().isExcludes());
+        return Utils.checkRanges(playerX, this.conditions.getXRanges().entries(), this.conditions.getXRanges().excludes());
     }
 
     /**
@@ -203,7 +203,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     protected boolean checkYRanges() {
         double playerY = Objects.requireNonNull(Minecraft.getInstance().player).getY();
-        return Utils.checkRanges(playerY, this.conditions.getYRanges().getEntries(), this.conditions.getYRanges().isExcludes());
+        return Utils.checkRanges(playerY, this.conditions.getYRanges().entries(), this.conditions.getYRanges().excludes());
     }
 
     /**
@@ -211,7 +211,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     protected boolean checkZRanges() {
         double playerZ = Objects.requireNonNull(Minecraft.getInstance().player).getZ();
-        return Utils.checkRanges(playerZ, this.conditions.getZRanges().getEntries(), this.conditions.getZRanges().isExcludes());
+        return Utils.checkRanges(playerZ, this.conditions.getZRanges().entries(), this.conditions.getZRanges().excludes());
     }
 
     /**
@@ -220,24 +220,24 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected boolean checkWeather() {
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
         LocalPlayer player = Objects.requireNonNull(Minecraft.getInstance().player);
-        Biome.Precipitation precipitation = world.getBiome(player.blockPosition()).value().getPrecipitationAt(player.blockPosition());
-        if (this.conditions.getWeathers().getEntries().isEmpty()) {
+        Biome.Precipitation precipitation = world.getBiome(player.blockPosition()).value().getPrecipitationAt(player.blockPosition(), world.getSeaLevel());
+        if (this.conditions.getWeathers().entries().isEmpty()) {
             return true;
         }
 
-        if ((this.conditions.getWeathers().isExcludes() ^ this.conditions.getWeathers().getEntries().contains(Weather.THUNDER)) && world.isThundering()) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.THUNDER)) && world.isThundering()) {
             return true;
         }
-        if ((this.conditions.getWeathers().isExcludes() ^ this.conditions.getWeathers().getEntries().contains(Weather.RAIN)) && world.isRaining() && !world.isThundering()) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.RAIN)) && world.isRaining() && !world.isThundering()) {
             return true;
         }
-        if ((this.conditions.getWeathers().isExcludes() ^ this.conditions.getWeathers().getEntries().contains(Weather.SNOW)) && world.isRaining() && precipitation == Biome.Precipitation.SNOW) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.SNOW)) && world.isRaining() && precipitation == Biome.Precipitation.SNOW) {
             return true;
         }
-        if ((this.conditions.getWeathers().isExcludes() ^ this.conditions.getWeathers().getEntries().contains(Weather.BIOME_RAIN)) && world.isRaining() && precipitation == Biome.Precipitation.RAIN) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.BIOME_RAIN)) && world.isRaining() && precipitation == Biome.Precipitation.RAIN) {
             return true;
         }
-        return (this.conditions.getWeathers().isExcludes() ^ this.conditions.getWeathers().getEntries().contains(Weather.CLEAR)) && !world.isRaining() && !world.isThundering();
+        return (this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.CLEAR)) && !world.isRaining() && !world.isThundering();
     }
 
     @Override
@@ -257,7 +257,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
     @Override
     public int getLayer() {
-        return this.properties.getLayer();
+        return this.properties.layer();
     }
 
     @Override
@@ -267,6 +267,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
     @Override
     public String toString() {
-        return String.format("[layer=%s, alpha=%s, dimension=%s, world=%s, biomes=%s, xranges=%s, yranges=%s, zranges=%s, weather=%s, effects=%s]", getProperties().getLayer(), getAlpha(), checkDimensions(), checkWorlds(), checkBiomes(), checkXRanges(), checkYRanges(), checkZRanges(), checkWeather(), checkEffects());
+        return String.format("[layer=%s, alpha=%s, dimension=%s, world=%s, biomes=%s, xranges=%s, yranges=%s, zranges=%s, weather=%s, effects=%s]", getProperties().layer(), getAlpha(), checkDimensions(), checkWorlds(), checkBiomes(), checkXRanges(), checkYRanges(), checkZRanges(), checkWeather(), checkEffects());
     }
 }

@@ -29,10 +29,10 @@ public class SkyboxDebugScreen extends Screen {
     public void renderHud(GuiGraphics drawContext) {
         if (NuitClient.config().generalSettings.debugHud || Minecraft.getInstance().screen == this) {
             int yPadding = 2;
-            for (Map.Entry<ResourceLocation, Skybox> identifierSkyboxEntry : SkyboxManager.getInstance().getSkyboxMap().entrySet()) {
-                Skybox activeSkybox = identifierSkyboxEntry.getValue();
+            for (Map.Entry<ResourceLocation, Skybox> skyboxEntry : SkyboxManager.getInstance().getSkyboxMap().entrySet()) {
+                Skybox activeSkybox = skyboxEntry.getValue();
                 if (activeSkybox.isActive()) {
-                    drawContext.drawString(Minecraft.getInstance().font, identifierSkyboxEntry.getKey() + activeSkybox.toString(), 2, yPadding, 0xffffffff, true);
+                    drawContext.drawString(Minecraft.getInstance().font, skyboxEntry.getKey() + activeSkybox.toString(), 2, yPadding, 0xffffffff, true);
                     yPadding += 14;
                 }
             }

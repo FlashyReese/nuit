@@ -7,6 +7,7 @@ import io.github.amerebagatelle.mods.nuit.NuitClient;
 import io.github.amerebagatelle.mods.nuit.SkyboxManager;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 
 import java.io.File;
@@ -14,6 +15,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.util.Objects;
 
 public class NuitConfig {
     private static final Gson GSON = new GsonBuilder()
@@ -68,7 +70,6 @@ public class NuitConfig {
         public boolean enable = true;
         public int unexpectedTransitionDuration = 20;
         public long fadeCacheDuration = 24000;
-        public boolean keepVanillaBehaviour = true;
 
         public boolean debugMode = false;
         public boolean debugHud = false;
@@ -86,11 +87,11 @@ public class NuitConfig {
                 NuitClient.config().save();
                 SkyboxManager.getInstance().setEnabled(NuitClient.config().generalSettings.enable);
 
-                assert client.player != null;
+                LocalPlayer player = Objects.requireNonNull(client.player);
                 if (SkyboxManager.getInstance().isEnabled()) {
-                    client.player.displayClientMessage(Component.translatable("nuit.message.enabled"), false);
+                    player.displayClientMessage(Component.translatable("nuit.message.enabled"), false);
                 } else {
-                    client.player.displayClientMessage(Component.translatable("nuit.message.disabled"), false);
+                    player.displayClientMessage(Component.translatable("nuit.message.disabled"), false);
                 }
             }
             while (this.toggleSkyboxDebugHud.consumeClick()) {

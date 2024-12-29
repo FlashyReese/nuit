@@ -7,14 +7,15 @@ import io.github.amerebagatelle.mods.nuit.components.Blend;
 import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.components.Rotation;
-import io.github.amerebagatelle.mods.nuit.mixin.LevelRendererAccessor;
+import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
 import io.github.amerebagatelle.mods.nuit.skybox.TextureRegistrar;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
-import org.joml.Matrix4f;
+import net.minecraft.client.renderer.CoreShaders;
+import net.minecraft.client.renderer.FogParameters;
+import net.minecraft.client.renderer.MultiBufferSource;
 
 import java.util.Objects;
 
@@ -25,33 +26,29 @@ public abstract class TexturedSkybox extends AbstractSkybox implements Rotatable
     protected TexturedSkybox(Properties properties, Conditions conditions, Blend blend) {
         super(properties, conditions);
         this.blend = blend;
-        this.rotation = properties.getRotation();
+        this.rotation = properties.rotation();
     }
 
     /**
      * Overrides and makes final here as there are options that should always be respected in a textured skybox.
      *
-     * @param worldRendererAccess Access to the worldRenderer as skyboxes often require it.
-     * @param matrixStack         The current MatrixStack.
-     * @param tickDelta           The current tick delta.
+     * @param skyRendererAccess Access to the skyRenderer as skyboxes often require it.
+     * @param poseStack         The current PoseStack.
+     * @param tickDelta         The current tick delta.
      */
     @Override
-    public final void render(LevelRendererAccessor worldRendererAccess, PoseStack matrixStack, Matrix4f projectionMatrix, float tickDelta, Camera camera, boolean thickFog, Runnable fogCallback) {
+    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback) {
         RenderSystem.depthMask(false);
         RenderSystem.enableBlend();
 
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(CoreShaders.POSITION_TEX);
         this.blend.applyBlendFunc(this.alpha);
 
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
-
-        matrixStack.pushPose();
-
-        // static
-        this.rotation.rotateStack(matrixStack, world);
-
-        this.renderSkybox(worldRendererAccess, matrixStack, tickDelta, camera, thickFog, fogCallback);
-        matrixStack.popPose();
+        poseStack.pushPose();
+        this.rotation.rotateStack(poseStack, world);
+        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters, fogCallback);
+        poseStack.popPose();
 
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();
@@ -61,7 +58,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements Rotatable
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(LevelRendererAccessor worldRendererAccess, PoseStack matrixStack, float tickDelta, Camera camera, boolean thickFog, Runnable runnable);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback);
 
     public Blend getBlend() {
         return this.blend;

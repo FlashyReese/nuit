@@ -7,18 +7,14 @@ import it.unimi.dsi.fastutil.longs.Long2FloatOpenHashMap;
 
 import java.util.Map;
 
-public class Fade {
+public record Fade(boolean alwaysOn, long duration, Map<Long, Float> keyFrames) {
     public static final Codec<Fade> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.BOOL.optionalFieldOf("alwaysOn", false).forGetter(Fade::isAlwaysOn),
-            CodecUtils.getClampedLong(1, Long.MAX_VALUE).optionalFieldOf("duration", 24000L).forGetter(Fade::getDuration),
+            Codec.BOOL.optionalFieldOf("alwaysOn", false).forGetter(Fade::alwaysOn),
+            CodecUtils.getClampedLong(1, Long.MAX_VALUE).optionalFieldOf("duration", 24000L).forGetter(Fade::duration),
             CodecUtils.unboundedMapFixed(Long.class, CodecUtils.getClampedFloat(0F, 1F), Long2FloatOpenHashMap::new)
                     .optionalFieldOf("keyFrames", CodecUtils.fastUtilLong2FloatOpenHashMap())
-                    .forGetter(Fade::getKeyFrames)
+                    .forGetter(Fade::keyFrames)
     ).apply(instance, Fade::new));
-    private final boolean alwaysOn;
-    private final long duration;
-
-    private final Map<Long, Float> keyFrames;
 
     public Fade(boolean alwaysOn, long duration, Map<Long, Float> keyFrames) {
         this.alwaysOn = alwaysOn || keyFrames.isEmpty();
@@ -43,18 +39,6 @@ public class Fade {
                 throw new IllegalArgumentException("Keyframes must be numeric", e);
             }
         }
-    }
-
-    public boolean isAlwaysOn() {
-        return this.alwaysOn;
-    }
-
-    public long getDuration() {
-        return this.duration;
-    }
-
-    public Map<Long, Float> getKeyFrames() {
-        return this.keyFrames;
     }
 
     public static Fade of() {

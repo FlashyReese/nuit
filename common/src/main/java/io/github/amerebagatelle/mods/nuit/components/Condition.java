@@ -6,31 +6,15 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import java.util.List;
 
-public class Condition<T> {
-    private final boolean excludes;
-    private final List<T> entries;
-
-    public Condition(boolean excludes, List<T> entries) {
-        this.excludes = excludes;
-        this.entries = entries;
-    }
-
-    public boolean isExcludes() {
-        return this.excludes;
-    }
-
-    public List<T> getEntries() {
-        return this.entries;
-    }
-
+public record Condition<T>(boolean excludes, List<T> entries) {
     public static <T> Condition<T> of() {
         return new Condition<>(false, ObjectArrayList.of());
     }
 
     public static <T> Codec<Condition<T>> create(Codec<T> codec) {
         return RecordCodecBuilder.create(instance -> instance.group(
-                Codec.BOOL.optionalFieldOf("excludes", false).forGetter(Condition::isExcludes),
-                codec.listOf().optionalFieldOf("entries", ObjectArrayList.of()).forGetter(Condition::getEntries)
+                Codec.BOOL.optionalFieldOf("excludes", false).forGetter(Condition::excludes),
+                codec.listOf().optionalFieldOf("entries", ObjectArrayList.of()).forGetter(Condition::entries)
         ).apply(instance, Condition::new));
     }
 }

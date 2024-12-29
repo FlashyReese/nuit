@@ -10,6 +10,7 @@ public class RGB {
             CodecUtils.getClampedFloat(0.0F, 1.0F).fieldOf("green").forGetter(RGB::getGreen),
             CodecUtils.getClampedFloat(0.0F, 1.0F).fieldOf("blue").forGetter(RGB::getBlue)
     ).apply(instance, RGB::new));
+
     private final float red;
     private final float green;
     private final float blue;

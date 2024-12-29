@@ -30,28 +30,28 @@ public interface NuitApi {
     /**
      * Allows mods to add new skyboxes at runtime.
      *
-     * @param identifier Identifier for skybox.
+     * @param resourceLocation Identifier for skybox.
      * @param skybox     Skybox implementation.
      */
-    void addSkybox(ResourceLocation identifier, Skybox skybox);
+    void addSkybox(ResourceLocation resourceLocation, Skybox skybox);
 
     /**
      * Allows mods to add new skyboxes with a {@link JsonObject} at runtime.
      * This method applies {@link SkyboxManager#parseSkyboxJson(ResourceLocation, JsonObject)}
      * serialization and adds the skybox with {@link #addSkybox(ResourceLocation, Skybox)}
      *
-     * @param identifier Identifier for skybox.
+     * @param resourceLocation Identifier for skybox.
      * @param jsonObject Json Object.
      */
-    void addSkybox(ResourceLocation identifier, JsonObject jsonObject);
+    void addSkybox(ResourceLocation resourceLocation, JsonObject jsonObject);
 
     /**
      * Allows mods to add new permanent skyboxes at runtime.
      *
-     * @param identifier Identifier for skybox.
+     * @param resourceLocation Identifier for skybox.
      * @param skybox     Skybox implementation.
      */
-    void addPermanentSkybox(ResourceLocation identifier, Skybox skybox);
+    void addPermanentSkybox(ResourceLocation resourceLocation, Skybox skybox);
 
     /**
      * Clears all non-permanent skyboxes.
