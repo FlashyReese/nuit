@@ -23,7 +23,7 @@ public class SkyboxResourceListener implements PreparableReloadListener {
     public void readFiles(ResourceManager resourceManager) {
         NuitApi skyboxManager = NuitApi.getInstance();
         skyboxManager.clearSkyboxes();
-        Map<ResourceLocation, Resource> resources = resourceManager.listResources("sky", resourceLocation -> resourceLocation.getPath().endsWith(".json"));
+        Map<ResourceLocation, Resource> resources = resourceManager.listResources("sky", resourceLocation -> resourceLocation.getNamespace().startsWith(NuitClient.MOD_ID) && resourceLocation.getPath().endsWith(".json"));
         resources.forEach((resourceLocation, resource) -> {
             try {
                 JsonObject json = GSON.fromJson(new InputStreamReader(resource.open()), JsonObject.class);
