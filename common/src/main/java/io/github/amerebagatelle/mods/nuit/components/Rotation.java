@@ -55,7 +55,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             resultRot.mul(axisRot);
 
             double timeRotation = Utils.calculateRotation(this.speed, this.skyboxRotation, level);
-            resultRot.mul(Axis.XP.rotationDegrees((float) timeRotation).mul(mappingRot));
+            resultRot.mul(Axis.YP.rotationDegrees((float) timeRotation).mul(mappingRot));
 
             resultRot.mul(axisRot.conjugate());
         });
