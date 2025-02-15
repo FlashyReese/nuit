@@ -38,7 +38,7 @@ public class NuitClientFabric implements ClientModInitializer {
 
             @Override
             public ResourceLocation getFabricId() {
-                return ResourceLocation.tryBuild(NuitClient.MOD_ID, "skybox_reader");
+                return ResourceLocation.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader");
             }
         });
 
