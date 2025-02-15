@@ -1,10 +1,7 @@
 package io.github.amerebagatelle.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.components.*;
@@ -35,26 +32,22 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback) {
-        VertexBuffer buffer = VertexBuffer.uploadStatic(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX, (vertexConsumer) -> {
-            RenderSystem.setShaderTexture(0, this.texture.getTextureId());
-            for (int face = 0; face < 6; face++) {
-                // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
-                UVRange tex = Utils.TEXTURE_FACES[face];
-                poseStack.pushPose();
-                Utils.rotateSkyBoxByFace(poseStack, face);
-                Matrix4f matrix4f = poseStack.last().pose();
-                vertexConsumer.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.getMinU(), tex.getMinV());
-                vertexConsumer.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.getMinU(), tex.getMaxV());
-                vertexConsumer.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.getMaxU(), tex.getMaxV());
-                vertexConsumer.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.getMaxU(), tex.getMinV());
-                poseStack.popPose();
-            }
-        });
-
-        buffer.bind();
-        buffer.drawWithShader(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-        VertexBuffer.unbind();
+    public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        for (int face = 0; face < 6; face++) {
+            // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
+            UVRange tex = Utils.TEXTURE_FACES[face];
+            poseStack.pushPose();
+            Utils.rotateSkyBoxByFace(poseStack, face);
+            Matrix4f matrix4f = poseStack.last().pose();
+            builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.minU(), tex.minV());
+            builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.minU(), tex.maxV());
+            builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
+            builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
+            poseStack.popPose();
+        }
+        RenderSystem.setShaderTexture(0, this.texture.getTextureId());
+        BufferUploader.drawWithShader(builder.buildOrThrow());
     }
 
     @Override

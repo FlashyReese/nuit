@@ -1,10 +1,7 @@
 package io.github.amerebagatelle.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.components.*;
@@ -38,7 +35,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback) {
+    public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         for (int face = 0; face < 6; ++face) {
             // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
             // List of UV ranges for each face of the cube
@@ -56,17 +53,13 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                     UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getCurrentFrame(), intersect);
 
                     // Render the quad at the calculated position
-                    VertexBuffer buffer = VertexBuffer.uploadStatic(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX, (vertexConsumer) -> {
-                        RenderSystem.setShaderTexture(0, animatableTexture.getTexture().getTextureId());
-                        vertexConsumer.addVertex(matrix4f, intersectionOnCurrentTexture.getMinU(), -this.quadSize, intersectionOnCurrentTexture.getMinV()).setUv(intersectionOnCurrentFrame.getMinU(), intersectionOnCurrentFrame.getMinV());
-                        vertexConsumer.addVertex(matrix4f, intersectionOnCurrentTexture.getMinU(), -this.quadSize, intersectionOnCurrentTexture.getMaxV()).setUv(intersectionOnCurrentFrame.getMinU(), intersectionOnCurrentFrame.getMaxV());
-                        vertexConsumer.addVertex(matrix4f, intersectionOnCurrentTexture.getMaxU(), -this.quadSize, intersectionOnCurrentTexture.getMaxV()).setUv(intersectionOnCurrentFrame.getMaxU(), intersectionOnCurrentFrame.getMaxV());
-                        vertexConsumer.addVertex(matrix4f, intersectionOnCurrentTexture.getMaxU(), -this.quadSize, intersectionOnCurrentTexture.getMinV()).setUv(intersectionOnCurrentFrame.getMaxU(), intersectionOnCurrentFrame.getMinV());
-                    });
-
-                    buffer.bind();
-                    buffer.drawWithShader(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-                    VertexBuffer.unbind();
+                    BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+                    builder.addVertex(matrix4f, intersectionOnCurrentTexture.minU(), -this.quadSize, intersectionOnCurrentTexture.minV()).setUv(intersectionOnCurrentFrame.minU(), intersectionOnCurrentFrame.minV());
+                    builder.addVertex(matrix4f, intersectionOnCurrentTexture.minU(), -this.quadSize, intersectionOnCurrentTexture.maxV()).setUv(intersectionOnCurrentFrame.minU(), intersectionOnCurrentFrame.maxV());
+                    builder.addVertex(matrix4f, intersectionOnCurrentTexture.maxU(), -this.quadSize, intersectionOnCurrentTexture.maxV()).setUv(intersectionOnCurrentFrame.maxU(), intersectionOnCurrentFrame.maxV());
+                    builder.addVertex(matrix4f, intersectionOnCurrentTexture.maxU(), -this.quadSize, intersectionOnCurrentTexture.minV()).setUv(intersectionOnCurrentFrame.maxU(), intersectionOnCurrentFrame.minV());
+                    RenderSystem.setShaderTexture(0, animatableTexture.getTexture().getTextureId());
+                    BufferUploader.drawWithShader(builder.buildOrThrow());
                 }
             }
 

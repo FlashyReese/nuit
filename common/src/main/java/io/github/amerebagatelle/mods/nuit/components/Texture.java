@@ -8,20 +8,25 @@ import net.minecraft.resources.ResourceLocation;
  * minimum u coordinate, maximum u coordinate,
  * minimum v coordinate and maximum v coordinate.
  */
-public class Texture extends UVRange {
+public class Texture {
     public static final Codec<Texture> CODEC = ResourceLocation.CODEC.xmap(Texture::new, Texture::getTextureId);
     private final ResourceLocation textureId;
+    private final UVRange uvRange;
 
-    public Texture(ResourceLocation textureId, float minU, float minV, float maxU, float maxV) {
-        super(minU, minV, maxU, maxV);
+    public Texture(ResourceLocation textureId, UVRange uvRange) {
         this.textureId = textureId;
+        this.uvRange = uvRange;
     }
 
     public Texture(ResourceLocation textureId) {
-        this(textureId, 0.0F, 0.0F, 1.0F, 1.0F);
+        this(textureId, new UVRange(0.0F, 0.0F, 1.0F, 1.0F));
     }
 
     public ResourceLocation getTextureId() {
         return this.textureId;
+    }
+
+    public UVRange getUvRange() {
+        return uvRange;
     }
 }

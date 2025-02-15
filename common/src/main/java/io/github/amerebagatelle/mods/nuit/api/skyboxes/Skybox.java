@@ -6,14 +6,13 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
-import org.joml.Matrix4f;
 
 public interface Skybox {
     default int getLayer() {
         return 0;
     }
 
-    void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters thickFog, Runnable fogCallback);
+    void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters thickFog);
 
     void tick(ClientLevel clientLevel);
 

@@ -1,9 +1,8 @@
 package io.github.amerebagatelle.mods.nuit.components;
 
-import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.Codec;
 
-import java.util.Map;
+import java.util.Arrays;
 import java.util.Objects;
 
 public enum Weather {
@@ -13,17 +12,7 @@ public enum Weather {
     SNOW("snow"),
     THUNDER("thunder");
 
-    private static final Map<String, Weather> VALUES;
     public static final Codec<Weather> CODEC = Codec.STRING.xmap(Weather::fromString, Weather::toString);
-
-    static {
-        ImmutableMap.Builder<String, Weather> builder = ImmutableMap.builder();
-        for (Weather value : values()) {
-            builder.put(value.name, value);
-        }
-        VALUES = builder.build();
-    }
-
     private final String name;
 
     Weather(String name) {
@@ -31,7 +20,7 @@ public enum Weather {
     }
 
     public static Weather fromString(String name) {
-        return Objects.requireNonNull(VALUES.get(name));
+        return Objects.requireNonNull(Arrays.stream(Weather.values()).filter(weather -> name.equals(weather.name)).findFirst().orElse(Weather.CLEAR));
     }
 
     @Override

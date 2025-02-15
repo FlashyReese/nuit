@@ -6,8 +6,8 @@ import com.mojang.math.Axis;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.NuitSkybox;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.Skybox;
-import io.github.amerebagatelle.mods.nuit.components.MinMaxEntry;
 import io.github.amerebagatelle.mods.nuit.components.RGB;
+import io.github.amerebagatelle.mods.nuit.components.RangeEntry;
 import io.github.amerebagatelle.mods.nuit.components.UVRange;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
@@ -38,15 +38,15 @@ public class Utils {
      * @return The output intersection
      */
     public static UVRange mapUVRanges(UVRange input, UVRange output, UVRange inputIntersection) {
-        float inputUWidth = input.getMaxU() - input.getMinU();
-        float outputUWidth = output.getMaxU() - output.getMinU();
-        float inputVHeight = input.getMaxV() - input.getMinV();
-        float outputVHeight = output.getMaxV() - output.getMinV();
+        float inputUWidth = input.maxU() - input.minU();
+        float outputUWidth = output.maxU() - output.minU();
+        float inputVHeight = input.maxV() - input.minV();
+        float outputVHeight = output.maxV() - output.minV();
 
-        float u1 = (inputIntersection.getMinU() - input.getMinU()) / inputUWidth * outputUWidth + output.getMinU();
-        float u2 = (inputIntersection.getMaxU() - input.getMinU()) / inputUWidth * outputUWidth + output.getMinU();
-        float v1 = (inputIntersection.getMinV() - input.getMinV()) / inputVHeight * outputVHeight + output.getMinV();
-        float v2 = (inputIntersection.getMaxV() - input.getMinV()) / inputVHeight * outputVHeight + output.getMinV();
+        float u1 = (inputIntersection.minU() - input.minU()) / inputUWidth * outputUWidth + output.minU();
+        float u2 = (inputIntersection.maxU() - input.minU()) / inputUWidth * outputUWidth + output.minU();
+        float v1 = (inputIntersection.minV() - input.minV()) / inputVHeight * outputVHeight + output.minV();
+        float v2 = (inputIntersection.maxV() - input.minV()) / inputVHeight * outputVHeight + output.minV();
 
         return new UVRange(u1, v1, u2, v2);
     }
@@ -59,11 +59,10 @@ public class Utils {
      * @return The intersection between the two UV ranges, if none is found, null is returned
      */
     public static UVRange findUVIntersection(UVRange first, UVRange second) {
-        float intersectionMinU = Math.max(first.getMinU(), second.getMinU());
-        float intersectionMaxU = Math.min(first.getMaxU(), second.getMaxU());
-        float intersectionMinV = Math.max(first.getMinV(), second.getMinV());
-        float intersectionMaxV = Math.min(first.getMaxV(), second.getMaxV());
-
+        float intersectionMinU = Math.max(first.minU(), second.minU());
+        float intersectionMaxU = Math.min(first.maxU(), second.maxU());
+        float intersectionMinV = Math.max(first.minV(), second.minV());
+        float intersectionMaxV = Math.min(first.maxV(), second.maxV());
         if (intersectionMaxU >= intersectionMinU && intersectionMaxV >= intersectionMinV) {
             return new UVRange(intersectionMinU, intersectionMinV, intersectionMaxU, intersectionMaxV);
         } else {
@@ -73,39 +72,12 @@ public class Utils {
     }
 
     /**
-     * @return Whether the value is within any of the minMaxEntries.
+     * @return Whether the value is within any of the rangeEntries.
      */
-    public static boolean checkRanges(double value, List<MinMaxEntry> minMaxEntries, boolean inverse) {
-        return minMaxEntries.isEmpty() || (inverse ^ minMaxEntries.stream()
+    public static boolean checkRanges(double value, List<RangeEntry> rangeEntries, boolean inverse) {
+        return rangeEntries.isEmpty() || (inverse ^ rangeEntries.stream()
                 .map(entry -> Range.closed(entry.min(), entry.max()))
                 .anyMatch(range -> range.contains((float) value)));
-    }
-
-    /**
-     * Helper method to log warnings when normalizing/debugging
-     *
-     * @param initialValue Initial value
-     * @param finalValue   Final value
-     * @param message      Desired message
-     * @param <T>          Any type
-     * @return finalValue
-     */
-    public static <T> T warnIfDifferent(T initialValue, T finalValue, String message) {
-        if (!initialValue.equals(finalValue) && NuitClient.config().generalSettings.debugMode) {
-            NuitClient.getLogger().warn(message);
-        }
-        return finalValue;
-    }
-
-    /**
-     * Normalizes any tick time outside 0-23999
-     *
-     * @param tickTime Time in ticks
-     * @return Normalized tickTime
-     */
-    public static int normalizeTickTime(long tickTime) {
-        long result = tickTime % 24000;
-        return (int) (result >= 0 ? result : result + 24000);
     }
 
     /**
@@ -151,54 +123,6 @@ public class Utils {
         } else if (face == 5) {
             poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
             poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
-        }
-    }
-
-    /**
-     * Checks whether current time is within start and end time, this method also supports roll over checks
-     *
-     * @param currentTime The current world time
-     * @param startTime   The start time
-     * @param endTime     The end time
-     * @return Whether current time is within start and end time
-     */
-    public static boolean isInTimeInterval(int currentTime, int startTime, int endTime) {
-        if (currentTime < 0 || currentTime >= 24000) {
-            throw new RuntimeException("Invalid current time, value must be between 0-23999: " + currentTime);
-        }
-
-        if (startTime <= endTime) {
-            return currentTime >= startTime && currentTime <= endTime;
-        } else {
-            return currentTime >= startTime || currentTime <= endTime;
-        }
-    }
-
-    /**
-     * Calculates the fade alpha
-     *
-     * @param maxAlpha     The maximum alpha value
-     * @param minAlpha     The minimum alpha value
-     * @param currentTime  The current world time
-     * @param startFadeIn  The fade in start time
-     * @param endFadeIn    The fade in end time
-     * @param startFadeOut The fade out start time
-     * @param endFadeOut   The fade out end time
-     * @return Fade Alpha
-     */
-    public static float calculateFadeAlphaValue(float maxAlpha, float minAlpha, int currentTime, int startFadeIn, int endFadeIn, int startFadeOut, int endFadeOut) {
-        if (isInTimeInterval(currentTime, endFadeIn, startFadeOut)) {
-            return maxAlpha;
-        } else if (isInTimeInterval(currentTime, startFadeIn, endFadeIn)) {
-            int fadeInDuration = calculateCyclicTimeDistance(startFadeIn, endFadeIn);
-            int timePassedSinceFadeInStart = calculateCyclicTimeDistance(startFadeIn, currentTime);
-            return minAlpha + ((float) timePassedSinceFadeInStart / fadeInDuration) * (maxAlpha - minAlpha);
-        } else if (isInTimeInterval(currentTime, startFadeOut, endFadeOut)) {
-            int fadeOutDuration = calculateCyclicTimeDistance(startFadeOut, endFadeOut);
-            int timePassedSinceFadeOutStart = calculateCyclicTimeDistance(startFadeOut, currentTime);
-            return maxAlpha + ((float) timePassedSinceFadeOutStart / fadeOutDuration) * (minAlpha - maxAlpha);
-        } else {
-            return minAlpha;
         }
     }
 
@@ -300,17 +224,6 @@ public class Utils {
     }
 
     /**
-     * Calculates the cyclic distance (duration) between two time points on a cyclic timescale.
-     *
-     * @param startTime The first time point.
-     * @param endTime   The second time point.
-     * @return The cyclic distance between the two time points.
-     */
-    public static int calculateCyclicTimeDistance(int startTime, int endTime) {
-        return (endTime - startTime + 24000) % 24000;
-    }
-
-    /**
      * Blends all fog colors using the alpha blending formula: (source * source_alpha) + (destination * (1 - source_alpha)).
      *
      * @param skyboxList      List of skyboxes to blend the fog colors from.
@@ -344,6 +257,7 @@ public class Utils {
                 destination = (nuitSkybox.getProperties().fog().getDensity() * nuitSkybox.getAlpha()) + (destination * sourceAlphaInv);
             }
         }
+
         return destination;
     }
 

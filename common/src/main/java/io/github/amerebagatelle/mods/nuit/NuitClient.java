@@ -21,6 +21,7 @@ public class NuitClient {
         if (LOGGER == null) {
             LOGGER = LogManager.getLogger("Nuit");
         }
+        
         return LOGGER;
     }
 

@@ -118,11 +118,10 @@ public class SkyboxManager implements NuitApi {
     }
 
     @Internal
-    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback) {
+    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         for (Skybox skybox : this.activeSkyboxes) {
             this.currentSkybox = skybox;
-            skybox.render(skyRendererAccessor, poseStack, tickDelta, camera, bufferSource, fogParameters, fogCallback);
-            bufferSource.endBatch();
+            skybox.render(skyRendererAccessor, poseStack, tickDelta, camera, bufferSource, fogParameters);
         }
     }
 
@@ -149,13 +148,13 @@ public class SkyboxManager implements NuitApi {
         }
 
         this.activeSkyboxes.removeIf(skybox -> !skybox.isActive());
-
         // Add the skyboxes to a activeSkyboxes container so that they can be ordered
         for (Skybox skybox : Iterables.concat(this.skyboxMap.values(), this.permanentSkyboxMap.values())) {
             if (!this.activeSkyboxes.contains(skybox) && skybox.isActive()) {
                 this.activeSkyboxes.add(skybox);
             }
         }
+
         this.activeSkyboxes.sort(Comparator.comparingInt(Skybox::getLayer));
     }
 

@@ -10,8 +10,6 @@ import java.nio.file.Path;
 public interface NuitPlatformHelper {
     NuitPlatformHelper INSTANCE = Utils.loadService(NuitPlatformHelper.class);
 
-    Path getGameDir();
-
     Path getConfigDir();
 
     Registry<SkyboxType<? extends Skybox>> getSkyboxTypeRegistry();

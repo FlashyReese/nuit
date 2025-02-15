@@ -18,17 +18,9 @@ public interface SkyRendererAccessor {
         return ResourceLocation.withDefaultNamespace("textures/environment/moon_phases.png");
     }
 
-    @Accessor("END_SKY_LOCATION")
-    static ResourceLocation getEndSky() {
-        return ResourceLocation.withDefaultNamespace("textures/environment/end_sky.png");
-    }
-
     @Accessor("topSkyBuffer")
     VertexBuffer getTopSkyBuffer();
 
     @Accessor("starBuffer")
     VertexBuffer getStarsBuffer();
-
-    @Accessor("bottomSkyBuffer")
-    VertexBuffer getBottomSkyBuffer();
 }

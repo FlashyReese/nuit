@@ -1,10 +1,7 @@
 package io.github.amerebagatelle.mods.nuit.skybox;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.components.Blend;
@@ -37,30 +34,27 @@ public class MonoColorSkybox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback) {
+    public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+        RenderSystem.setShaderFog(fogParameters);
         if (this.alpha > 0) {
             RenderSystem.depthMask(false);
             RenderSystem.enableBlend();
+            this.blend.apply(this.alpha);
+
+            BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            for (int face = 0; face < 6; ++face) {
+                poseStack.pushPose();
+                Utils.rotateSkyBoxByFace(poseStack, face);
+                Matrix4f matrix4f = poseStack.last().pose();
+                builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
+                builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
+                builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
+                builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
+                poseStack.popPose();
+            }
+
             RenderSystem.setShader(CoreShaders.POSITION_COLOR);
-            this.blend.applyBlendFunc(this.alpha);
-
-            VertexBuffer buffer = VertexBuffer.uploadStatic(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR, (vertexConsumer) -> {
-                for (int face = 0; face < 6; ++face) {
-                    poseStack.pushPose();
-                    Utils.rotateSkyBoxByFace(poseStack, face);
-                    Matrix4f matrix4f = poseStack.last().pose();
-                    vertexConsumer.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
-                    vertexConsumer.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
-                    vertexConsumer.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
-                    vertexConsumer.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.alpha);
-                    poseStack.popPose();
-                }
-            });
-
-            buffer.bind();
-            buffer.drawWithShader(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-            VertexBuffer.unbind();
-
+            BufferUploader.drawWithShader(builder.buildOrThrow());
             RenderSystem.disableBlend();
             RenderSystem.depthMask(true);
         }

@@ -19,7 +19,7 @@ public class MinMaxTest {
     })
     public void testCorrectParse(String json) {
         var jsonOb = JsonTestHelper.readJson(json);
-        assertDoesNotThrow(() -> MinMaxEntry.CODEC.decode(JsonOps.INSTANCE, jsonOb).getOrThrow().getFirst());
+        assertDoesNotThrow(() -> RangeEntry.CODEC.decode(JsonOps.INSTANCE, jsonOb).getOrThrow().getFirst());
     }
 
     @ParameterizedTest
@@ -47,6 +47,6 @@ public class MinMaxTest {
     })
     public void testIncorrectParse(String json) {
         var jsonOb = JsonTestHelper.readJson(json);
-        assertThrows(IllegalStateException.class, () -> MinMaxEntry.CODEC.decode(JsonOps.INSTANCE, jsonOb).getOrThrow().getFirst());
+        assertThrows(IllegalStateException.class, () -> RangeEntry.CODEC.decode(JsonOps.INSTANCE, jsonOb).getOrThrow().getFirst());
     }
 }

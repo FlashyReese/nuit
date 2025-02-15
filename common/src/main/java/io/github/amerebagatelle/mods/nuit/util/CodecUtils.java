@@ -2,7 +2,6 @@ package io.github.amerebagatelle.mods.nuit.util;
 
 import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
-import it.unimi.dsi.fastutil.longs.Long2FloatArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.util.Mth;
@@ -13,7 +12,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class CodecUtils {
-
     public static Codec<Long> getClampedLong(long min, long max) {
         if (min > max) {
             throw new UnsupportedOperationException("Maximum value was lesser than than the minimum value");
@@ -33,13 +31,6 @@ public class CodecUtils {
             throw new UnsupportedOperationException("Maximum value was lesser than than the minimum value");
         }
         return Codec.FLOAT.xmap(f -> Mth.clamp(f, min, max), Function.identity());
-    }
-
-    public static Codec<Double> getClampedDouble(double min, double max) {
-        if (min > max) {
-            throw new UnsupportedOperationException("Maximum value was lesser than than the minimum value");
-        }
-        return Codec.DOUBLE.xmap(f -> Mth.clamp(f, min, max), Function.identity());
     }
 
     public static <K extends Number, V> Codec<Map<K, V>> unboundedMapFixed(Class<K> clazz, Codec<V> valueCodec, Supplier<Map<K, V>> mapSupplier) {
@@ -73,10 +64,6 @@ public class CodecUtils {
                         Map.Entry::getValue
                 ))
         );
-    }
-
-    public static Map<Long, Float> fastUtilLong2FloatArrayMap() {
-        return new Long2FloatArrayMap();
     }
 
     public static Map<Integer, Long> fastUtilInt2LongArrayMap() {
