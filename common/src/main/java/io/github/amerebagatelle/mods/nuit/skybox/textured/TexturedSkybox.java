@@ -2,7 +2,6 @@ package io.github.amerebagatelle.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.amerebagatelle.mods.nuit.api.skyboxes.RotatableSkybox;
 import io.github.amerebagatelle.mods.nuit.components.Blend;
 import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
@@ -19,7 +18,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 
 import java.util.Objects;
 
-public abstract class TexturedSkybox extends AbstractSkybox implements RotatableSkybox, TextureRegistrar {
+public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
     public Rotation rotation;
     public Blend blend;
 
@@ -37,17 +36,18 @@ public abstract class TexturedSkybox extends AbstractSkybox implements Rotatable
      * @param tickDelta         The current tick delta.
      */
     @Override
-    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback) {
+    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+        RenderSystem.setShaderFog(fogParameters);
         RenderSystem.depthMask(false);
         RenderSystem.enableBlend();
 
         RenderSystem.setShader(CoreShaders.POSITION_TEX);
-        this.blend.applyBlendFunc(this.alpha);
+        this.blend.apply(this.alpha);
 
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
         poseStack.pushPose();
-        this.rotation.rotateStack(poseStack, world);
-        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters, fogCallback);
+        this.rotation.apply(poseStack, world);
+        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters);
         poseStack.popPose();
 
         RenderSystem.depthMask(true);
@@ -58,13 +58,9 @@ public abstract class TexturedSkybox extends AbstractSkybox implements Rotatable
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters, Runnable fogCallback);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters);
 
     public Blend getBlend() {
         return this.blend;
-    }
-
-    public Rotation getRotation() {
-        return this.rotation;
     }
 }

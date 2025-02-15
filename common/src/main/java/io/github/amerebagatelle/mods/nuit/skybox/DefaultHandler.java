@@ -35,18 +35,21 @@ public class DefaultHandler {
 
     public static void addConditions(Conditions conditions) {
         for (ResourceLocation location : conditions.getBiomes().entries()) {
-            if (!concatConditions.getBiomes().entries().contains(location))
+            if (!concatConditions.getBiomes().entries().contains(location)) {
                 concatConditions.getBiomes().entries().add(location);
+            }
         }
 
         for (ResourceLocation resourceLocation : conditions.getWorlds().entries()) {
-            if (!concatConditions.getWorlds().entries().contains(resourceLocation))
+            if (!concatConditions.getWorlds().entries().contains(resourceLocation)) {
                 concatConditions.getWorlds().entries().add(resourceLocation);
+            }
         }
 
         for (ResourceLocation resource : conditions.getDimensions().entries()) {
-            if (!concatConditions.getDimensions().entries().contains(resource))
+            if (!concatConditions.getDimensions().entries().contains(resource)) {
                 concatConditions.getDimensions().entries().add(resource);
+            }
         }
     }
 
@@ -91,12 +94,5 @@ public class DefaultHandler {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
         return !concatConditions.getDimensions().entries().contains(client.level.dimension().location());
-    }
-
-    /**
-     * @return a Conditions instance containing all biomes, worlds, and dimensions listed in all loaded skyboxes.
-     */
-    public static Conditions getConcatConditions() {
-        return concatConditions;
     }
 }

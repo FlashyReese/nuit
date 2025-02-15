@@ -10,11 +10,6 @@ import java.nio.file.Path;
 
 public class NuitFabricPlatformHelper implements NuitPlatformHelper {
     @Override
-    public Path getGameDir() {
-        return FabricLoader.getInstance().getGameDir();
-    }
-
-    @Override
     public Path getConfigDir() {
         return FabricLoader.getInstance().getConfigDir();
     }

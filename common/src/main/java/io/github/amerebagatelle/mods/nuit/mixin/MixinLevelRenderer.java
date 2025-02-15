@@ -29,15 +29,13 @@ public abstract class MixinLevelRenderer {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {
             PoseStack poseStack = new PoseStack();
-            MultiBufferSource.BufferSource bufferSource = this.renderBuffers.bufferSource();
             skyboxManager.renderSkyboxes(
                     (SkyRendererAccessor) skyRenderer,
                     poseStack,
                     tickDelta,
                     Minecraft.getInstance().gameRenderer.getMainCamera(),
-                    bufferSource,
-                    fogParameters,
-                    FogRenderer::toggleFog
+                    this.renderBuffers.bufferSource(),
+                    fogParameters
             );
             ci.cancel();
         }

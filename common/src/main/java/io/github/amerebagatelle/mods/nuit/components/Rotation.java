@@ -21,15 +21,11 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
     private static final Codec<Quaternionf> QUAT_FROM_VEC_3_F = Codec.FLOAT.listOf().comapFlatMap((list) -> {
         if (list.size() != 3) {
             return DataResult.error(() -> "Invalid number of elements in vector");
+        } else {
+            return DataResult.success(new Quaternionf().rotateLocalX((float) Math.toRadians(list.get(0))).rotateLocalY((float) Math.toRadians(list.get(1))).rotateLocalZ((float) Math.toRadians(list.get(2))));
         }
-
-        Quaternionf result = new Quaternionf();
-        result.rotateLocalX((float) Math.toRadians(list.get(0))); // X
-        result.rotateLocalY((float) Math.toRadians(list.get(1))); // Y
-        result.rotateLocalZ((float) Math.toRadians(list.get(2))); // Y
-
-        return DataResult.success(result);
     }, (vec) -> ImmutableList.of(vec.x(), vec.y(), vec.z()));
+
     public static final Codec<Rotation> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.optionalFieldOf("skyboxRotation", true).forGetter(Rotation::skyboxRotation),
             CodecUtils.unboundedMapFixed(Long.class, QUAT_FROM_VEC_3_F, Long2ObjectOpenHashMap::new)
@@ -42,8 +38,8 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             Codec.FLOAT.optionalFieldOf("speed", 1f).forGetter(Rotation::speed)
     ).apply(instance, Rotation::new));
 
-    public void rotateStack(PoseStack poseStack, ClientLevel world) {
-        long currentTime = world.getDayTime() % this.duration;
+    public void apply(PoseStack poseStack, ClientLevel level) {
+        long currentTime = level.getDayTime() % this.duration;
 //         static
         Quaternionf resultRot = new Quaternionf();
 
@@ -58,7 +54,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             mappingRot.mul(Utils.interpolateQuatKeyframes(this.axis, axisKeyframe, currentTime), axisRot);
             resultRot.mul(axisRot);
 
-            double timeRotation = Utils.calculateRotation(this.speed, this.skyboxRotation, world);
+            double timeRotation = Utils.calculateRotation(this.speed, this.skyboxRotation, level);
             resultRot.mul(Axis.XP.rotationDegrees((float) timeRotation).mul(mappingRot));
 
             resultRot.mul(axisRot.conjugate());

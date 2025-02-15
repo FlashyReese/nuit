@@ -24,8 +24,7 @@ The documentation on this format can be found [here](docs).
 
 It is **out of the scope** of this mod to support the OptiFine format by
 itself. [FSB-Interop](https://modrinth.com/mod/fabricskyboxes-interop) is designed as an add-on to Nuit to achieve
-compatibility with the OptiFine format. Alternatively, [MCPP++](https://modrinth.com/mod/mcpppp) can be used following
-these [instructions](https://github.com/supsm/MCPPPP#use).
+compatibility with the OptiFine format.
 
 ## Suggestions / Support
 

@@ -27,7 +27,7 @@ This specification defines a format for a set of rules for the purpose of custom
     - [Decorations Object](#decorations-object)
     - [RGBA Object](#rgba-object)
     - [Fade Object](#fade-object)
-    - [MinMax Entry Object](#minmax-entry-object)
+    - [Range Entry Object](#minmax-entry-object)
     - [Integer Vector](#integer-vector)
     - [Float Vector](#float-vector)
     - [Rotation Object](#rotation-object)
@@ -63,11 +63,11 @@ The basic structure of a nuit skybox file may look something like this:
         /* effects (Namespaced Identifier Condition, optional) */
         // Here, a "MinMax" type refers to an object containing "min" and "max" keys, both floats
         "xRanges": {},
-        /* x ranges (MinMax Condition, optional) */
+        /* x ranges (Range Condition, optional) */
         "yRanges": {},
-        /* y ranges (MinMax Condition, optional) */
+        /* y ranges (Range Condition, optional) */
         "zRanges": {}
-        /* z ranges (MinMax Condition, optional) */
+        /* z ranges (Range Condition, optional) */
     },
     "decorations": // decorations object (optional)
     {
@@ -413,16 +413,16 @@ Specifies when and where a skybox should render. All fields are optional.
 
 **Specification**
 
-|     Name     |                                        Datatype                                         |                                                                                                           Description                                                                                                            |            Default value             |
-|:------------:|:---------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------:|
-|   `biomes`   |    [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    |       Specifies a list of biomes that the skybox should be rendered in. Note that using the value "nuit:default" will fulfil the condition if the current biome is absent from the biomes condition of all other skyboxes.       |     Empty condition (all biomes)     |
-|   `worlds`   |    [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    | Specifies a list of worlds sky effects that the skybox should be rendered in. Note that using the value "nuit:default" will fulfil the condition if the current world is absent from the worlds condition of all other skyboxes. |     Empty condition (all worlds)     |
-| `dimensions` |    [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    | Specifies a list of dimensions that the skybox should be rendered in. Note that using the value "nuit:default" will fulfil the condition if the current dimension is absent from the dimensions condition of all other skyboxes. |   Empty condition (all dimensions)   |
-|  `effects`   |    [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    |                                                                                Specifies a list of effects that the skybox should be rendered in                                                                                 |  Empty condition (default effects)   |
-|  `weathers`  |          [Condition Object](#generic-condition-object) of [Weathers](#weather)          |                                                                           Specifies a list of weather conditions that the skybox should be rendered in                                                                           | Empty condition (vanilla conditions) |
-|  `xRanges`   | [Condition Object](#generic-condition-object) of [MinMax Entries](#minmax-entry-object) |                                                                            Specifies a list of coordinates that the skybox should be rendered between                                                                            | Empty condition (all x coordinates)  |
-|  `yRanges`   | [Condition Object](#generic-condition-object) of [MinMax Entries](#minmax-entry-object) |                                                                            Specifies a list of coordinates that the skybox should be rendered between                                                                            | Empty condition (all y coordinates)  |
-|  `zRanges`   | [Condition Object](#generic-condition-object) of [MinMax Entries](#minmax-entry-object) |                                                                            Specifies a list of coordinates that the skybox should be rendered between                                                                            | Empty condition (all z coordinates)  |
+|     Name     |                                        Datatype                                        |                                                                                                           Description                                                                                                            |            Default value             |
+|:------------:|:--------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------:|
+|   `biomes`   |   [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    |       Specifies a list of biomes that the skybox should be rendered in. Note that using the value "nuit:default" will fulfil the condition if the current biome is absent from the biomes condition of all other skyboxes.       |     Empty condition (all biomes)     |
+|   `worlds`   |   [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    | Specifies a list of worlds sky effects that the skybox should be rendered in. Note that using the value "nuit:default" will fulfil the condition if the current world is absent from the worlds condition of all other skyboxes. |     Empty condition (all worlds)     |
+| `dimensions` |   [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    | Specifies a list of dimensions that the skybox should be rendered in. Note that using the value "nuit:default" will fulfil the condition if the current dimension is absent from the dimensions condition of all other skyboxes. |   Empty condition (all dimensions)   |
+|  `effects`   |   [Condition Object](#generic-condition-object) of [Namespaced Ids](#namespaced-id)    |                                                                                Specifies a list of effects that the skybox should be rendered in                                                                                 |  Empty condition (default effects)   |
+|  `weathers`  |         [Condition Object](#generic-condition-object) of [Weathers](#weather)          |                                                                           Specifies a list of weather conditions that the skybox should be rendered in                                                                           | Empty condition (vanilla conditions) |
+|  `xRanges`   | [Condition Object](#generic-condition-object) of [Range Entries](#minmax-entry-object) |                                                                            Specifies a list of coordinates that the skybox should be rendered between                                                                            | Empty condition (all x coordinates)  |
+|  `yRanges`   | [Condition Object](#generic-condition-object) of [Range Entries](#minmax-entry-object) |                                                                            Specifies a list of coordinates that the skybox should be rendered between                                                                            | Empty condition (all y coordinates)  |
+|  `zRanges`   | [Condition Object](#generic-condition-object) of [Range Entries](#minmax-entry-object) |                                                                            Specifies a list of coordinates that the skybox should be rendered between                                                                            | Empty condition (all z coordinates)  |
 
 **Example**
 
@@ -608,7 +608,7 @@ Stores a list of four integers which specify the time in ticks to start and end 
 }
 ```
 
-### MinMax Entry Object
+### Range Entry Object
 
 Specifies a minimum and maximum x/y/z value. All fields are required.
 

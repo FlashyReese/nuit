@@ -37,7 +37,8 @@ public class RGB {
     public boolean equals(Object obj) {
         if (obj instanceof RGB rgb) {
             return this.red == rgb.red && this.green == rgb.green && this.blue == rgb.blue;
+        } else {
+            return super.equals(obj);
         }
-        return super.equals(obj);
     }
 }

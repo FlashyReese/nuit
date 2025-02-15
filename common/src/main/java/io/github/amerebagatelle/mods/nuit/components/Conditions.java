@@ -11,9 +11,9 @@ public class Conditions {
             Condition.create(ResourceLocation.CODEC).optionalFieldOf("dimensions", Condition.of()).forGetter(Conditions::getDimensions),
             Condition.create(ResourceLocation.CODEC).optionalFieldOf("effects", Condition.of()).forGetter(Conditions::getEffects),
             Condition.create(Weather.CODEC).optionalFieldOf("weathers", Condition.of()).forGetter(Conditions::getWeathers),
-            Condition.create(MinMaxEntry.CODEC).optionalFieldOf("xRanges", Condition.of()).forGetter(Conditions::getXRanges),
-            Condition.create(MinMaxEntry.CODEC).optionalFieldOf("yRanges", Condition.of()).forGetter(Conditions::getYRanges),
-            Condition.create(MinMaxEntry.CODEC).optionalFieldOf("zRanges", Condition.of()).forGetter(Conditions::getZRanges)
+            Condition.create(RangeEntry.CODEC).optionalFieldOf("xRanges", Condition.of()).forGetter(Conditions::getXRanges),
+            Condition.create(RangeEntry.CODEC).optionalFieldOf("yRanges", Condition.of()).forGetter(Conditions::getYRanges),
+            Condition.create(RangeEntry.CODEC).optionalFieldOf("zRanges", Condition.of()).forGetter(Conditions::getZRanges)
     ).apply(instance, Conditions::new));
 
     private final Condition<ResourceLocation> biomes;
@@ -21,11 +21,11 @@ public class Conditions {
     private final Condition<ResourceLocation> dimensions;
     private final Condition<ResourceLocation> effects;
     private final Condition<Weather> weathers;
-    private final Condition<MinMaxEntry> xRanges;
-    private final Condition<MinMaxEntry> yRanges;
-    private final Condition<MinMaxEntry> zRanges;
+    private final Condition<RangeEntry> xRanges;
+    private final Condition<RangeEntry> yRanges;
+    private final Condition<RangeEntry> zRanges;
 
-    public Conditions(Condition<ResourceLocation> biomes, Condition<ResourceLocation> worlds, Condition<ResourceLocation> dimensions, Condition<ResourceLocation> effects, Condition<Weather> weathers, Condition<MinMaxEntry> xRanges, Condition<MinMaxEntry> yRanges, Condition<MinMaxEntry> zRanges) {
+    public Conditions(Condition<ResourceLocation> biomes, Condition<ResourceLocation> worlds, Condition<ResourceLocation> dimensions, Condition<ResourceLocation> effects, Condition<Weather> weathers, Condition<RangeEntry> xRanges, Condition<RangeEntry> yRanges, Condition<RangeEntry> zRanges) {
         this.biomes = biomes;
         this.worlds = worlds;
         this.dimensions = dimensions;
@@ -56,15 +56,15 @@ public class Conditions {
         return this.weathers;
     }
 
-    public Condition<MinMaxEntry> getXRanges() {
+    public Condition<RangeEntry> getXRanges() {
         return this.xRanges;
     }
 
-    public Condition<MinMaxEntry> getYRanges() {
+    public Condition<RangeEntry> getYRanges() {
         return this.yRanges;
     }
 
-    public Condition<MinMaxEntry> getZRanges() {
+    public Condition<RangeEntry> getZRanges() {
         return this.zRanges;
     }
 

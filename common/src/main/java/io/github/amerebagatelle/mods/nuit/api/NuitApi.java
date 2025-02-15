@@ -8,7 +8,6 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 public interface NuitApi {
-
     /**
      * @since API v0.0
      */
@@ -24,14 +23,14 @@ public interface NuitApi {
      * @return The current version of the API
      */
     static int getApiVersion() {
-        return 0;
+        return 1;
     }
 
     /**
      * Allows mods to add new skyboxes at runtime.
      *
      * @param resourceLocation Identifier for skybox.
-     * @param skybox     Skybox implementation.
+     * @param skybox           Skybox implementation.
      */
     void addSkybox(ResourceLocation resourceLocation, Skybox skybox);
 
@@ -41,7 +40,7 @@ public interface NuitApi {
      * serialization and adds the skybox with {@link #addSkybox(ResourceLocation, Skybox)}
      *
      * @param resourceLocation Identifier for skybox.
-     * @param jsonObject Json Object.
+     * @param jsonObject       Json Object.
      */
     void addSkybox(ResourceLocation resourceLocation, JsonObject jsonObject);
 
@@ -49,7 +48,7 @@ public interface NuitApi {
      * Allows mods to add new permanent skyboxes at runtime.
      *
      * @param resourceLocation Identifier for skybox.
-     * @param skybox     Skybox implementation.
+     * @param skybox           Skybox implementation.
      */
     void addPermanentSkybox(ResourceLocation resourceLocation, Skybox skybox);
 

@@ -11,6 +11,7 @@ public class RGBA extends RGB {
             CodecUtils.getClampedFloat(0.0F, 1.0F).fieldOf("blue").forGetter(RGB::getBlue),
             CodecUtils.getClampedFloat(0.0F, 1.0F).optionalFieldOf("alpha", 1.0F).forGetter(RGBA::getAlpha)
     ).apply(instance, RGBA::new));
+
     private final float alpha;
 
     public RGBA(float red, float green, float blue, float alpha) {
@@ -30,7 +31,8 @@ public class RGBA extends RGB {
     public boolean equals(Object obj) {
         if (obj instanceof RGBA rgba) {
             return super.equals(obj) && this.alpha == rgba.alpha;
+        } else {
+            return super.equals(obj);
         }
-        return super.equals(obj);
     }
 }

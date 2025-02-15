@@ -59,6 +59,7 @@ public class Blender {
                 } else {
                     RenderSystem.blendFunc(this.sourceFactor, this.destinationFactor);
                 }
+
                 RenderSystem.blendEquation(this.equation);
                 RenderSystem.setShaderColor(this.redAlphaEnabled ? alpha : 1.0F, this.greenAlphaEnabled ? alpha : 1.0F, this.blueAlphaEnabled ? alpha : 1.0F, this.alphaEnabled ? alpha : 1.0F);
             };
@@ -66,6 +67,7 @@ public class Blender {
             if (NuitClient.config().generalSettings.debugMode) {
                 NuitClient.getLogger().error("Invalid custom blender values!");
             }
+
             this.blendFunc = (alpha) -> {
                 RenderSystem.defaultBlendFunc();
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);

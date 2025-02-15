@@ -18,10 +18,7 @@ import java.lang.reflect.Modifier;
 import java.util.Objects;
 
 public class NuitConfig {
-    private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .excludeFieldsWithModifiers(Modifier.PRIVATE)
-            .create();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().excludeFieldsWithModifiers(Modifier.PRIVATE).create();
     public final GeneralSettings generalSettings = new GeneralSettings();
     private final KeyBindingImpl keyBinding = new KeyBindingImpl();
     private File file;
@@ -38,9 +35,9 @@ public class NuitConfig {
         } else {
             config = new NuitConfig();
         }
+
         config.file = file;
         config.save();
-
         return config;
     }
 
@@ -50,7 +47,6 @@ public class NuitConfig {
 
     public void save() {
         File dir = this.file.getParentFile();
-
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
                 throw new RuntimeException("Could not create parent directories");
@@ -75,9 +71,7 @@ public class NuitConfig {
         public boolean debugHud = false;
     }
 
-
     public static class KeyBindingImpl {
-
         public final KeyMapping toggleNuit = new KeyMapping("key.nuit.toggle", InputConstants.Type.KEYSYM, -1, "category.nuit");
         public final KeyMapping toggleSkyboxDebugHud = new KeyMapping("key.nuit.toggle.debug_hud", InputConstants.Type.KEYSYM, -1, "category.nuit");
 
@@ -86,7 +80,6 @@ public class NuitConfig {
                 NuitClient.config().generalSettings.enable = !NuitClient.config().generalSettings.enable;
                 NuitClient.config().save();
                 SkyboxManager.getInstance().setEnabled(NuitClient.config().generalSettings.enable);
-
                 LocalPlayer player = Objects.requireNonNull(client.player);
                 if (SkyboxManager.getInstance().isEnabled()) {
                     player.displayClientMessage(Component.translatable("nuit.message.enabled"), false);
@@ -94,6 +87,7 @@ public class NuitConfig {
                     player.displayClientMessage(Component.translatable("nuit.message.disabled"), false);
                 }
             }
+
             while (this.toggleSkyboxDebugHud.consumeClick()) {
                 NuitClient.config().generalSettings.debugHud = !NuitClient.config().generalSettings.debugHud;
                 NuitClient.config().save();

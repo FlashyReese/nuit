@@ -28,7 +28,6 @@ import java.util.Objects;
  * the type of the skybox.
  */
 public abstract class AbstractSkybox implements NuitSkybox {
-
     /**
      * The current alpha for the skybox. Expects all skyboxes extending this to accommodate this.
      * This variable is responsible for fading in/out skyboxes.
@@ -47,7 +46,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     private final Map<Long, Float> cachedKeyFrames = new Long2FloatOpenHashMap();
 
-
     protected AbstractSkybox() {
     }
 
@@ -57,21 +55,17 @@ public abstract class AbstractSkybox implements NuitSkybox {
     }
 
     @Override
-    public void tick(ClientLevel clientWorld) {
-        this.updateAlpha();
+    public void tick(ClientLevel level) {
+        this.updateAlpha(level);
     }
 
     /**
      * Calculates the alpha value for the current time and conditions and returns it.
-     *
-     * @return The new alpha value.
      */
     @Override
-    public float updateAlpha() {
-        long currentTime = Objects.requireNonNull(Minecraft.getInstance().level).getDayTime() % this.properties.fade().duration();
-
+    public void updateAlpha(ClientLevel level) {
+        long currentTime = level.getDayTime() % this.properties.fade().duration();
         boolean condition = this.checkConditions();
-
         float fadeAlpha = 1f;
         if (this.properties.fade().alwaysOn()) {
             this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(), condition);
@@ -113,8 +107,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         this.alpha = fadeAlpha * this.conditionAlpha;
         this.lastTime = currentTime;
-
-        return this.alpha;
     }
 
     /**
@@ -167,7 +159,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Objects.requireNonNull(client.level);
 
         Camera camera = client.gameRenderer.getMainCamera();
-
         if (this.conditions.getEffects().entries().isEmpty()) {
             // Vanilla checks
             boolean thickFog = client.level.effects().isFoggyAt(Mth.floor(camera.getPosition().x()), Mth.floor(camera.getPosition().y())) || client.gui.getBossOverlay().shouldCreateWorldFog();
@@ -187,6 +178,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
                 return (this.conditions.getEffects().excludes() ^ this.conditions.getEffects().entries().stream().noneMatch(resourceLocation -> client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).isPresent() && livingEntity.hasEffect(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).get().value()))));
             }
         }
+
         return true;
     }
 
@@ -228,15 +220,19 @@ public abstract class AbstractSkybox implements NuitSkybox {
         if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.THUNDER)) && world.isThundering()) {
             return true;
         }
+
         if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.RAIN)) && world.isRaining() && !world.isThundering()) {
             return true;
         }
+
         if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.SNOW)) && world.isRaining() && precipitation == Biome.Precipitation.SNOW) {
             return true;
         }
+
         if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.BIOME_RAIN)) && world.isRaining() && precipitation == Biome.Precipitation.RAIN) {
             return true;
         }
+
         return (this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.CLEAR)) && !world.isRaining() && !world.isThundering();
     }
 
