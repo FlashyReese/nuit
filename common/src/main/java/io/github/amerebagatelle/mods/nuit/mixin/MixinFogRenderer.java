@@ -88,7 +88,7 @@ public class MixinFogRenderer {
     private static int renderSkyColor(int original) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         Skybox skybox = skyboxManager.getCurrentSkybox();
-        if (skyboxManager.isEnabled() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().renderSunSkyTint()) {
+        if (skyboxManager.isEnabled() && skybox instanceof NuitSkybox nuitSkybox && !nuitSkybox.getProperties().renderSunSkyTint()) {
             return Integer.MAX_VALUE;
         } else {
             return original;
