@@ -1,12 +1,18 @@
 package io.github.amerebagatelle.mods.nuit.mixin;
 
+import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.amerebagatelle.mods.nuit.SkyboxManager;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.FogParameters;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.RenderBuffers;
+import net.minecraft.client.renderer.SkyRenderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -21,21 +27,33 @@ public abstract class MixinLevelRenderer {
     @Final
     private RenderBuffers renderBuffers;
 
+    @Unique
+    private float nuit$tickDelta;
+
+    @Unique
+    private FogParameters nuit$fogParameters;
+
+    @Inject(method = "addSkyPass", at = @At(value = "HEAD"))
+    private void preAddSkyPass(FrameGraphBuilder frameGraphBuilder, Camera camera, float f, FogParameters fogParameters, CallbackInfo ci) {
+        this.nuit$tickDelta = f;
+        this.nuit$fogParameters = fogParameters;
+    }
+
     /**
      * Contains the logic for when skyboxes should be rendered.
      */
-    @Inject(method = "method_62215", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lnet/minecraft/client/renderer/FogParameters;)V", shift = At.Shift.AFTER), cancellable = true)
-    private void renderCustomSkyboxes(FogParameters fogParameters, DimensionSpecialEffects.SkyType skyType, float tickDelta, DimensionSpecialEffects dimensionSpecialEffects, CallbackInfo ci) {
+    @Inject(method = {"method_62215", "lambda$addSkyPass$12"}, require = 1, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lnet/minecraft/client/renderer/FogParameters;)V", shift = At.Shift.AFTER), cancellable = true)
+    private void renderCustomSkyboxes(CallbackInfo ci) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {
             PoseStack poseStack = new PoseStack();
             skyboxManager.renderSkyboxes(
                     (SkyRendererAccessor) skyRenderer,
                     poseStack,
-                    tickDelta,
+                    this.nuit$tickDelta,
                     Minecraft.getInstance().gameRenderer.getMainCamera(),
                     this.renderBuffers.bufferSource(),
-                    fogParameters
+                    this.nuit$fogParameters
             );
             ci.cancel();
         }
