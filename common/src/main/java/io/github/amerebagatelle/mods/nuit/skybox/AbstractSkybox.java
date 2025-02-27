@@ -135,7 +135,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected boolean checkDimensions() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return this.conditions.getDimensions().entries().isEmpty() || this.conditions.getBiomes().excludes() ^ (
+        return this.conditions.getDimensions().entries().isEmpty() || this.conditions.getDimensions().excludes() ^ (
                 this.conditions.getDimensions().entries().contains(client.level.dimension().location()) ||
                         this.conditions.getDimensions().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackDimensions());
     }
@@ -146,7 +146,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected boolean checkWorlds() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return this.conditions.getWorlds().entries().isEmpty() || this.conditions.getBiomes().excludes() ^ (
+        return this.conditions.getWorlds().entries().isEmpty() || this.conditions.getWorlds().excludes() ^ (
                 this.conditions.getWorlds().entries().contains(client.level.dimensionType().effectsLocation()) ||
                         this.conditions.getWorlds().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackWorlds());
     }
