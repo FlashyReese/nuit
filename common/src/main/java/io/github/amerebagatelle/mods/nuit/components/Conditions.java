@@ -10,7 +10,7 @@ public class Conditions {
             Condition.create(ResourceLocation.CODEC).optionalFieldOf("worlds", Condition.of()).forGetter(Conditions::getWorlds),
             Condition.create(ResourceLocation.CODEC).optionalFieldOf("dimensions", Condition.of()).forGetter(Conditions::getDimensions),
             Condition.create(ResourceLocation.CODEC).optionalFieldOf("effects", Condition.of()).forGetter(Conditions::getEffects),
-            Condition.create(Weather.CODEC).optionalFieldOf("weathers", Condition.of()).forGetter(Conditions::getWeathers),
+            Condition.create(Weather.CODEC).optionalFieldOf("weather", Condition.of()).forGetter(Conditions::getWeathers),
             Condition.create(RangeEntry.CODEC).optionalFieldOf("xRanges", Condition.of()).forGetter(Conditions::getXRanges),
             Condition.create(RangeEntry.CODEC).optionalFieldOf("yRanges", Condition.of()).forGetter(Conditions::getYRanges),
             Condition.create(RangeEntry.CODEC).optionalFieldOf("zRanges", Condition.of()).forGetter(Conditions::getZRanges)
