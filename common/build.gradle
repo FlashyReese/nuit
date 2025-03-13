@@ -10,6 +10,9 @@ dependencies {
 
     // Architectury API. This is optional, and you can comment it out if you don't need it.
     //modImplementation "dev.architectury:architectury:$rootProject.architectury_api_version"
+    modImplementation "maven.modrinth:sodium:mc1.21.4-0.6.10-fabric"
+    modImplementation "maven.modrinth:sodium:mc1.21.4-0.6.10-neoforge"
+    implementation("com.moulberry:mixinconstraints:1.0.7")
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'

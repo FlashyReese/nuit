@@ -2,11 +2,14 @@
   "required": true,
   "minVersion": "0.8",
   "package": "io.github.amerebagatelle.mods.nuit.mixin",
+  "plugin": "com.moulberry.mixinconstraints.ConstraintsMixinPlugin",
   "compatibilityLevel": "JAVA_17",
   "client": [
     "MixinFogRenderer",
     "MixinLevelRenderer",
-    "SkyRendererAccessor"
+    "SkyRendererAccessor",
+    "compatibility.MixinMonoColorSkybox",
+    "compatibility.MixinSquareTexturedSkybox"
   ],
   "injectors": {
     "defaultRequire": 1

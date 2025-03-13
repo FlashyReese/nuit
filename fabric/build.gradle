@@ -33,7 +33,8 @@ dependencies {
     // Architectury API. This is optional, and you can comment it out if you don"t need it.
     // modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
 
-    //modImplementation "maven.modrinth:sodium:mc1.20.6-0.5.8"
+    modImplementation "maven.modrinth:sodium:mc1.21.4-0.6.10-fabric"
+    include(implementation("com.moulberry:mixinconstraints:1.0.7"))
     //modImplementation "maven.modrinth:lithium:mc1.20.6-0.12.3"
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
