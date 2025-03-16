@@ -217,23 +217,31 @@ public abstract class AbstractSkybox implements NuitSkybox {
             return true;
         }
 
-        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.THUNDER)) && world.isThundering()) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.WORLD_PRECIPITATION)) && world.isRaining() && precipitation == Biome.Precipitation.NONE && !world.isThundering()) {
             return true;
         }
 
-        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.RAIN)) && world.isRaining() && !world.isThundering()) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.WORLD_THUNDERSTORM)) && world.isRaining() && world.isThundering() && precipitation == Biome.Precipitation.NONE) {
             return true;
         }
 
-        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.SNOW)) && world.isRaining() && precipitation == Biome.Precipitation.SNOW) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.RAIN_IN_BIOME)) && world.isRaining() && precipitation == Biome.Precipitation.RAIN && !world.isThundering()) {
             return true;
         }
 
-        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.BIOME_RAIN)) && world.isRaining() && precipitation == Biome.Precipitation.RAIN) {
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.THUNDER_IN_RAIN_BIOME)) && world.isRaining() && precipitation == Biome.Precipitation.RAIN && world.isThundering()) {
             return true;
         }
 
-        return (this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.CLEAR)) && !world.isRaining() && !world.isThundering();
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.SNOW_IN_BIOME)) && world.isRaining() && precipitation == Biome.Precipitation.SNOW && !world.isThundering()) {
+            return true;
+        }
+
+        if ((this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.THUNDER_IN_SNOW_BIOME)) && world.isRaining() && precipitation == Biome.Precipitation.SNOW && world.isThundering()) {
+            return true;
+        }
+
+        return (this.conditions.getWeathers().excludes() ^ this.conditions.getWeathers().entries().contains(Weather.NO_PRECIPITATION)) && !world.isRaining() && !world.isThundering();
     }
 
     @Override

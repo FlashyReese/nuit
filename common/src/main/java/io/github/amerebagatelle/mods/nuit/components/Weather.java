@@ -6,11 +6,13 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public enum Weather {
-    CLEAR("clear"),
-    RAIN("rain"),
-    BIOME_RAIN("rain_biome"),
-    SNOW("snow"),
-    THUNDER("thunder");
+    NO_PRECIPITATION("clear"),
+    WORLD_PRECIPITATION("rain"),
+    WORLD_THUNDERSTORM("thunder"),
+    RAIN_IN_BIOME("rain_biome"),
+    THUNDER_IN_RAIN_BIOME("rain_thunder"),
+    SNOW_IN_BIOME("snow"),
+    THUNDER_IN_SNOW_BIOME("snow_thunder");
 
     public static final Codec<Weather> CODEC = Codec.STRING.xmap(Weather::fromString, Weather::toString);
     private final String name;
@@ -20,7 +22,7 @@ public enum Weather {
     }
 
     public static Weather fromString(String name) {
-        return Objects.requireNonNull(Arrays.stream(Weather.values()).filter(weather -> name.equals(weather.name)).findFirst().orElse(Weather.CLEAR));
+        return Objects.requireNonNull(Arrays.stream(Weather.values()).filter(weather -> name.equals(weather.name)).findFirst().orElse(Weather.NO_PRECIPITATION));
     }
 
     @Override
