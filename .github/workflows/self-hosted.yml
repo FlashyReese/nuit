@@ -1,13 +1,11 @@
-# This workflow will build a Java project with Gradle
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+name: Self-Hosted runner CI with Gradle
 
-name: Java CI with Gradle
-
-on: [pull_request, push]
+on: [push]
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  selfhost-build:
+    if: github.repository_owner == 'FlashyReese'
+    runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
@@ -20,8 +18,11 @@ jobs:
           distribution: 'temurin'
           java-version: 21
           check-latest: true
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Build and Publish with Gradle
+        run: ./gradlew build publishAllPublicationsToFlashyReeseSnapshotsRepository
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
       - name: Upload Build Artifacts - Fabric
         uses: actions/upload-artifact@v4
         with:
