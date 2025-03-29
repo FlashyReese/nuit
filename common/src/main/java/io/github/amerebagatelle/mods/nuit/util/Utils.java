@@ -127,41 +127,48 @@ public class Utils {
     }
 
     /**
-     * Calculates the interpolated alpha value between two keyframes.
+     * Calculates the interpolated alpha value based on the current time within an fade cycle.
+     * This method supports cyclical fade where keyframes can loop back to the start.
      *
-     * @param currentTime          The current time.
-     * @param duration             The duration of the keyframes.
+     * @param currentTime          The current time in the fade cycle.
+     * @param duration             The total duration of the fade cycle.
      * @param currentKeyFrame      The timestamp of the current keyframe.
      * @param nextKeyFrame         The timestamp of the next keyframe.
      * @param currentKeyFrameValue The alpha value at the current keyframe.
      * @param nextKeyFrameValue    The alpha value at the next keyframe.
-     * @return The interpolated alpha value based on the current time and keyframes.
+     * @return The interpolated alpha value based on the current time.
      */
     public static float calculateInterpolatedAlpha(long currentTime, long duration, long currentKeyFrame, long nextKeyFrame, float currentKeyFrameValue, float nextKeyFrameValue) {
-        // Check if no interpolation is needed
+        // If both keyframes have the same value or the same timestamp, no interpolation is needed.
         if (currentKeyFrameValue == nextKeyFrameValue || currentKeyFrame == nextKeyFrame) {
             return nextKeyFrameValue;
         }
 
-        // Handle cyclical keyframes
-        if (currentKeyFrame > nextKeyFrame) {
-            // Calculate time remaining in the cycle
-            long timeRemainingInCycle = duration - currentKeyFrame;
-            // Calculate total time in the cycle
-            long timeInCycle = timeRemainingInCycle + nextKeyFrame;
+        long cycleDuration;
+        long timePassedInCycle;
 
-            // Adjust nextKeyFrame and currentTime
-            nextKeyFrame = currentKeyFrame + timeInCycle;
-            long timePassed = timeRemainingInCycle + currentTime;
-            currentTime = currentKeyFrame + timePassed;
+        // Handle cyclical keyframes where the next keyframe is before the current keyframe in time.
+        if (currentKeyFrame > nextKeyFrame) {
+            // The cycle wraps around, so we calculate the duration from currentKeyFrame to nextKeyFrame.
+            cycleDuration = duration - currentKeyFrame + nextKeyFrame;
+
+            // Determine how much time has passed in the cycle based on the current time.
+            if (currentTime < nextKeyFrame) {
+                // If currentTime is in the second half of the cycle (after wrapping around),
+                // calculate time passed from the previous cycle's end.
+                timePassedInCycle = duration - currentKeyFrame + currentTime;
+            } else {
+                // Otherwise, calculate time passed normally within the first half.
+                timePassedInCycle = currentTime - currentKeyFrame;
+            }
+        } else {
+            // Standard case where keyframes are in order without wrapping.
+            cycleDuration = nextKeyFrame - currentKeyFrame;
+            timePassedInCycle = currentTime - currentKeyFrame;
         }
 
-        // Calculate duration between keyframes and time passed since currentKeyFrame
-        long durationBetween = nextKeyFrame - currentKeyFrame;
-        long timePassedSinceKeyFrame = currentTime - currentKeyFrame;
-
-        // Perform interpolation calculation
-        return currentKeyFrameValue + ((float) timePassedSinceKeyFrame / durationBetween) * (nextKeyFrameValue - currentKeyFrameValue);
+        // Perform linear interpolation between the two keyframe values.
+        return currentKeyFrameValue + ((float) timePassedInCycle / cycleDuration) * (nextKeyFrameValue - currentKeyFrameValue);
     }
 
     /**
