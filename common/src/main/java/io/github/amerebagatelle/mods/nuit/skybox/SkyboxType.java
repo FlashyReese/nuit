@@ -57,10 +57,14 @@ public class SkyboxType<T extends Skybox> {
     private final ResourceLocation name;
 
     private SkyboxType(String name, int schemaVersion, Codec<T> codec) {
-        this(ImmutableBiMap.<Integer, Codec<T>>builder().put(schemaVersion, codec).build(), ResourceLocation.tryBuild(NuitClient.MOD_ID, name));
+        this(ResourceLocation.tryBuild(NuitClient.MOD_ID, name), schemaVersion, codec);
     }
 
-    private SkyboxType(BiMap<Integer, Codec<T>> codecBiMap, ResourceLocation name) {
+    public SkyboxType(ResourceLocation name, int schemaVersion, Codec<T> codec) {
+        this(ImmutableBiMap.<Integer, Codec<T>>builder().put(schemaVersion, codec).build(), name);
+    }
+
+    public SkyboxType(BiMap<Integer, Codec<T>> codecBiMap, ResourceLocation name) {
         this.codecBiMap = codecBiMap;
         this.name = name;
     }
