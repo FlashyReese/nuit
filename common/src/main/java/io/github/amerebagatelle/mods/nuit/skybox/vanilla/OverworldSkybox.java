@@ -46,14 +46,15 @@ public class OverworldSkybox extends AbstractSkybox {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
         int sunriseOrSunsetColor = world.effects().getSunriseOrSunsetColor(tickDelta);
-        if (world.effects().isSunriseOrSunset(sunriseOrSunsetColor)) {
+        if (world.effects().isSunriseOrSunset(world.getTimeOfDay(tickDelta))) {
             float skyAngle = world.getSunAngle(tickDelta);
             if (SkyboxManager.getInstance().isEnabled() && NuitApi.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorationBox && decorationBox.getProperties().rotation().skyboxRotation())) {
                 skyAngle = Mth.positiveModulo(world.getDayTime() / 24000F + 0.75F, 1);
             }
-
             ((SkyRenderer) skyRendererAccess).renderSunriseAndSunset(poseStack, bufferSource, skyAngle, sunriseOrSunsetColor);
         }
+
+        bufferSource.endBatch();
 
         // Dark Sky
         double eyeHeight = entity.getEyePosition(tickDelta).y - world.getLevelData().getHorizonHeight(world);
