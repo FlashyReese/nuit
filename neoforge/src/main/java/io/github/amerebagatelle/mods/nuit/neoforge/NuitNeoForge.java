@@ -69,7 +69,7 @@ public final class NuitNeoForge {
 
     @SubscribeEvent
     public void registerSkyTypes(RegisterEvent event) {
-        event.register(SkyboxType.SKYBOX_TYPE_REGISTRY_KEY, registry -> SkyboxType.register(skyboxType -> registry.register(skyboxType.createId(), skyboxType)));
+        event.register(SkyboxType.SKYBOX_TYPE_REGISTRY_KEY, registry -> SkyboxType.registerAll(skyboxType -> registry.register(skyboxType.getName(), skyboxType)));
     }
 
     @SubscribeEvent

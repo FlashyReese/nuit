@@ -14,77 +14,70 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class SkyboxType<T extends Skybox> {
     public static final Codec<ResourceLocation> SKYBOX_ID_CODEC;
     public static final ResourceKey<Registry<SkyboxType<? extends Skybox>>> SKYBOX_TYPE_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.tryBuild(NuitClient.MOD_ID, "skybox_type"));
-
     public static final SkyboxType<OverworldSkybox> OVERWORLD;
     public static final SkyboxType<EndSkybox> END;
-
     public static final SkyboxType<MonoColorSkybox> MONO_COLOR_SKYBOX;
     public static final SkyboxType<SquareTexturedSkybox> SQUARE_TEXTURED_SKYBOX;
     public static final SkyboxType<MultiTexturedSkybox> MULTI_TEXTURED_SKYBOX;
-
     public static final SkyboxType<DecorationBox> DECORATION_BOX;
+    private static final Map<ResourceLocation, SkyboxType<?>> SKYBOX_TYPES = new ConcurrentHashMap<>();
 
     static {
         SKYBOX_ID_CODEC = Codec.STRING.xmap((s) -> {
             if (!s.contains(":")) {
-                return ResourceLocation.tryBuild(NuitClient.MOD_ID, s.replace('-', '_'));
+                return ResourceLocation.tryBuild(NuitClient.MOD_ID, s);
             }
-            return ResourceLocation.tryParse(s.replace('-', '_'));
+            return ResourceLocation.tryParse(s);
         }, (id) -> {
             if (id.getNamespace().equals(NuitClient.MOD_ID)) {
-                return id.getPath().replace('_', '-');
+                return id.getPath();
             }
-            return id.toString().replace('_', '-');
+            return id.toString();
         });
-        
-        OVERWORLD = new SkyboxType<>("overworld", 1, OverworldSkybox.CODEC);
-        END = new SkyboxType<>("end", 1, EndSkybox.CODEC);
 
-        MONO_COLOR_SKYBOX = new SkyboxType<>("monocolor", 1, MonoColorSkybox.CODEC);
-        SQUARE_TEXTURED_SKYBOX = new SkyboxType<>("square-textured", 1, SquareTexturedSkybox.CODEC);
-        MULTI_TEXTURED_SKYBOX = new SkyboxType<>("multi-textured", 1, MultiTexturedSkybox.CODEC);
+        OVERWORLD = register(new SkyboxType<>("overworld", 1, OverworldSkybox.CODEC));
+        END = register(new SkyboxType<>("end", 1, EndSkybox.CODEC));
 
-        DECORATION_BOX = new SkyboxType<>("decorations", 1, DecorationBox.CODEC);
+        MONO_COLOR_SKYBOX = register(new SkyboxType<>("monocolor", 1, MonoColorSkybox.CODEC));
+        SQUARE_TEXTURED_SKYBOX = register(new SkyboxType<>("square-textured", 1, SquareTexturedSkybox.CODEC));
+        MULTI_TEXTURED_SKYBOX = register(new SkyboxType<>("multi-textured", 1, MultiTexturedSkybox.CODEC));
+
+        DECORATION_BOX = register(new SkyboxType<>("decorations", 1, DecorationBox.CODEC));
     }
 
     private final BiMap<Integer, Codec<T>> codecBiMap;
-    private final String name;
+    private final ResourceLocation name;
 
-    public SkyboxType(String name, int schemaVersion, Codec<T> codec) {
-        this(ImmutableBiMap.<Integer, Codec<T>>builder().put(schemaVersion, codec).build(), name);
+    private SkyboxType(String name, int schemaVersion, Codec<T> codec) {
+        this(ImmutableBiMap.<Integer, Codec<T>>builder().put(schemaVersion, codec).build(), ResourceLocation.tryBuild(NuitClient.MOD_ID, name));
     }
 
-    private SkyboxType(BiMap<Integer, Codec<T>> codecBiMap, String name) {
+    private SkyboxType(BiMap<Integer, Codec<T>> codecBiMap, ResourceLocation name) {
         this.codecBiMap = codecBiMap;
         this.name = name;
     }
 
-    public static void register(Consumer<SkyboxType<?>> function) {
-        function.accept(OVERWORLD);
-        function.accept(END);
-        function.accept(MONO_COLOR_SKYBOX);
-        function.accept(SQUARE_TEXTURED_SKYBOX);
-        function.accept(MULTI_TEXTURED_SKYBOX);
-        function.accept(DECORATION_BOX);
+    public static <T extends Skybox> SkyboxType<T> register(SkyboxType<T> type) {
+        if (SKYBOX_TYPES.putIfAbsent(type.name, type) != null) {
+            throw new IllegalStateException("SkyboxType with name '" + type.name + "' already registered!");
+        }
+        return type;
     }
 
-    public String getName() {
+    public static void registerAll(Consumer<SkyboxType<?>> function) {
+        SKYBOX_TYPES.values().forEach(function);
+    }
+
+    public ResourceLocation getName() {
         return this.name;
-    }
-
-    public ResourceLocation createId() {
-        return this.createIdFactory().apply(NuitClient.MOD_ID);
-    }
-
-    public Function<String, ResourceLocation> createIdFactory() {
-        return (ns) -> ResourceLocation.tryBuild(ns, this.getName().replace('-', '_'));
     }
 
     public Codec<T> getCodec(int schemaVersion) {

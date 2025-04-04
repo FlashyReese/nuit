@@ -29,7 +29,7 @@ public class NuitClientFabric implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        SkyboxType.register(skyboxType -> Registry.register(REGISTRY, skyboxType.createId(), skyboxType));
+        SkyboxType.registerAll(skyboxType -> Registry.register(REGISTRY, skyboxType.getName(), skyboxType));
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
             @Override
             public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, Executor executor, Executor executor2) {
