@@ -63,8 +63,8 @@ public class DecorationBox extends AbstractSkybox {
         poseStack.pushPose();
         this.properties.rotation().apply(poseStack, level);
 
-        poseStack.mulPose(Axis.YP.rotation(-90F));
-        poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
+       // poseStack.mulPose(Axis.YP.rotation(-90F));
+        //poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
         // Iris Compat
         //poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(IrisCompat.getSunPathRotation()));
         //poseStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(level.getSkyAngle(tickDelta) * 360.0F * this.decorations.getRotation().getRotationSpeed()));
