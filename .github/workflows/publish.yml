@@ -31,10 +31,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: fabric
-            name: Fabric
           - platform: neoforge
             name: NeoForge
+          - platform: fabric
+            name: Fabric
     steps:
       - name: Publish ${{ matrix.name }} to Modrinth, CurseForge & GitHub
         uses: Kir-Antipov/mc-publish@v3.3.0
