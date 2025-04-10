@@ -23,4 +23,7 @@ public interface SkyRendererAccessor {
 
     @Accessor("starBuffer")
     VertexBuffer getStarsBuffer();
+
+    @Accessor("bottomSkyBuffer")
+    VertexBuffer getBottomSkyBuffer();
 }
