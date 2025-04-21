@@ -48,8 +48,8 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShader(CoreShaders.POSITION_TEX);
         RenderSystem.depthMask(false);
-        Utils.enableBlendingOverride();
         RenderSystem.enableBlend();
+        Utils.enableBlendingOverride();
         this.blend.apply(this.alpha);
 
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
@@ -59,8 +59,9 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         poseStack.popPose();
 
         RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
         Utils.disableBlendingOverride();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
