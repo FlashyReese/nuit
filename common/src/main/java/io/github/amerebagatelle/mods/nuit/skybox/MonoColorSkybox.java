@@ -37,10 +37,6 @@ public class MonoColorSkybox extends AbstractSkybox {
     public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         if (this.alpha > 0) {
-            RenderSystem.depthMask(false);
-            RenderSystem.enableBlend();
-            this.blend.apply(this.alpha);
-
             BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
             for (int face = 0; face < 6; ++face) {
                 poseStack.pushPose();
@@ -53,11 +49,15 @@ public class MonoColorSkybox extends AbstractSkybox {
                 poseStack.popPose();
             }
 
+            RenderSystem.depthMask(false);
+            RenderSystem.enableBlend();
+            this.blend.apply(this.alpha);
             RenderSystem.setShader(CoreShaders.POSITION_COLOR);
             BufferUploader.drawWithShader(builder.buildOrThrow());
             RenderSystem.disableBlend();
             RenderSystem.depthMask(true);
         }
+
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 

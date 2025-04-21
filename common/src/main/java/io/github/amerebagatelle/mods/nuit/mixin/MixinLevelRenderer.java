@@ -34,7 +34,7 @@ public abstract class MixinLevelRenderer {
     private FogParameters nuit$fogParameters;
 
     @Inject(method = "addSkyPass", at = @At(value = "HEAD"))
-    private void preAddSkyPass(FrameGraphBuilder frameGraphBuilder, Camera camera, float f, FogParameters fogParameters, CallbackInfo ci) {
+    private void nuit$preAddSkyPass(FrameGraphBuilder frameGraphBuilder, Camera camera, float f, FogParameters fogParameters, CallbackInfo ci) {
         this.nuit$tickDelta = f;
         this.nuit$fogParameters = fogParameters;
     }
@@ -42,8 +42,8 @@ public abstract class MixinLevelRenderer {
     /**
      * Contains the logic for when skyboxes should be rendered.
      */
-    @Inject(method = {"method_62215", "lambda$addSkyPass$12"}, require = 1, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lnet/minecraft/client/renderer/FogParameters;)V", shift = At.Shift.AFTER), cancellable = true)
-    private void renderCustomSkyboxes(CallbackInfo ci) {
+    @Inject(method = {"method_62215", "lambda$addSkyPass$12"}, require = 1, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lnet/minecraft/client/renderer/FogParameters;)V", shift = At.Shift.AFTER), remap = false, cancellable = true)
+    private void nuit$renderCustomSkyboxes(CallbackInfo ci) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {
             PoseStack poseStack = new PoseStack();

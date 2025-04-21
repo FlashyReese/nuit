@@ -33,6 +33,7 @@ public class SquareTexturedSkybox extends TexturedSkybox {
 
     @Override
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+        RenderSystem.setShaderFog(fogParameters);
         BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         for (int face = 0; face < 6; face++) {
             // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west

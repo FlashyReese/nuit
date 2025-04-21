@@ -1,8 +1,8 @@
 package io.github.amerebagatelle.mods.nuit.skybox.decorations;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Axis;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.components.Blend;
@@ -10,6 +10,7 @@ import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
+import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.CoreShaders;
@@ -34,7 +35,6 @@ public class DecorationBox extends AbstractSkybox {
             Codec.BOOL.optionalFieldOf("showStars", false).forGetter(DecorationBox::isStarsEnabled),
             Blend.CODEC.optionalFieldOf("blend", Blend.decorations()).forGetter(DecorationBox::getBlend)
     ).apply(instance, DecorationBox::new));
-
     private final ResourceLocation sunTexture;
     private final ResourceLocation moonTexture;
     private final boolean sunEnabled;
@@ -55,19 +55,20 @@ public class DecorationBox extends AbstractSkybox {
 
     @Override
     public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
-        RenderSystem.enableBlend();
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
+        RenderSystem.enableBlend();
+        Utils.enableBlendingOverride();
         this.blend.apply(this.alpha);
         poseStack.pushPose();
         this.properties.rotation().apply(poseStack, level);
 
-       // poseStack.mulPose(Axis.YP.rotation(-90F));
-        //poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
+        // poseStack.mulPose(Axis.YP.rotation(-90F));
+        // poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
         // Iris Compat
-        //poseStack.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(IrisCompat.getSunPathRotation()));
-        //poseStack.multiply(RotationAxis.POSITIVE_X.rotationDegrees(level.getSkyAngle(tickDelta) * 360.0F * this.decorations.getRotation().getRotationSpeed()));
+        // poseStack.mulPose(Axis.ZP.rotationDegrees(IrisCompat.getSunPathRotation()));
+        // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
         RenderSystem.setShader(CoreShaders.POSITION_TEX);
         float rainLevel = 1.0F - level.getRainLevel(tickDelta);
@@ -80,14 +81,14 @@ public class DecorationBox extends AbstractSkybox {
         }
 
         bufferSource.endBatch();
-
         if (this.starsEnabled) {
             this.renderStars(skyRendererAccessor, level, poseStack, fogParameters, tickDelta);
         }
 
         poseStack.popPose();
-        RenderSystem.disableBlend();
         RenderSystem.defaultBlendFunc();
+        Utils.disableBlendingOverride();
+        RenderSystem.disableBlend();
     }
 
     public void renderSun(float f, MultiBufferSource multiBufferSource, PoseStack poseStack) {

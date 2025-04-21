@@ -22,6 +22,10 @@ public class IrisCompat {
         }
     }
 
+    public static boolean isIrisPresent() {
+        return isIrisPresent;
+    }
+
     public static float getSunPathRotation() {
         if (isIrisPresent) {
             try {
@@ -31,6 +35,6 @@ public class IrisCompat {
             }
         }
 
-        return 0;
+        return 0.0F;
     }
 }
