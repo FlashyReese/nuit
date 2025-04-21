@@ -36,6 +36,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
 
     @Override
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+        RenderSystem.setShaderFog(fogParameters);
         for (int face = 0; face < 6; ++face) {
             // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
             // List of UV ranges for each face of the cube

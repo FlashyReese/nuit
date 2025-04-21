@@ -37,7 +37,7 @@ public class MixinFogRenderer {
      * Checks if we should change the fog color to whatever the skybox set it to, and sets it.
      */
     @Inject(method = "computeFogColor", at = @At("RETURN"))
-    private static void modifyColors(Camera camera, float f, ClientLevel clientLevel, int i, float g, CallbackInfoReturnable<Vector4f> cir) {
+    private static void nuit$modifyColors(Camera camera, float tickDelta, ClientLevel clientLevel, int i, float g, CallbackInfoReturnable<Vector4f> cir) {
         Vector4f fogColorVec = cir.getReturnValue();
         RGB initialFogColor = new RGB(fogColorVec.x, fogColorVec.y, fogColorVec.z);
         RGB fogColor = Utils.alphaBlendFogColors(SkyboxManager.getInstance().getActiveSkyboxes(), initialFogColor);
@@ -49,16 +49,16 @@ public class MixinFogRenderer {
     }
 
     @ModifyReturnValue(method = "setupFog", at = @At(value = "RETURN"))
-    private static FogParameters redirectSetShaderFogColor(FogParameters original) {
+    private static FogParameters nuit$redirectSetShaderFogColor(FogParameters original) {
         float fogDensity = Utils.alphaBlendFogDensity(SkyboxManager.getInstance().getActiveSkyboxes(), original.alpha());
         boolean enabled = SkyboxManager.getInstance().isEnabled();
         return new FogParameters(
                 original.start(),
                 original.end(),
                 original.shape(),
-                enabled && nuit$fogRed != null ? nuit$fogRed : original.red(),
-                enabled && nuit$fogGreen != null ? nuit$fogGreen : original.green(),
-                enabled && nuit$fogBlue != null ? nuit$fogBlue : original.blue(),
+                (enabled && nuit$fogRed != null) ? nuit$fogRed : original.red(),
+                (enabled && nuit$fogGreen != null) ? nuit$fogGreen : original.green(),
+                (enabled && nuit$fogBlue != null) ? nuit$fogBlue : original.blue(),
                 fogDensity);
     }
 
@@ -80,12 +80,8 @@ public class MixinFogRenderer {
         }
     }
 
-    @ModifyConstant(
-            method = "computeFogColor",
-            slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/util/CubicSampler;gaussianSampleVec3(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/util/CubicSampler$Vec3Fetcher;)Lnet/minecraft/world/phys/Vec3;")),
-            constant = @Constant(intValue = 4, ordinal = 0)
-    )
-    private static int renderSkyColor(int original) {
+    @ModifyConstant(method = "computeFogColor", slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/util/CubicSampler;gaussianSampleVec3(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/util/CubicSampler$Vec3Fetcher;)Lnet/minecraft/world/phys/Vec3;")), constant = @Constant(intValue = 4, ordinal = 0))
+    private static int nuit$renderSkyColor(int original) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         Skybox skybox = skyboxManager.getCurrentSkybox();
         if (skyboxManager.isEnabled() && skybox instanceof NuitSkybox nuitSkybox && !nuitSkybox.getProperties().renderSunSkyTint()) {

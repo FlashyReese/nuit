@@ -20,6 +20,8 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 public class Utils {
+    private static boolean overrideRenderTypeBlending = false;
+
     public static final UVRange[] TEXTURE_FACES = new UVRange[]{
             new UVRange(0, 0, 1.0F / 3.0F, 1.0F / 2.0F), // bottom
             new UVRange(1.0F / 3.0F, 1.0F / 2.0F, 2.0F / 3.0F, 1), // north
@@ -301,5 +303,17 @@ public class Utils {
                 .orElseThrow(() -> new NullPointerException("Failed to load service for " + clazz.getName()));
         NuitClient.getLogger().debug("Loaded {} for service {}", loadedService, clazz);
         return loadedService;
+    }
+
+    public static void enableBlendingOverride() {
+        overrideRenderTypeBlending = true;
+    }
+
+    public static boolean isOverridingBlending() {
+        return overrideRenderTypeBlending;
+    }
+
+    public static void disableBlendingOverride() {
+        overrideRenderTypeBlending = false;
     }
 }

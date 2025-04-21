@@ -28,8 +28,6 @@ public class EndSkybox extends AbstractSkybox {
 
     @Override
     public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
-        RenderSystem.enableBlend();
-        RenderSystem.depthMask(false);
         BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         Matrix4f matrix4f = poseStack.last().pose();
         for (int i = 0; i < 6; ++i) {
@@ -47,7 +45,10 @@ public class EndSkybox extends AbstractSkybox {
             builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(color);
             builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(color);
         }
+
         RenderSystem.setShader(CoreShaders.POSITION_TEX_COLOR);
+        RenderSystem.enableBlend();
+        RenderSystem.depthMask(false);
         RenderSystem.setShaderTexture(0, SkyRenderer.END_SKY_LOCATION);
         BufferUploader.drawWithShader(builder.buildOrThrow());
         RenderSystem.depthMask(true);

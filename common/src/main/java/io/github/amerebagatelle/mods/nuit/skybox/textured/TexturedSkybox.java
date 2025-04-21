@@ -9,6 +9,7 @@ import io.github.amerebagatelle.mods.nuit.components.Rotation;
 import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
 import io.github.amerebagatelle.mods.nuit.skybox.TextureRegistrar;
+import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -19,13 +20,21 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import java.util.Objects;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
-    public Rotation rotation;
-    public Blend blend;
+    private final Rotation rotation;
+    private final Blend blend;
 
     protected TexturedSkybox(Properties properties, Conditions conditions, Blend blend) {
         super(properties, conditions);
         this.blend = blend;
         this.rotation = properties.rotation();
+    }
+
+    public Rotation getRotation() {
+        return this.rotation;
+    }
+
+    public Blend getBlend() {
+        return this.blend;
     }
 
     /**
@@ -37,11 +46,10 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      */
     @Override
     public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
-        RenderSystem.setShaderFog(fogParameters);
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
-
         RenderSystem.setShader(CoreShaders.POSITION_TEX);
+        RenderSystem.depthMask(false);
+        Utils.enableBlendingOverride();
+        RenderSystem.enableBlend();
         this.blend.apply(this.alpha);
 
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
@@ -52,6 +60,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
 
         RenderSystem.depthMask(true);
         RenderSystem.disableBlend();
+        Utils.disableBlendingOverride();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
@@ -59,8 +68,4 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      * Override this method instead of render if you are extending this skybox.
      */
     public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters);
-
-    public Blend getBlend() {
-        return this.blend;
-    }
 }
