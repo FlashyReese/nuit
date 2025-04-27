@@ -21,15 +21,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(FogRenderer.class)
-public class MixinFogRenderer {
-
+public abstract class MixinFogRenderer {
     /**
      * Checks if we should change the fog color to whatever the skybox set it to, and sets it.
      */
     @Inject(method = "computeFogColor", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/FogRenderer;biomeChangedTime:J", ordinal = 6), locals = LocalCapture.CAPTURE_FAILEXCEPTION, cancellable = true)
     private static void nuit$modifyColors(Camera camera, float f, ClientLevel clientLevel, int i, float g, CallbackInfoReturnable<Vector4f> cir, FogType fogType, Entity entity, float u, float v, float w) {
-        RGB initialFogColor = new RGB(u, v, w);
-        RGB fogColor = Utils.alphaBlendFogColors(SkyboxManager.getInstance().getActiveSkyboxes(), initialFogColor);
+        final RGB initialFogColor = new RGB(u, v, w);
+        final RGB fogColor = Utils.alphaBlendFogColors(SkyboxManager.getInstance().getActiveSkyboxes(), initialFogColor);
         if (SkyboxManager.getInstance().isEnabled() && !fogColor.equals(initialFogColor)) {
             cir.setReturnValue(new Vector4f(fogColor.getRed(), fogColor.getGreen(), fogColor.getBlue(), 1.0f));
         }
@@ -37,8 +36,7 @@ public class MixinFogRenderer {
 
     @ModifyReturnValue(method = "setupFog", at = @At(value = "RETURN"))
     private static FogParameters nuit$redirectSetShaderFogColor(FogParameters original) {
-        float fogDensity = Utils.alphaBlendFogDensity(SkyboxManager.getInstance().getActiveSkyboxes(), original.alpha());
-        boolean enabled = SkyboxManager.getInstance().isEnabled();
+        final float fogDensity = Utils.alphaBlendFogDensity(SkyboxManager.getInstance().getActiveSkyboxes(), original.alpha());
         return new FogParameters(
                 original.start(),
                 original.end(),
@@ -46,7 +44,7 @@ public class MixinFogRenderer {
                 original.red(),
                 original.green(),
                 original.blue(),
-                enabled ? fogDensity : original.alpha());
+                SkyboxManager.getInstance().isEnabled() ? fogDensity : original.alpha());
     }
 
     @Redirect(method = "computeFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getTimeOfDay(F)F"))
@@ -69,8 +67,8 @@ public class MixinFogRenderer {
 
     @ModifyConstant(method = "computeFogColor", slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/util/CubicSampler;gaussianSampleVec3(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/util/CubicSampler$Vec3Fetcher;)Lnet/minecraft/world/phys/Vec3;")), constant = @Constant(intValue = 4, ordinal = 0))
     private static int nuit$renderSkyColor(int original) {
-        SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        Skybox skybox = skyboxManager.getCurrentSkybox();
+        final SkyboxManager skyboxManager = SkyboxManager.getInstance();
+        final Skybox skybox = skyboxManager.getCurrentSkybox();
         if (skyboxManager.isEnabled() && skybox instanceof NuitSkybox nuitSkybox && !nuitSkybox.getProperties().renderSunSkyTint()) {
             return Integer.MAX_VALUE;
         } else {
