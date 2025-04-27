@@ -21,6 +21,7 @@ import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import java.util.List;
 import java.util.OptionalDouble;
@@ -79,6 +80,9 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
     public void renderSkybox(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         if (vertexBuffer != null) {
+            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+            modelViewStack.pushMatrix();
+            modelViewStack.mul(poseStack.last().pose());
             GpuTexture texture = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTexture();
             RenderPipeline pipeline = TEXTURED_SKYBOX_PIPELINE_CONSUMER.apply(this.getBlend().getBlendFunction());
             RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
@@ -89,6 +93,7 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
                 renderPass.bindSampler("Sampler0", texture);
                 renderPass.drawIndexed(0, indexCount);
             }
+            modelViewStack.popMatrix();
         }
     }
 
