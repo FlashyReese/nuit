@@ -81,7 +81,7 @@ public class DecorationBox extends AbstractSkybox {
 
         bufferSource.endBatch();
         if (this.starsEnabled) {
-            float brightness = level.getStarBrightness(tickDelta) * (1.0F - level.getRainLevel(tickDelta));
+            float brightness = level.getStarBrightness(tickDelta) * rainLevel;
             skyRendererAccessor.invokeRenderStars(fogParameters, brightness, poseStack);
         }
 
