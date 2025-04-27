@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Mixin(GlCommandEncoder.class)
 public abstract class MixinGlCommandEncoder {
-    @WrapOperation(method = "applyPipelineState", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderPipeline;getBlendFunction()Ljava/util/Optional;"), remap = false)
+    @WrapOperation(method = "applyPipelineState", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderPipeline;getBlendFunction()Ljava/util/Optional;"))
     private Optional<BlendFunction> nuit$overrideBlending(RenderPipeline instance, Operation<Optional<BlendFunction>> original) {
         if (Utils.isOverridingBlending()) {
             return Utils.getOverridenBlendFunction() != null ? Optional.of(Utils.getOverridenBlendFunction()) : Optional.empty();
