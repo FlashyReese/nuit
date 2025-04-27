@@ -13,6 +13,7 @@ import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
+import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogParameters;
@@ -36,41 +37,43 @@ public class EndSkybox extends AbstractSkybox {
 
     public EndSkybox(Properties properties, Conditions conditions) {
         super(properties, conditions);
+        buildSky();
     }
 
-    @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    private int indexCount = 0;
+    private RenderSystem.AutoStorageIndexBuffer skyIndices;
+    private GpuBuffer vertexBuffer = null;
+
+    private void buildSky() {
+        PoseStack poseStack = new PoseStack();
+
         VertexFormat vertexFormat = DefaultVertexFormat.POSITION_TEX_COLOR;
         VertexFormat.Mode vertexFormatMode = VertexFormat.Mode.QUADS;
 
         ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(vertexFormat.getVertexSize() * 24);
         BufferBuilder builder = new BufferBuilder(byteBufferBuilder, vertexFormatMode, vertexFormat);
-        Matrix4f matrix4f = poseStack.last().pose();
-        for (int i = 0; i < 6; ++i) {
-            switch (i) {
-                case 1 -> matrix4f.rotationX(1.5707964F);
-                case 2 -> matrix4f.rotationX(-1.5707964F);
-                case 3 -> matrix4f.rotationX(3.1415927F);
-                case 4 -> matrix4f.rotationZ(1.5707964F);
-                case 5 -> matrix4f.rotationZ(-1.5707964F);
-            }
-
+        for (int face = 0; face < 6; ++face) {
+            poseStack.pushPose();
+            Utils.rotateSkyBoxByFace(poseStack, face);
+            Matrix4f matrix4f = poseStack.last().pose();
             int color = ARGB.color(0x282828, (int) (255 * this.alpha));
             builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(color);
             builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(color);
             builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(color);
             builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(color);
+            poseStack.popPose();
         }
 
-        int indexCount = 0;
-        GpuBuffer vertexBuffer = null;
+        skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
         MeshData meshData = builder.build();
         if (meshData != null) {
             indexCount = meshData.drawState().indexCount();
-            vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "End skybox", BufferType.VERTICES, BufferUsage.DYNAMIC_WRITE, meshData.vertexBuffer());
+            vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "End skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
         }
+    }
 
-        RenderSystem.AutoStorageIndexBuffer autoStorageIndexBuffer = RenderSystem.getSequentialBuffer(vertexFormatMode);
+    @Override
+    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         if (vertexBuffer != null) {
             TextureManager textureManager = Minecraft.getInstance().getTextureManager();
             AbstractTexture abstractTexture = textureManager.getTexture(SkyRenderer.END_SKY_LOCATION);
@@ -79,17 +82,20 @@ public class EndSkybox extends AbstractSkybox {
             try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
                 renderPass.setPipeline(RenderPipelines.END_SKY);
                 renderPass.setVertexBuffer(0, null);
-                renderPass.setIndexBuffer(autoStorageIndexBuffer.getBuffer(indexCount), autoStorageIndexBuffer.type());
+                renderPass.setIndexBuffer(skyIndices.getBuffer(indexCount), skyIndices.type());
                 renderPass.bindSampler("Sampler0", abstractTexture.getTexture());
                 renderPass.drawIndexed(0, indexCount);
             } finally {
                 vertexBuffer.close();
-                meshData.close();
             }
         }
     }
 
     @Override
     public void close() {
+        if (vertexBuffer != null) {
+            vertexBuffer.close();
+            vertexBuffer = null;
+        }
     }
 }
