@@ -78,7 +78,7 @@ public class Utils {
      */
     public static boolean checkRanges(double value, List<RangeEntry> rangeEntries, boolean inverse) {
         return rangeEntries.isEmpty() || (inverse ^ rangeEntries.stream()
-                .map(entry -> Range.closed(entry.min(), entry.max()))
+                .map(entry -> Range.closedOpen(entry.min(), entry.max()))
                 .anyMatch(range -> range.contains((float) value)));
     }
 
