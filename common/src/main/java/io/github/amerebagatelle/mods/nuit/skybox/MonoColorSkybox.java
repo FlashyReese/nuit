@@ -26,7 +26,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -117,7 +117,7 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
             }
             modelViewStack.popMatrix();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            GL14.glBlendEquation(GL14.GL_FUNC_ADD);
+            GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
         }
     }
 

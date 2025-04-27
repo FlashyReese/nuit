@@ -20,7 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
 
@@ -87,7 +87,7 @@ public class DecorationBox extends AbstractSkybox {
 
         poseStack.pushPose();
         Utils.disableBlendingOverride();
-        GL14.glBlendEquation(GL14.GL_FUNC_ADD);
+        GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
     }
 
     public void renderSun(float f, MultiBufferSource multiBufferSource, PoseStack poseStack) {

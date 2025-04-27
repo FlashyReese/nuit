@@ -8,7 +8,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.function.Function;
 
@@ -30,7 +30,7 @@ public class Blend {
             case "add" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(1.0F, 1.0F, 1.0F, alpha);
                 };
             }
@@ -38,7 +38,7 @@ public class Blend {
             case "subtract" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.ONE_MINUS_DST_COLOR, DestFactor.ZERO);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(alpha, alpha, alpha, 1.0F);
                 };
             }
@@ -46,7 +46,7 @@ public class Blend {
             case "multiply" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.DST_COLOR, DestFactor.ONE_MINUS_SRC_ALPHA);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(alpha, alpha, alpha, alpha);
                 };
             }
@@ -54,7 +54,7 @@ public class Blend {
             case "screen" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.ONE, DestFactor.ONE_MINUS_SRC_COLOR);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(alpha, alpha, alpha, 1.0F);
                 };
             }
@@ -62,7 +62,7 @@ public class Blend {
             case "replace" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.ZERO, DestFactor.ONE);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(1.0F, 1.0F, 1.0F, alpha);
                 };
             }
@@ -70,7 +70,7 @@ public class Blend {
             case "normal" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(1.0F, 1.0F, 1.0F, alpha);
                 };
             }
@@ -78,7 +78,7 @@ public class Blend {
             case "burn" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.ZERO, DestFactor.ONE_MINUS_SRC_COLOR);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(alpha, alpha, alpha, 1.0F);
                 };
             }
@@ -86,7 +86,7 @@ public class Blend {
             case "dodge" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.DST_COLOR, DestFactor.ONE);
                 this.colorAndEquationFunc = (alpha) -> {
-                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    GL46C.glBlendEquation(Blender.Equation.ADD.value);
                     return new Vector4f(alpha, alpha, alpha, 1.0F);
                 };
             }

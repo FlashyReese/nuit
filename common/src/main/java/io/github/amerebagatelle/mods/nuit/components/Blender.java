@@ -10,7 +10,7 @@ import io.github.amerebagatelle.mods.nuit.NuitClient;
 import io.github.amerebagatelle.mods.nuit.util.Utils;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.Arrays;
 import java.util.function.Function;
@@ -66,7 +66,7 @@ public class Blender {
             }
 
             this.colorAndEquationFunc = (alpha) -> {
-                GL14.glBlendEquation(this.equation);
+                GL46C.glBlendEquation(this.equation);
                 return new Vector4f(this.redAlphaEnabled ? alpha : 1.0F, this.greenAlphaEnabled ? alpha : 1.0F, this.blueAlphaEnabled ? alpha : 1.0F, this.alphaEnabled ? alpha : 1.0F);
             };
         } else {
@@ -164,11 +164,11 @@ public class Blender {
     }
 
     public enum Equation {
-        ADD(GL14.GL_FUNC_ADD),
-        SUBTRACT(GL14.GL_FUNC_SUBTRACT),
-        REVERSE_SUBTRACT(GL14.GL_FUNC_REVERSE_SUBTRACT),
-        MIN(GL14.GL_MIN),
-        MAX(GL14.GL_MAX);
+        ADD(GL46C.GL_FUNC_ADD),
+        SUBTRACT(GL46C.GL_FUNC_SUBTRACT),
+        REVERSE_SUBTRACT(GL46C.GL_FUNC_REVERSE_SUBTRACT),
+        MIN(GL46C.GL_MIN),
+        MAX(GL46C.GL_MAX);
 
         public final int value;
 

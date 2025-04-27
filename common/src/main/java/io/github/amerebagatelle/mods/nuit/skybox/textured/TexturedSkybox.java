@@ -22,7 +22,7 @@ import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -84,7 +84,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         poseStack.popPose();
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        GL14.glBlendEquation(GL14.GL_FUNC_ADD);
+        GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
     }
 
     /**

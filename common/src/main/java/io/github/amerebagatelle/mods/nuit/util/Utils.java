@@ -16,8 +16,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Quaternionf;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.List;
 import java.util.Map;
@@ -324,40 +323,40 @@ public class Utils {
 
     public static SourceFactor toSourceFactor(int glId) {
         return switch (glId) {
-            case GL14.GL_CONSTANT_ALPHA -> SourceFactor.CONSTANT_ALPHA;
-            case GL14.GL_CONSTANT_COLOR -> SourceFactor.CONSTANT_COLOR;
-            case GL11.GL_DST_ALPHA -> SourceFactor.DST_ALPHA;
-            case GL11.GL_DST_COLOR -> SourceFactor.DST_COLOR;
-            case GL11.GL_ONE -> SourceFactor.ONE;
-            case GL14.GL_ONE_MINUS_CONSTANT_ALPHA -> SourceFactor.ONE_MINUS_CONSTANT_ALPHA;
-            case GL14.GL_ONE_MINUS_CONSTANT_COLOR -> SourceFactor.ONE_MINUS_CONSTANT_COLOR;
-            case GL11.GL_ONE_MINUS_DST_ALPHA -> SourceFactor.ONE_MINUS_DST_ALPHA;
-            case GL11.GL_ONE_MINUS_DST_COLOR -> SourceFactor.ONE_MINUS_DST_COLOR;
-            case GL11.GL_ONE_MINUS_SRC_ALPHA -> SourceFactor.ONE_MINUS_SRC_ALPHA;
-            case GL11.GL_ONE_MINUS_SRC_COLOR -> SourceFactor.ONE_MINUS_SRC_COLOR;
-            case GL11.GL_SRC_ALPHA -> SourceFactor.SRC_ALPHA;
-            case GL11.GL_SRC_COLOR -> SourceFactor.SRC_COLOR;
-            case GL11.GL_ZERO -> SourceFactor.ZERO;
+            case GL46C.GL_CONSTANT_ALPHA -> SourceFactor.CONSTANT_ALPHA;
+            case GL46C.GL_CONSTANT_COLOR -> SourceFactor.CONSTANT_COLOR;
+            case GL46C.GL_DST_ALPHA -> SourceFactor.DST_ALPHA;
+            case GL46C.GL_DST_COLOR -> SourceFactor.DST_COLOR;
+            case GL46C.GL_ONE -> SourceFactor.ONE;
+            case GL46C.GL_ONE_MINUS_CONSTANT_ALPHA -> SourceFactor.ONE_MINUS_CONSTANT_ALPHA;
+            case GL46C.GL_ONE_MINUS_CONSTANT_COLOR -> SourceFactor.ONE_MINUS_CONSTANT_COLOR;
+            case GL46C.GL_ONE_MINUS_DST_ALPHA -> SourceFactor.ONE_MINUS_DST_ALPHA;
+            case GL46C.GL_ONE_MINUS_DST_COLOR -> SourceFactor.ONE_MINUS_DST_COLOR;
+            case GL46C.GL_ONE_MINUS_SRC_ALPHA -> SourceFactor.ONE_MINUS_SRC_ALPHA;
+            case GL46C.GL_ONE_MINUS_SRC_COLOR -> SourceFactor.ONE_MINUS_SRC_COLOR;
+            case GL46C.GL_SRC_ALPHA -> SourceFactor.SRC_ALPHA;
+            case GL46C.GL_SRC_COLOR -> SourceFactor.SRC_COLOR;
+            case GL46C.GL_ZERO -> SourceFactor.ZERO;
             default -> throw new RuntimeException("Unknown SourceFactor with GL id of " + glId);
         };
     }
 
     public static DestFactor toDestFactor(int glId) {
         return switch (glId) {
-            case GL14.GL_CONSTANT_ALPHA -> DestFactor.CONSTANT_ALPHA;
-            case GL14.GL_CONSTANT_COLOR -> DestFactor.CONSTANT_COLOR;
-            case GL11.GL_DST_ALPHA -> DestFactor.DST_ALPHA;
-            case GL11.GL_DST_COLOR -> DestFactor.DST_COLOR;
-            case GL11.GL_ONE -> DestFactor.ONE;
-            case GL14.GL_ONE_MINUS_CONSTANT_ALPHA -> DestFactor.ONE_MINUS_CONSTANT_ALPHA;
-            case GL14.GL_ONE_MINUS_CONSTANT_COLOR -> DestFactor.ONE_MINUS_CONSTANT_COLOR;
-            case GL11.GL_ONE_MINUS_DST_ALPHA -> DestFactor.ONE_MINUS_DST_ALPHA;
-            case GL11.GL_ONE_MINUS_DST_COLOR -> DestFactor.ONE_MINUS_DST_COLOR;
-            case GL11.GL_ONE_MINUS_SRC_ALPHA -> DestFactor.ONE_MINUS_SRC_ALPHA;
-            case GL11.GL_ONE_MINUS_SRC_COLOR -> DestFactor.ONE_MINUS_SRC_COLOR;
-            case GL11.GL_SRC_ALPHA -> DestFactor.SRC_ALPHA;
-            case GL11.GL_SRC_COLOR -> DestFactor.SRC_COLOR;
-            case GL11.GL_ZERO -> DestFactor.ZERO;
+            case GL46C.GL_CONSTANT_ALPHA -> DestFactor.CONSTANT_ALPHA;
+            case GL46C.GL_CONSTANT_COLOR -> DestFactor.CONSTANT_COLOR;
+            case GL46C.GL_DST_ALPHA -> DestFactor.DST_ALPHA;
+            case GL46C.GL_DST_COLOR -> DestFactor.DST_COLOR;
+            case GL46C.GL_ONE -> DestFactor.ONE;
+            case GL46C.GL_ONE_MINUS_CONSTANT_ALPHA -> DestFactor.ONE_MINUS_CONSTANT_ALPHA;
+            case GL46C.GL_ONE_MINUS_CONSTANT_COLOR -> DestFactor.ONE_MINUS_CONSTANT_COLOR;
+            case GL46C.GL_ONE_MINUS_DST_ALPHA -> DestFactor.ONE_MINUS_DST_ALPHA;
+            case GL46C.GL_ONE_MINUS_DST_COLOR -> DestFactor.ONE_MINUS_DST_COLOR;
+            case GL46C.GL_ONE_MINUS_SRC_ALPHA -> DestFactor.ONE_MINUS_SRC_ALPHA;
+            case GL46C.GL_ONE_MINUS_SRC_COLOR -> DestFactor.ONE_MINUS_SRC_COLOR;
+            case GL46C.GL_SRC_ALPHA -> DestFactor.SRC_ALPHA;
+            case GL46C.GL_SRC_COLOR -> DestFactor.SRC_COLOR;
+            case GL46C.GL_ZERO -> DestFactor.ZERO;
             default -> throw new RuntimeException("Unknown DestFactor with GL id of " + glId);
         };
     }
