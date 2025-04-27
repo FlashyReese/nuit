@@ -73,9 +73,9 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
         RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
-        ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
+        ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         poseStack.pushPose();
-        this.rotation.apply(poseStack, world);
+        this.rotation.apply(poseStack, level);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
         modelViewStack.mul(poseStack.last().pose());
