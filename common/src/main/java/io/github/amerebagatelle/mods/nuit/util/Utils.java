@@ -241,17 +241,10 @@ public class Utils {
      */
     public static RGB alphaBlendFogColors(List<Skybox> skyboxList, RGB initialFogColor) {
         RGB destination = initialFogColor;
-
         for (Skybox skybox : skyboxList) {
             if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().fog().isModifyColors()) {
-                RGB source = nuitSkybox.getProperties().fog();
-
-                float sourceAlphaInv = 1f - nuitSkybox.getAlpha();
-                destination = new RGB(
-                        (source.getRed() * nuitSkybox.getAlpha()) + (destination.getRed() * sourceAlphaInv),
-                        (source.getGreen() * nuitSkybox.getAlpha()) + (destination.getGreen() * sourceAlphaInv),
-                        (source.getBlue() * nuitSkybox.getAlpha()) + (destination.getBlue() * sourceAlphaInv)
-                );
+                final RGB fogColor = nuitSkybox.getProperties().fog();
+                destination = fogColor.blend(destination, nuitSkybox.getAlpha());
             }
         }
 
@@ -262,7 +255,7 @@ public class Utils {
         float destination = initialFogDensity;
         for (Skybox skybox : skyboxList) {
             if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().fog().isModifyDensity()) {
-                float sourceAlphaInv = 1f - nuitSkybox.getAlpha();
+                float sourceAlphaInv = 1.0F - nuitSkybox.getAlpha();
                 destination = (nuitSkybox.getProperties().fog().getDensity() * nuitSkybox.getAlpha()) + (destination * sourceAlphaInv);
             }
         }

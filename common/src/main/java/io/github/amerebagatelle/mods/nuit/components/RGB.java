@@ -33,6 +33,15 @@ public class RGB {
         return this.green;
     }
 
+    public RGB blend(RGB other, float alpha) {
+        final float invAlpha = 1.0F - alpha;
+        return new RGB(
+                this.getRed() * alpha + other.getRed() * invAlpha,
+                this.getGreen() * alpha + other.getGreen() * invAlpha,
+                this.getBlue() * alpha + other.getBlue() * invAlpha
+        );
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof RGB rgb) {

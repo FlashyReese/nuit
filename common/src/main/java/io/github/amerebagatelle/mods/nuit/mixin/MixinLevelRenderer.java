@@ -34,8 +34,8 @@ public abstract class MixinLevelRenderer {
     private FogParameters nuit$fogParameters;
 
     @Inject(method = "addSkyPass", at = @At(value = "HEAD"))
-    private void nuit$preAddSkyPass(FrameGraphBuilder frameGraphBuilder, Camera camera, float f, FogParameters fogParameters, CallbackInfo ci) {
-        this.nuit$tickDelta = f;
+    private void nuit$preAddSkyPass(FrameGraphBuilder frameGraphBuilder, Camera camera, float tickDelta, FogParameters fogParameters, CallbackInfo ci) {
+        this.nuit$tickDelta = tickDelta;
         this.nuit$fogParameters = fogParameters;
     }
 

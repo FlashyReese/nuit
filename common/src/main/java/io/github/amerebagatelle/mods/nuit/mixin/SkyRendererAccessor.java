@@ -18,9 +18,6 @@ public interface SkyRendererAccessor {
         return ResourceLocation.withDefaultNamespace("textures/environment/moon_phases.png");
     }
 
-    @Accessor("topSkyBuffer")
-    VertexBuffer getTopSkyBuffer();
-
     @Accessor("starBuffer")
     VertexBuffer getStarsBuffer();
 
