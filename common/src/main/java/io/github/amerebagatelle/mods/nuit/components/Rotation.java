@@ -11,6 +11,7 @@ import io.github.amerebagatelle.mods.nuit.util.Utils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Tuple;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
 import java.util.Map;
@@ -38,7 +39,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             Codec.FLOAT.optionalFieldOf("speed", 1f).forGetter(Rotation::speed)
     ).apply(instance, Rotation::new));
 
-    public void apply(PoseStack poseStack, ClientLevel level) {
+    public void apply(Matrix4f matrix4f, ClientLevel level) {
         long currentTime = level.getDayTime() % this.duration;
 //         static
         Quaternionf resultRot = new Quaternionf();
@@ -65,7 +66,13 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             resultRot.mul(mappingRot);
         });
 
-        poseStack.mulPose(resultRot);
+        matrix4f.rotate(resultRot);
+    }
+
+    public void apply(PoseStack poseStack, ClientLevel level) {
+        Matrix4f matrix4f = new Matrix4f();
+        apply(matrix4f, level);
+        poseStack.mulPose(matrix4f);
     }
 
     public static Rotation of() {

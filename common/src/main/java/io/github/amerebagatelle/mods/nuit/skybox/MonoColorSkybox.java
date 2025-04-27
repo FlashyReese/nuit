@@ -24,7 +24,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
 
@@ -102,9 +101,6 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
         if (this.alpha > 0) {
             Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
             RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
-            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
-            modelViewStack.pushMatrix();
-            modelViewStack.mul(poseStack.last().pose());
             if (vertexBuffer != null) {
                 RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
                 RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
@@ -115,7 +111,6 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
                     renderPass.drawIndexed(0, indexCount);
                 }
             }
-            modelViewStack.popMatrix();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
         }
