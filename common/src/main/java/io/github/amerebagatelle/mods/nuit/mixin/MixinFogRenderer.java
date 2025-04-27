@@ -12,39 +12,26 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.util.Mth;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.material.FogType;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer {
-    @Unique
-    @Nullable
-    private static Float nuit$fogRed = null;
-
-    @Unique
-    @Nullable
-    private static Float nuit$fogGreen = null;
-
-    @Unique
-    @Nullable
-    private static Float nuit$fogBlue = null;
 
     /**
      * Checks if we should change the fog color to whatever the skybox set it to, and sets it.
      */
-    @Inject(method = "computeFogColor", at = @At("RETURN"))
-    private static void nuit$modifyColors(Camera camera, float tickDelta, ClientLevel clientLevel, int i, float g, CallbackInfoReturnable<Vector4f> cir) {
-        Vector4f fogColorVec = cir.getReturnValue();
-        RGB initialFogColor = new RGB(fogColorVec.x, fogColorVec.y, fogColorVec.z);
+    @Inject(method = "computeFogColor", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/FogRenderer;biomeChangedTime:J", ordinal = 6), locals = LocalCapture.CAPTURE_FAILEXCEPTION, cancellable = true)
+    private static void nuit$modifyColors(Camera camera, float f, ClientLevel clientLevel, int i, float g, CallbackInfoReturnable<Vector4f> cir, FogType fogType, Entity entity, float u, float v, float w) {
+        RGB initialFogColor = new RGB(u, v, w);
         RGB fogColor = Utils.alphaBlendFogColors(SkyboxManager.getInstance().getActiveSkyboxes(), initialFogColor);
-        if (SkyboxManager.getInstance().isEnabled()) {
-            nuit$fogRed = fogColor.getRed();
-            nuit$fogBlue = fogColor.getBlue();
-            nuit$fogGreen = fogColor.getGreen();
+        if (SkyboxManager.getInstance().isEnabled() && !fogColor.equals(initialFogColor)) {
+            cir.setReturnValue(new Vector4f(fogColor.getRed(), fogColor.getGreen(), fogColor.getBlue(), 1.0f));
         }
     }
 
@@ -56,10 +43,10 @@ public class MixinFogRenderer {
                 original.start(),
                 original.end(),
                 original.shape(),
-                (enabled && nuit$fogRed != null) ? nuit$fogRed : original.red(),
-                (enabled && nuit$fogGreen != null) ? nuit$fogGreen : original.green(),
-                (enabled && nuit$fogBlue != null) ? nuit$fogBlue : original.blue(),
-                fogDensity);
+                original.red(),
+                original.green(),
+                original.blue(),
+                enabled ? fogDensity : original.alpha());
     }
 
     @Redirect(method = "computeFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getTimeOfDay(F)F"))
