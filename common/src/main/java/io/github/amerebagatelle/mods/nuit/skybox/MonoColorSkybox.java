@@ -24,6 +24,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL14;
 
@@ -101,17 +102,20 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
         if (this.alpha > 0) {
             Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
             RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+            modelViewStack.pushMatrix();
+            modelViewStack.mul(poseStack.last().pose());
             if (vertexBuffer != null) {
-                RenderSystem.AutoStorageIndexBuffer autoStorageIndexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
                 RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
                 RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
                 try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
                     renderPass.setPipeline(pipeline);
                     renderPass.setVertexBuffer(0, vertexBuffer);
-                    renderPass.setIndexBuffer(autoStorageIndexBuffer.getBuffer(indexCount), autoStorageIndexBuffer.type());
+                    renderPass.setIndexBuffer(skyIndices.getBuffer(indexCount), skyIndices.type());
                     renderPass.drawIndexed(0, indexCount);
                 }
             }
+            modelViewStack.popMatrix();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL14.glBlendEquation(GL14.GL_FUNC_ADD);
         }
