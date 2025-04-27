@@ -1,27 +1,50 @@
 package io.github.amerebagatelle.mods.nuit.skybox.textured;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import io.github.amerebagatelle.mods.nuit.NuitClient;
 import io.github.amerebagatelle.mods.nuit.components.Blend;
 import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.components.Rotation;
+import io.github.amerebagatelle.mods.nuit.mixin.RenderPipelinesAccessor;
 import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
 import io.github.amerebagatelle.mods.nuit.skybox.TextureRegistrar;
-import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL14;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
     private final Rotation rotation;
     private final Blend blend;
+
+    public static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_CONSUMER = (blendFunction) -> {
+        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesColorSnippet());
+        builder.withLocation(NuitClient.withId("pipeline/textured_skybox"));
+        builder.withVertexShader("core/position_tex");
+        builder.withFragmentShader("core/position_tex");
+        builder.withDepthWrite(false);
+        if (blendFunction != null) {
+            builder.withBlend(blendFunction);
+        } else {
+            builder.withoutBlend();
+        }
+        builder.withSampler("Sampler0");
+        builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
+        return builder.build();
+    };
 
     protected TexturedSkybox(Properties properties, Conditions conditions, Blend blend) {
         super(properties, conditions);
@@ -46,11 +69,8 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      */
     @Override
     public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
-        RenderSystem.setShader(CoreShaders.POSITION_TEX);
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
-        Utils.enableBlendingOverride();
-        this.blend.apply(this.alpha);
+        Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+        RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
         poseStack.pushPose();
@@ -58,11 +78,8 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters);
         poseStack.popPose();
 
-        RenderSystem.depthMask(true);
-        Utils.disableBlendingOverride();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        GL14.glBlendEquation(GL14.GL_FUNC_ADD);
     }
 
     /**

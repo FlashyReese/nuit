@@ -27,7 +27,7 @@ import java.util.Objects;
  * have a default constructor as it is required when checking
  * the type of the skybox.
  */
-public abstract class AbstractSkybox implements NuitSkybox {
+public abstract class AbstractSkybox implements NuitSkybox, AutoCloseable {
     /**
      * The current alpha for the skybox. Expects all skyboxes extending this to accommodate this.
      * This variable is responsible for fading in/out skyboxes.

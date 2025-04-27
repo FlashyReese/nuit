@@ -13,14 +13,14 @@ import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
 import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL14;
 
 import java.util.Objects;
 
@@ -58,9 +58,9 @@ public class DecorationBox extends AbstractSkybox {
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
-        RenderSystem.enableBlend();
-        Utils.enableBlendingOverride();
-        this.blend.apply(this.alpha);
+        Utils.enableBlendingOverride(this.blend.getBlendFunction());
+        Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+        RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
         poseStack.pushPose();
         this.properties.rotation().apply(poseStack, level);
 
@@ -70,7 +70,6 @@ public class DecorationBox extends AbstractSkybox {
         // poseStack.mulPose(Axis.ZP.rotationDegrees(IrisCompat.getSunPathRotation()));
         // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
-        RenderSystem.setShader(CoreShaders.POSITION_TEX);
         float rainLevel = 1.0F - level.getRainLevel(tickDelta);
         if (this.sunEnabled) {
             this.renderSun(rainLevel, bufferSource, poseStack);
@@ -82,13 +81,13 @@ public class DecorationBox extends AbstractSkybox {
 
         bufferSource.endBatch();
         if (this.starsEnabled) {
-            this.renderStars(skyRendererAccessor, level, poseStack, fogParameters, tickDelta);
+            float brightness = level.getStarBrightness(tickDelta) * (1.0F - level.getRainLevel(tickDelta));
+            skyRendererAccessor.invokeRenderStars(fogParameters, brightness, poseStack);
         }
 
-        poseStack.popPose();
-        RenderSystem.defaultBlendFunc();
+        poseStack.pushPose();
         Utils.disableBlendingOverride();
-        RenderSystem.disableBlend();
+        GL14.glBlendEquation(GL14.GL_FUNC_ADD);
     }
 
     public void renderSun(float f, MultiBufferSource multiBufferSource, PoseStack poseStack) {
@@ -117,22 +116,6 @@ public class DecorationBox extends AbstractSkybox {
         vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, -20.0F).setUv(endX, startY).setColor(p);
     }
 
-    public void renderStars(SkyRendererAccessor skyRendererAccessor, ClientLevel level, PoseStack poseStack, FogParameters fogParameters, float tickDelta) {
-        float rainLevel = 1.0F - level.getRainLevel(tickDelta);
-        float brightness = level.getStarBrightness(tickDelta) * rainLevel;
-        if (brightness > 0.0F) {
-            Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
-            matrix4fStack.pushMatrix();
-            matrix4fStack.mul(poseStack.last().pose());
-            RenderSystem.setShaderColor(brightness, brightness, brightness, brightness);
-            RenderSystem.setShaderFog(FogParameters.NO_FOG);
-            skyRendererAccessor.getStarsBuffer().drawWithRenderType(RenderType.stars());
-            RenderSystem.setShaderFog(fogParameters);
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            matrix4fStack.popMatrix();
-        }
-    }
-
     public ResourceLocation getSunTexture() {
         return this.sunTexture;
     }
@@ -155,5 +138,9 @@ public class DecorationBox extends AbstractSkybox {
 
     public Blend getBlend() {
         return this.blend;
+    }
+
+    @Override
+    public void close() {
     }
 }

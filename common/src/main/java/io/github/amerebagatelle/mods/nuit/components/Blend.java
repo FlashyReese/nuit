@@ -1,12 +1,16 @@
 package io.github.amerebagatelle.mods.nuit.components;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.platform.DestFactor;
+import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL14;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class Blend {
     public static Codec<Blend> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -16,84 +20,109 @@ public class Blend {
 
     private final String type;
     private final Blender blender;
-    private final Consumer<Float> blendFunc;
+    private final BlendFunction blendFunction;
+    private final Function<Float, Vector4f> colorAndEquationFunc;
 
     public Blend(String type, Blender blender) {
         this.type = type;
         this.blender = blender;
         switch (type) {
-            case "add" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-            };
+            case "add" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(1.0F, 1.0F, 1.0F, alpha);
+                };
+            }
 
-            case "subtract" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ZERO);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(alpha, alpha, alpha, 1.0F);
-            };
+            case "subtract" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.ONE_MINUS_DST_COLOR, DestFactor.ZERO);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(alpha, alpha, alpha, 1.0F);
+                };
+            }
 
-            case "multiply" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.DST_COLOR, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(alpha, alpha, alpha, alpha);
-            };
+            case "multiply" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.DST_COLOR, DestFactor.ONE_MINUS_SRC_ALPHA);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(alpha, alpha, alpha, alpha);
+                };
+            }
 
-            case "screen" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(alpha, alpha, alpha, 1.0F);
-            };
+            case "screen" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.ONE, DestFactor.ONE_MINUS_SRC_COLOR);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(alpha, alpha, alpha, 1.0F);
+                };
+            }
 
-            case "replace" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-            };
+            case "replace" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.ZERO, DestFactor.ONE);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(1.0F, 1.0F, 1.0F, alpha);
+                };
+            }
 
-            case "normal" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-            };
+            case "normal" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(1.0F, 1.0F, 1.0F, alpha);
+                };
+            }
 
-            case "burn" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(alpha, alpha, alpha, 1.0F);
-            };
+            case "burn" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.ZERO, DestFactor.ONE_MINUS_SRC_COLOR);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(alpha, alpha, alpha, 1.0F);
+                };
+            }
 
-            case "dodge" -> this.blendFunc = (alpha) -> {
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.DST_COLOR, GlStateManager.DestFactor.ONE);
-                RenderSystem.blendEquation(Blender.Equation.ADD.value);
-                RenderSystem.setShaderColor(alpha, alpha, alpha, 1.0F);
-            };
+            case "dodge" -> {
+                this.blendFunction = new BlendFunction(SourceFactor.DST_COLOR, DestFactor.ONE);
+                this.colorAndEquationFunc = (alpha) -> {
+                    GL14.glBlendEquation(Blender.Equation.ADD.value);
+                    return new Vector4f(alpha, alpha, alpha, 1.0F);
+                };
+            }
 
-            case "disable" -> this.blendFunc = (alpha) -> {
-                RenderSystem.disableBlend();
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-            };
+            case "disable" -> {
+                this.blendFunction = null;
+                this.colorAndEquationFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
+            }
 
-            case "decorations" -> this.blendFunc = Blender.decorations()::applyBlendFunc;
+            case "decorations" -> {
+                this.blendFunction = Blender.decorations().getBlendFunction();
+                this.colorAndEquationFunc = Blender.decorations()::applyEquationAndGetColor;
+            }
 
-            case "custom" -> this.blendFunc = this.blender::applyBlendFunc;
+            case "custom" -> {
+                this.blendFunction = this.blender.getBlendFunction();
+                this.colorAndEquationFunc = this.blender::applyEquationAndGetColor;
+            }
 
             default -> {
                 if (NuitClient.config().generalSettings.debugMode) {
                     NuitClient.getLogger().error("Blend mode is set to an invalid or unsupported value.");
                 }
 
-                this.blendFunc = (alpha) -> {
-                    RenderSystem.defaultBlendFunc();
-                    RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-                };
+                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ZERO);
+                this.colorAndEquationFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
             }
         }
     }
 
-    public void apply(float alpha) {
-        this.blendFunc.accept(alpha);
+    public Vector4f applyEquationAndGetColor(float alpha) {
+        return this.colorAndEquationFunc.apply(alpha);
+    }
+
+    public @Nullable BlendFunction getBlendFunction() {
+        return this.blendFunction;
     }
 
     public String getType() {

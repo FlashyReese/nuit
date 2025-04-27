@@ -1,14 +1,19 @@
 package io.github.amerebagatelle.mods.nuit.components;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.opengl.GlConst;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.platform.DestFactor;
+import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
+import io.github.amerebagatelle.mods.nuit.util.Utils;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL14;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class Blender {
     public static Codec<Blender> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -38,7 +43,8 @@ public class Blender {
     private final boolean blueAlphaEnabled;
     private final boolean alphaEnabled;
 
-    private final Consumer<Float> blendFunc;
+    private final BlendFunction blendFunction;
+    private final Function<Float, Vector4f> colorAndEquationFunc;
 
     public Blender(boolean separateFunction, int sourceFactor, int destinationFactor, int equation, int sourceFactorAlpha, int destinationFactorAlpha, boolean redAlphaEnabled, boolean greenAlphaEnabled, boolean blueAlphaEnabled, boolean alphaEnabled) {
         this.separateFunction = separateFunction;
@@ -53,30 +59,32 @@ public class Blender {
         this.alphaEnabled = alphaEnabled;
 
         if ((this.separateFunction && this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidFactor(sourceFactorAlpha) && this.isValidFactor(destinationFactorAlpha) && this.isValidEquation(equation)) || (this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidEquation(equation))) {
-            this.blendFunc = (alpha) -> {
-                if (this.separateFunction) {
-                    RenderSystem.blendFuncSeparate(this.sourceFactor, this.destinationFactor, this.sourceFactorAlpha, this.destinationFactorAlpha);
-                } else {
-                    RenderSystem.blendFunc(this.sourceFactor, this.destinationFactor);
-                }
+            if (this.separateFunction) {
+                this.blendFunction = new BlendFunction(Utils.toSourceFactor(this.sourceFactor), Utils.toDestFactor(this.destinationFactor), Utils.toSourceFactor(this.sourceFactorAlpha), Utils.toDestFactor(this.destinationFactorAlpha));
+            } else {
+                this.blendFunction = new BlendFunction(Utils.toSourceFactor(this.sourceFactor), Utils.toDestFactor(this.destinationFactor));
+            }
 
-                RenderSystem.blendEquation(this.equation);
-                RenderSystem.setShaderColor(this.redAlphaEnabled ? alpha : 1.0F, this.greenAlphaEnabled ? alpha : 1.0F, this.blueAlphaEnabled ? alpha : 1.0F, this.alphaEnabled ? alpha : 1.0F);
+            this.colorAndEquationFunc = (alpha) -> {
+                GL14.glBlendEquation(this.equation);
+                return new Vector4f(this.redAlphaEnabled ? alpha : 1.0F, this.greenAlphaEnabled ? alpha : 1.0F, this.blueAlphaEnabled ? alpha : 1.0F, this.alphaEnabled ? alpha : 1.0F);
             };
         } else {
             if (NuitClient.config().generalSettings.debugMode) {
                 NuitClient.getLogger().error("Invalid custom blender values!");
             }
 
-            this.blendFunc = (alpha) -> {
-                RenderSystem.defaultBlendFunc();
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-            };
+            this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ZERO);
+            this.colorAndEquationFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
         }
     }
 
-    public void applyBlendFunc(float alpha) {
-        this.blendFunc.accept(alpha);
+    public Vector4f applyEquationAndGetColor(float alpha) {
+        return this.colorAndEquationFunc.apply(alpha);
+    }
+
+    public @Nullable BlendFunction getBlendFunction() {
+        return this.blendFunction;
     }
 
     public boolean isSeparateFunction() {
@@ -120,7 +128,7 @@ public class Blender {
     }
 
     public boolean isValidFactor(int factor) {
-        return Arrays.stream(GlStateManager.SourceFactor.values()).filter(factor1 -> factor == factor1.value).count() == 1;
+        return Arrays.stream(SourceFactor.values()).filter(factor1 -> factor == GlConst.toGl(factor1)).count() == 1;
     }
 
     public boolean isValidEquation(int equation) {

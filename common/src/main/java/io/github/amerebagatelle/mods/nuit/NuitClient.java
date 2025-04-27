@@ -3,6 +3,7 @@ package io.github.amerebagatelle.mods.nuit;
 import io.github.amerebagatelle.mods.nuit.api.NuitPlatformHelper;
 import io.github.amerebagatelle.mods.nuit.config.NuitConfig;
 import io.github.amerebagatelle.mods.nuit.resource.SkyboxResourceListener;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,7 +22,7 @@ public class NuitClient {
         if (LOGGER == null) {
             LOGGER = LogManager.getLogger("Nuit");
         }
-        
+
         return LOGGER;
     }
 
@@ -31,6 +32,10 @@ public class NuitClient {
         }
 
         return CONFIG;
+    }
+
+    public static ResourceLocation withId(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
     public static SkyboxResourceListener skyboxResourceListener() {

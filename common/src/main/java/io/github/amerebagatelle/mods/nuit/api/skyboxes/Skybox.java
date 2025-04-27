@@ -7,7 +7,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 
-public interface Skybox {
+public interface Skybox extends AutoCloseable {
     default int getLayer() {
         return 0;
     }

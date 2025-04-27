@@ -21,7 +21,6 @@ import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 
 public class OverworldSkybox extends AbstractSkybox {
     public static Codec<OverworldSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -56,7 +55,7 @@ public class OverworldSkybox extends AbstractSkybox {
         // Dark Sky
         double eyeHeight = camera.getEntity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);
         if (eyeHeight < 0.0) {
-            this.renderDarkSky(skyRendererAccessor);
+            ((SkyRenderer) skyRendererAccessor).renderDarkDisc();
         }
     }
 
@@ -90,14 +89,7 @@ public class OverworldSkybox extends AbstractSkybox {
         poseStack.popPose();
     }
 
-    // Fixes https://bugs.mojang.com/browse/MC-279472 (fixed in 1.21.5)
-    private void renderDarkSky(SkyRendererAccessor skyRendererAccessor) {
-        RenderSystem.setShaderColor(0.0F, 0.0F, 0.0F, this.alpha);
-        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
-        modelViewStack.pushMatrix();
-        modelViewStack.translate(0.0F, 12.0F, 0.0F);
-        skyRendererAccessor.getBottomSkyBuffer().drawWithRenderType(RenderType.sky());
-        modelViewStack.popMatrix();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    @Override
+    public void close() {
     }
 }

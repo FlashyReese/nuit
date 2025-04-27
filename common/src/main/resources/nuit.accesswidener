@@ -1,2 +1,3 @@
 accessWidener v2 named
-accessible class net/minecraft/client/renderer/RenderStateShard$TransparencyStateShard
+# NOTE: I was gonna put MATRICES_COLOR_SNIPPET as we were previously doing so with TransparencyShard
+# However, it just doesn't want to work..???

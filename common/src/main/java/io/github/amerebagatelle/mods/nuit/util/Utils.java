@@ -1,6 +1,9 @@
 package io.github.amerebagatelle.mods.nuit.util;
 
 import com.google.common.collect.Range;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.platform.DestFactor;
+import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
@@ -13,6 +16,8 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Quaternionf;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL14;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +26,7 @@ import java.util.ServiceLoader;
 
 public class Utils {
     private static boolean overrideRenderTypeBlending = false;
+    private static BlendFunction overrideRenderTypeBlendFunction = null;
 
     public static final UVRange[] TEXTURE_FACES = new UVRange[]{
             new UVRange(0, 0, 1.0F / 3.0F, 1.0F / 2.0F), // bottom
@@ -298,15 +304,61 @@ public class Utils {
         return loadedService;
     }
 
-    public static void enableBlendingOverride() {
+    public static void enableBlendingOverride(BlendFunction blendFunction) {
         overrideRenderTypeBlending = true;
+        overrideRenderTypeBlendFunction = blendFunction;
     }
 
     public static boolean isOverridingBlending() {
         return overrideRenderTypeBlending;
     }
 
+    public static BlendFunction getOverridenBlendFunction() {
+        return overrideRenderTypeBlendFunction;
+    }
+
     public static void disableBlendingOverride() {
         overrideRenderTypeBlending = false;
+        overrideRenderTypeBlendFunction = null;
+    }
+
+    public static SourceFactor toSourceFactor(int glId) {
+        return switch (glId) {
+            case GL14.GL_CONSTANT_ALPHA -> SourceFactor.CONSTANT_ALPHA;
+            case GL14.GL_CONSTANT_COLOR -> SourceFactor.CONSTANT_COLOR;
+            case GL11.GL_DST_ALPHA -> SourceFactor.DST_ALPHA;
+            case GL11.GL_DST_COLOR -> SourceFactor.DST_COLOR;
+            case GL11.GL_ONE -> SourceFactor.ONE;
+            case GL14.GL_ONE_MINUS_CONSTANT_ALPHA -> SourceFactor.ONE_MINUS_CONSTANT_ALPHA;
+            case GL14.GL_ONE_MINUS_CONSTANT_COLOR -> SourceFactor.ONE_MINUS_CONSTANT_COLOR;
+            case GL11.GL_ONE_MINUS_DST_ALPHA -> SourceFactor.ONE_MINUS_DST_ALPHA;
+            case GL11.GL_ONE_MINUS_DST_COLOR -> SourceFactor.ONE_MINUS_DST_COLOR;
+            case GL11.GL_ONE_MINUS_SRC_ALPHA -> SourceFactor.ONE_MINUS_SRC_ALPHA;
+            case GL11.GL_ONE_MINUS_SRC_COLOR -> SourceFactor.ONE_MINUS_SRC_COLOR;
+            case GL11.GL_SRC_ALPHA -> SourceFactor.SRC_ALPHA;
+            case GL11.GL_SRC_COLOR -> SourceFactor.SRC_COLOR;
+            case GL11.GL_ZERO -> SourceFactor.ZERO;
+            default -> throw new RuntimeException("Unknown SourceFactor with GL id of " + glId);
+        };
+    }
+
+    public static DestFactor toDestFactor(int glId) {
+        return switch (glId) {
+            case GL14.GL_CONSTANT_ALPHA -> DestFactor.CONSTANT_ALPHA;
+            case GL14.GL_CONSTANT_COLOR -> DestFactor.CONSTANT_COLOR;
+            case GL11.GL_DST_ALPHA -> DestFactor.DST_ALPHA;
+            case GL11.GL_DST_COLOR -> DestFactor.DST_COLOR;
+            case GL11.GL_ONE -> DestFactor.ONE;
+            case GL14.GL_ONE_MINUS_CONSTANT_ALPHA -> DestFactor.ONE_MINUS_CONSTANT_ALPHA;
+            case GL14.GL_ONE_MINUS_CONSTANT_COLOR -> DestFactor.ONE_MINUS_CONSTANT_COLOR;
+            case GL11.GL_ONE_MINUS_DST_ALPHA -> DestFactor.ONE_MINUS_DST_ALPHA;
+            case GL11.GL_ONE_MINUS_DST_COLOR -> DestFactor.ONE_MINUS_DST_COLOR;
+            case GL11.GL_ONE_MINUS_SRC_ALPHA -> DestFactor.ONE_MINUS_SRC_ALPHA;
+            case GL11.GL_ONE_MINUS_SRC_COLOR -> DestFactor.ONE_MINUS_SRC_COLOR;
+            case GL11.GL_SRC_ALPHA -> DestFactor.SRC_ALPHA;
+            case GL11.GL_SRC_COLOR -> DestFactor.SRC_COLOR;
+            case GL11.GL_ZERO -> DestFactor.ZERO;
+            default -> throw new RuntimeException("Unknown DestFactor with GL id of " + glId);
+        };
     }
 }

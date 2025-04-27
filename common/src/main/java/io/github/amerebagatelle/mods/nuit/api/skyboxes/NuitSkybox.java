@@ -4,7 +4,7 @@ import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import net.minecraft.client.multiplayer.ClientLevel;
 
-public interface NuitSkybox extends Skybox {
+public interface NuitSkybox extends Skybox, AutoCloseable {
     float getAlpha();
 
     void updateAlpha(ClientLevel level);
