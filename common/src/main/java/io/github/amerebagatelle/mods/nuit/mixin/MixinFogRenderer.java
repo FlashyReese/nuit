@@ -58,7 +58,7 @@ public abstract class MixinFogRenderer {
 
     @Redirect(method = "computeFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getSunAngle(F)F"))
     private static float nuit$redirectSkyAngleRadian(ClientLevel instance, float v) {
-        if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorBox && decorBox.getProperties().rotation().skyboxRotation())) {
+        if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorationBox && decorationBox.getProperties().rotation().skyboxRotation())) {
             return (float) Math.toRadians(Mth.positiveModulo(instance.getDayTime() / 24000F + 0.75F, 1));
         } else {
             return instance.getSunAngle(v);

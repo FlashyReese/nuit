@@ -20,6 +20,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL14;
 
@@ -75,7 +76,11 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
         poseStack.pushPose();
         this.rotation.apply(poseStack, world);
-        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters);
+        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+        modelViewStack.pushMatrix();
+        modelViewStack.mul(poseStack.last().pose());
+        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, fogParameters);
+        modelViewStack.popMatrix();
         poseStack.popPose();
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -85,5 +90,5 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters);
 }
