@@ -32,7 +32,6 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
             Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(TexturedSkybox::getBlend),
             Texture.CODEC.fieldOf("texture").forGetter(SquareTexturedSkybox::getTexture)
     ).apply(instance, SquareTexturedSkybox::new));
-
     protected Texture texture;
 
     public SquareTexturedSkybox(Properties properties, Conditions conditions, Blend blend, Texture texture) {

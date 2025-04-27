@@ -38,7 +38,6 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
             RGBA.CODEC.optionalFieldOf("color", RGBA.of()).forGetter(MonoColorSkybox::getColor),
             Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(MonoColorSkybox::getBlend)
     ).apply(instance, MonoColorSkybox::new));
-
     public RGBA color;
     public Blend blend;
 
