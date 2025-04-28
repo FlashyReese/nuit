@@ -16,7 +16,7 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "io.github.amerebagatelle.mods.nuit.fabric.NuitClientFabric"
+      "me.flashyreese.mods.nuit.fabric.NuitClientFabric"
     ]
   },
   "mixins": [

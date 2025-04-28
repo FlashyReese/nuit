@@ -45,7 +45,7 @@ if (FabricLoader.getInstance().isModLoaded("Nuit")) {
 
 ```java
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.amerebagatelle.mods.nuit.api.skyboxes.Skybox;
+import skyboxes.api.me.flashyreese.mods.nuit.Skybox;
 import io.github.amerebagatelle.mods.nuit.mixin.skybox.SkyRendererAccess;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.FogParameters;
