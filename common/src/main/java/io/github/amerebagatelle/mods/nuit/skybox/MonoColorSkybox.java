@@ -87,28 +87,27 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
         }
 
         skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
-        MeshData meshData = builder.build();
-        if (meshData != null) {
-            indexCount = meshData.drawState().indexCount();
-            vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Mono color skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+        try (MeshData meshData = builder.build()) {
+            if (meshData != null) {
+                indexCount = meshData.drawState().indexCount();
+                vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Mono color skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+            }
         }
     }
 
     @Override
     public void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
-        if (this.alpha > 0) {
+        if (this.alpha > 0 && vertexBuffer != null) {
             Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
             RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
-            if (vertexBuffer != null) {
-                RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
-                RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-                try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
-                    renderPass.setPipeline(pipeline);
-                    renderPass.setVertexBuffer(0, vertexBuffer);
-                    renderPass.setIndexBuffer(skyIndices.getBuffer(indexCount), skyIndices.type());
-                    renderPass.drawIndexed(0, indexCount);
-                }
+            RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
+            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
+                renderPass.setPipeline(pipeline);
+                renderPass.setVertexBuffer(0, vertexBuffer);
+                renderPass.setIndexBuffer(skyIndices.getBuffer(indexCount), skyIndices.type());
+                renderPass.drawIndexed(0, indexCount);
             }
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);

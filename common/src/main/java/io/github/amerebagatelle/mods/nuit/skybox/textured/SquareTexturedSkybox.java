@@ -66,10 +66,11 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
         }
 
         skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
-        MeshData meshData = builder.build();
-        if (meshData != null) {
-            indexCount = meshData.drawState().indexCount();
-            vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Square textured skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+        try (MeshData meshData = builder.build()) {
+            if (meshData != null) {
+                indexCount = meshData.drawState().indexCount();
+                vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Square textured skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+            }
         }
     }
 

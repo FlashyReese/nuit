@@ -64,10 +64,11 @@ public class EndSkybox extends AbstractSkybox {
         }
 
         skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
-        MeshData meshData = builder.build();
-        if (meshData != null) {
-            indexCount = meshData.drawState().indexCount();
-            vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "End skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+        try (MeshData meshData = builder.build()) {
+            if (meshData != null) {
+                indexCount = meshData.drawState().indexCount();
+                vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "End skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+            }
         }
     }
 
