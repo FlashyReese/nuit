@@ -12,7 +12,7 @@ public interface Skybox extends AutoCloseable {
         return 0;
     }
 
-    void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters thickFog);
+    void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters);
 
     void tick(ClientLevel clientLevel);
 
