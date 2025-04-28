@@ -18,11 +18,11 @@ import java.util.function.Function;
 public class Blender {
     public static Codec<Blender> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.optionalFieldOf("separateFunction", false).forGetter(Blender::isSeparateFunction),
-            Codec.INT.optionalFieldOf("sourceFactor", 770).forGetter(Blender::getSourceFactor),
-            Codec.INT.optionalFieldOf("destinationFactor", 1).forGetter(Blender::getDestinationFactor),
-            Codec.INT.optionalFieldOf("equation", 32774).forGetter(Blender::getEquation),
-            Codec.INT.optionalFieldOf("sourceFactorAlpha", 0).forGetter(Blender::getSourceFactorAlpha),
-            Codec.INT.optionalFieldOf("destinationFactorAlpha", 0).forGetter(Blender::getDestinationFactorAlpha),
+            Codec.INT.optionalFieldOf("sourceFactor", GL46C.GL_SRC_ALPHA).forGetter(Blender::getSourceFactor),
+            Codec.INT.optionalFieldOf("destinationFactor", GL46C.GL_ONE).forGetter(Blender::getDestinationFactor),
+            Codec.INT.optionalFieldOf("equation", GL46C.GL_FUNC_ADD).forGetter(Blender::getEquation),
+            Codec.INT.optionalFieldOf("sourceFactorAlpha", GL46C.GL_ZERO).forGetter(Blender::getSourceFactorAlpha),
+            Codec.INT.optionalFieldOf("destinationFactorAlpha", GL46C.GL_ZERO).forGetter(Blender::getDestinationFactorAlpha),
             Codec.BOOL.optionalFieldOf("redAlphaEnabled", false).forGetter(Blender::isRedAlphaEnabled),
             Codec.BOOL.optionalFieldOf("greenAlphaEnabled", false).forGetter(Blender::isGreenAlphaEnabled),
             Codec.BOOL.optionalFieldOf("blueAlphaEnabled", false).forGetter(Blender::isBlueAlphaEnabled),
