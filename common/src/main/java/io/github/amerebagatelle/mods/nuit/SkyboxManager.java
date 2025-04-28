@@ -73,17 +73,19 @@ public class SkyboxManager implements NuitApi {
 
     public void addSkybox(ResourceLocation resourceLocation, JsonObject jsonObject) {
         Optional<Skybox> skybox = SkyboxManager.parseSkyboxJson(resourceLocation, jsonObject);
-        if (skybox.isPresent()) {
-            NuitClient.getLogger().info("Adding skybox {}", resourceLocation.toString());
-            this.addSkybox(resourceLocation, skybox.get());
-        }
+        skybox.ifPresent(value -> {
+            if (NuitClient.config().generalSettings.debugMode) {
+                NuitClient.getLogger().info("Adding skybox {}", resourceLocation.toString());
+            }
+
+            this.addSkybox(resourceLocation, value);
+        });
     }
 
     public void addSkybox(ResourceLocation resourceLocation, Skybox skybox) {
         Preconditions.checkNotNull(resourceLocation, "Identifier was null");
         Preconditions.checkNotNull(skybox, "Skybox was null");
         DefaultHandler.addConditions(skybox);
-
         if (skybox instanceof TextureRegistrar textureRegistrar) {
             textureRegistrar.getTexturesToRegister().forEach((theResourceLocation) -> {
                 Minecraft.getInstance().getTextureManager().registerAndLoad(theResourceLocation, new SimpleTexture(theResourceLocation));
