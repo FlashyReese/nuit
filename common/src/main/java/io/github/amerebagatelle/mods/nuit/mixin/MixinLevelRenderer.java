@@ -48,7 +48,7 @@ public abstract class MixinLevelRenderer {
         if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {
             PoseStack poseStack = new PoseStack();
             skyboxManager.renderSkyboxes(
-                    (SkyRendererAccessor) skyRenderer,
+                    this.skyRenderer,
                     poseStack,
                     this.nuit$tickDelta,
                     Minecraft.getInstance().gameRenderer.getMainCamera(),

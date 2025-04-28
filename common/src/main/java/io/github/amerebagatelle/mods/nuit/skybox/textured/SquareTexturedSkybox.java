@@ -12,12 +12,12 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.amerebagatelle.mods.nuit.components.*;
-import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
 import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogParameters;
+import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
@@ -74,7 +74,7 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
     }
 
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters) {
+    public void renderSkybox(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         if (vertexBuffer != null) {
             GpuTexture texture = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTexture();

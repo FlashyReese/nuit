@@ -17,12 +17,12 @@ import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.components.RGBA;
 import io.github.amerebagatelle.mods.nuit.mixin.RenderPipelinesAccessor;
-import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SkyRenderer;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
@@ -95,7 +95,7 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         if (this.alpha > 0) {
             Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);

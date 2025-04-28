@@ -12,7 +12,6 @@ import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.components.Rotation;
 import io.github.amerebagatelle.mods.nuit.mixin.RenderPipelinesAccessor;
-import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
 import io.github.amerebagatelle.mods.nuit.skybox.TextureRegistrar;
 import net.minecraft.client.Camera;
@@ -20,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SkyRenderer;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
@@ -69,7 +69,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      * @param tickDelta         The current tick delta.
      */
     @Override
-    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public final void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
         RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
@@ -77,7 +77,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
         this.rotation.apply(modelViewStack, level);
-        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, fogParameters);
+        this.renderSkybox(skyRenderer, poseStack, tickDelta, camera, fogParameters);
         modelViewStack.popMatrix();
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -87,5 +87,5 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters);
+    public abstract void renderSkybox(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters);
 }

@@ -16,6 +16,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
@@ -54,7 +55,7 @@ public class DecorationBox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
@@ -82,7 +83,7 @@ public class DecorationBox extends AbstractSkybox {
         bufferSource.endBatch();
         if (this.starsEnabled) {
             float brightness = level.getStarBrightness(tickDelta) * rainLevel;
-            skyRendererAccessor.invokeRenderStars(fogParameters, brightness, poseStack);
+            ((SkyRendererAccessor) skyRenderer).invokeRenderStars(fogParameters, brightness, poseStack);
         }
 
         poseStack.pushPose();

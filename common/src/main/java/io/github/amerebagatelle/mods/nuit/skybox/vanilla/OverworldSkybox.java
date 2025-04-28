@@ -33,7 +33,7 @@ public class OverworldSkybox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
 
         ClientLevel level = (ClientLevel) camera.getEntity().level();
@@ -43,7 +43,7 @@ public class OverworldSkybox extends AbstractSkybox {
         int skyColor = level.getSkyColor(camera.getPosition(), tickDelta);
 
         // Light Sky
-        ((SkyRenderer) skyRendererAccessor).renderSkyDisc(ARGB.redFloat(skyColor), ARGB.greenFloat(skyColor), ARGB.blueFloat(skyColor));
+        skyRenderer.renderSkyDisc(ARGB.redFloat(skyColor), ARGB.greenFloat(skyColor), ARGB.blueFloat(skyColor));
         if (level.effects().isSunriseOrSunset(timeOfDay)) {
             if (NuitApi.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorationBox && decorationBox.getProperties().rotation().skyboxRotation())) {
                 sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1);
@@ -55,7 +55,7 @@ public class OverworldSkybox extends AbstractSkybox {
         // Dark Sky
         double eyeHeight = camera.getEntity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);
         if (eyeHeight < 0.0) {
-            ((SkyRenderer) skyRendererAccessor).renderDarkDisc();
+            skyRenderer.renderDarkDisc();
         }
     }
 

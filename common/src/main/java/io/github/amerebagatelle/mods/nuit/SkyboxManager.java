@@ -9,7 +9,6 @@ import io.github.amerebagatelle.mods.nuit.api.NuitApi;
 import io.github.amerebagatelle.mods.nuit.api.NuitPlatformHelper;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.Skybox;
 import io.github.amerebagatelle.mods.nuit.components.Metadata;
-import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.DefaultHandler;
 import io.github.amerebagatelle.mods.nuit.skybox.SkyboxType;
 import io.github.amerebagatelle.mods.nuit.skybox.TextureRegistrar;
@@ -19,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
@@ -125,10 +125,10 @@ public class SkyboxManager implements NuitApi {
     }
 
     @Internal
-    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void renderSkyboxes(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         for (Skybox skybox : this.activeSkyboxes) {
             this.currentSkybox = skybox;
-            skybox.render(skyRendererAccessor, poseStack, tickDelta, camera, bufferSource, fogParameters);
+            skybox.render(skyRenderer, poseStack, tickDelta, camera, bufferSource, fogParameters);
         }
     }
 
