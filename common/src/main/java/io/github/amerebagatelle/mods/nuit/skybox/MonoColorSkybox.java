@@ -68,22 +68,17 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
     private GpuBuffer vertexBuffer = null;
 
     private void buildSky() {
-        PoseStack poseStack = new PoseStack();
-
         VertexFormat vertexFormat = DefaultVertexFormat.POSITION_COLOR;
         VertexFormat.Mode vertexFormatMode = VertexFormat.Mode.QUADS;
 
         ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(vertexFormat.getVertexSize() * 24);
         BufferBuilder builder = new BufferBuilder(byteBufferBuilder, vertexFormatMode, vertexFormat);
         for (int face = 0; face < 6; ++face) {
-            poseStack.pushPose();
-            Utils.rotateSkyBoxByFace(poseStack, face);
-            Matrix4f matrix4f = poseStack.last().pose();
+            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
             builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
             builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
             builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
             builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
-            poseStack.popPose();
         }
 
         skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
@@ -101,6 +96,7 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
         if (this.alpha > 0 && vertexBuffer != null) {
             Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
             RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+
             RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
             RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
             try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
@@ -109,6 +105,7 @@ public class MonoColorSkybox extends AbstractSkybox implements AutoCloseable {
                 renderPass.setIndexBuffer(skyIndices.getBuffer(indexCount), skyIndices.type());
                 renderPass.drawIndexed(0, indexCount);
             }
+
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
         }

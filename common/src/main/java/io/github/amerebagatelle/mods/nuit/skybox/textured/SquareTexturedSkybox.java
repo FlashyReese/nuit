@@ -45,24 +45,18 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
     private GpuBuffer vertexBuffer = null;
 
     private void buildSky() {
-        PoseStack poseStack = new PoseStack();
-
         VertexFormat vertexFormat = DefaultVertexFormat.POSITION_TEX;
         VertexFormat.Mode vertexFormatMode = VertexFormat.Mode.QUADS;
 
         ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(vertexFormat.getVertexSize() * 24);
         BufferBuilder builder = new BufferBuilder(byteBufferBuilder, vertexFormatMode, vertexFormat);
         for (int face = 0; face < 6; face++) {
-            // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
             UVRange tex = Utils.TEXTURE_FACES[face];
-            poseStack.pushPose();
-            Utils.rotateSkyBoxByFace(poseStack, face);
-            Matrix4f matrix4f = poseStack.last().pose();
+            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
             builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.minU(), tex.minV());
             builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.minU(), tex.maxV());
             builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
             builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
-            poseStack.popPose();
         }
 
         skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);

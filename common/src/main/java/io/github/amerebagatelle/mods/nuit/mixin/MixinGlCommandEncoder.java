@@ -5,7 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.opengl.GlCommandEncoder;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import io.github.amerebagatelle.mods.nuit.util.Utils;
+import io.github.amerebagatelle.mods.nuit.util.OverrideUtils;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -15,8 +15,8 @@ import java.util.Optional;
 public abstract class MixinGlCommandEncoder {
     @WrapOperation(method = "applyPipelineState", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderPipeline;getBlendFunction()Ljava/util/Optional;"))
     private Optional<BlendFunction> nuit$overrideBlending(RenderPipeline instance, Operation<Optional<BlendFunction>> original) {
-        if (Utils.isOverridingBlending()) {
-            return Utils.getOverridenBlendFunction() != null ? Optional.of(Utils.getOverridenBlendFunction()) : Optional.empty();
+        if (OverrideUtils.isOverridingBlending()) {
+            return OverrideUtils.getOverridenBlendFunction() != null ? Optional.of(OverrideUtils.getOverridenBlendFunction()) : Optional.empty();
         } else {
             return original.call(instance);
         }

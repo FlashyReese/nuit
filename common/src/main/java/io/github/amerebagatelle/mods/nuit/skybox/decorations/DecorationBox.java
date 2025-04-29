@@ -10,7 +10,7 @@ import io.github.amerebagatelle.mods.nuit.components.Conditions;
 import io.github.amerebagatelle.mods.nuit.components.Properties;
 import io.github.amerebagatelle.mods.nuit.mixin.SkyRendererAccessor;
 import io.github.amerebagatelle.mods.nuit.skybox.AbstractSkybox;
-import io.github.amerebagatelle.mods.nuit.util.Utils;
+import io.github.amerebagatelle.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.FogParameters;
@@ -59,9 +59,10 @@ public class DecorationBox extends AbstractSkybox {
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
-        Utils.enableBlendingOverride(this.blend.getBlendFunction());
+        OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
         RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+
         poseStack.pushPose();
         this.properties.rotation().apply(poseStack, level);
 
@@ -87,7 +88,7 @@ public class DecorationBox extends AbstractSkybox {
         }
 
         poseStack.pushPose();
-        Utils.disableBlendingOverride();
+        OverrideUtils.disableBlendingOverride();
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
     }
 

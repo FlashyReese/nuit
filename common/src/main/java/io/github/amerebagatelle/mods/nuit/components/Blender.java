@@ -71,7 +71,7 @@ public class Blender {
             };
         } else {
             if (NuitClient.config().generalSettings.debugMode) {
-                NuitClient.getLogger().error("Invalid custom blender values!");
+                NuitClient.logger().error("Invalid custom blender values!");
             }
 
             this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ZERO);

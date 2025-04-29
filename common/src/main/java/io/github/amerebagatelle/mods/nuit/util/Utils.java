@@ -1,11 +1,8 @@
 package io.github.amerebagatelle.mods.nuit.util;
 
 import com.google.common.collect.Range;
-import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.platform.SourceFactor;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import io.github.amerebagatelle.mods.nuit.NuitClient;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.NuitSkybox;
 import io.github.amerebagatelle.mods.nuit.api.skyboxes.Skybox;
@@ -15,6 +12,7 @@ import io.github.amerebagatelle.mods.nuit.components.UVRange;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.lwjgl.opengl.GL46C;
 
@@ -24,9 +22,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 public class Utils {
-    private static boolean overrideRenderTypeBlending = false;
-    private static BlendFunction overrideRenderTypeBlendFunction = null;
-
+    // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
     public static final UVRange[] TEXTURE_FACES = new UVRange[]{
             new UVRange(0, 0, 1.0F / 3.0F, 1.0F / 2.0F), // bottom
             new UVRange(1.0F / 3.0F, 1.0F / 2.0F, 2.0F / 3.0F, 1), // north
@@ -34,6 +30,16 @@ public class Utils {
             new UVRange(1.0F / 3.0F, 0, 2.0F / 3.0F, 1.0F / 2.0F), // top
             new UVRange(2.0F / 3.0F, 1.0F / 2.0F, 1, 1), // east
             new UVRange(0, 1.0F / 2.0F, 1.0F / 3.0F, 1) // west
+    };
+
+    // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
+    private static final Matrix4f[] MATRIX4F_ROTATED_FACE = new Matrix4f[]{
+            new Matrix4f(), // 0 (Bottom)
+            new Matrix4f().rotateX((float) Math.toRadians(90.0F)), // 1 (North)
+            new Matrix4f().rotateX((float) Math.toRadians(-90.0F)).rotateY((float) Math.toRadians(180.0F)), // 2 (South)
+            new Matrix4f().rotateX((float) Math.toRadians(180.0F)), // 3 (Top)
+            new Matrix4f().rotateZ((float) Math.toRadians(90.0F)).rotateY((float) Math.toRadians(-90.0F)), // 4 (East)
+            new Matrix4f().rotateZ((float) Math.toRadians(-90.0F)).rotateY((float) Math.toRadians(90.0F)) // 5 (West)
     };
 
     /**
@@ -111,26 +117,17 @@ public class Utils {
     }
 
     /**
-     * Rotates the faces of the vertexes for the skybox
+     * Get the Matrix4f rotation for the requested cube face of the skybox
      *
-     * @param poseStack
      * @param face
+     * @return The Matrix4f rotation for the requested cube face of the skybox
      */
-    public static void rotateSkyBoxByFace(PoseStack poseStack, int face) {
-        if (face == 1) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
-        } else if (face == 2) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        } else if (face == 3) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
-        } else if (face == 4) {
-            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
-        } else if (face == 5) {
-            poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+    public static Matrix4f getMatrixForRotatedFace(int face) {
+        if (face >= MATRIX4F_ROTATED_FACE.length) {
+            throw new RuntimeException("Face is out of bounds");
         }
+
+        return MATRIX4F_ROTATED_FACE[face];
     }
 
     /**
@@ -299,26 +296,8 @@ public class Utils {
         final T loadedService = ServiceLoader.load(clazz)
                 .findFirst()
                 .orElseThrow(() -> new NullPointerException("Failed to load service for " + clazz.getName()));
-        NuitClient.getLogger().debug("Loaded {} for service {}", loadedService, clazz);
+        NuitClient.logger().debug("Loaded {} for service {}", loadedService, clazz);
         return loadedService;
-    }
-
-    public static void enableBlendingOverride(BlendFunction blendFunction) {
-        overrideRenderTypeBlending = true;
-        overrideRenderTypeBlendFunction = blendFunction;
-    }
-
-    public static boolean isOverridingBlending() {
-        return overrideRenderTypeBlending;
-    }
-
-    public static BlendFunction getOverridenBlendFunction() {
-        return overrideRenderTypeBlendFunction;
-    }
-
-    public static void disableBlendingOverride() {
-        overrideRenderTypeBlending = false;
-        overrideRenderTypeBlendFunction = null;
     }
 
     public static SourceFactor toSourceFactor(int glId) {

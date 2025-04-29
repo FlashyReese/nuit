@@ -18,7 +18,7 @@ public class NuitClient {
         SkyboxManager.getInstance().setEnabled(config().generalSettings.enable);
     }
 
-    public static Logger getLogger() {
+    public static Logger logger() {
         if (LOGGER == null) {
             LOGGER = LogManager.getLogger("Nuit");
         }

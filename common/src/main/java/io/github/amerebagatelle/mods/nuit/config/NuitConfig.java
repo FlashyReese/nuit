@@ -29,7 +29,7 @@ public class NuitConfig {
             try (FileReader reader = new FileReader(file)) {
                 config = GSON.fromJson(reader, NuitConfig.class);
             } catch (Exception e) {
-                NuitClient.getLogger().error("Could not parse config, falling back to defaults!", e);
+                NuitClient.logger().error("Could not parse config, falling back to defaults!", e);
                 config = new NuitConfig();
             }
         } else {

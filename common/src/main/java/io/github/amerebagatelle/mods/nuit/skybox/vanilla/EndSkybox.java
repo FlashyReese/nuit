@@ -44,23 +44,18 @@ public class EndSkybox extends AbstractSkybox {
     private GpuBuffer vertexBuffer = null;
 
     private void buildSky() {
-        PoseStack poseStack = new PoseStack();
-
         VertexFormat vertexFormat = DefaultVertexFormat.POSITION_TEX_COLOR;
         VertexFormat.Mode vertexFormatMode = VertexFormat.Mode.QUADS;
 
         ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(vertexFormat.getVertexSize() * 24);
         BufferBuilder builder = new BufferBuilder(byteBufferBuilder, vertexFormatMode, vertexFormat);
         for (int face = 0; face < 6; ++face) {
-            poseStack.pushPose();
-            Utils.rotateSkyBoxByFace(poseStack, face);
-            Matrix4f matrix4f = poseStack.last().pose();
             int color = ARGB.color(0x282828, (int) (255 * this.alpha));
+            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
             builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(color);
             builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(color);
             builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(color);
             builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(color);
-            poseStack.popPose();
         }
 
         skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);

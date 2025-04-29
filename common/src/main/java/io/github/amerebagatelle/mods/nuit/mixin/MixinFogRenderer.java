@@ -44,7 +44,8 @@ public abstract class MixinFogRenderer {
                 original.red(),
                 original.green(),
                 original.blue(),
-                SkyboxManager.getInstance().isEnabled() ? fogDensity : original.alpha());
+                SkyboxManager.getInstance().isEnabled() ? fogDensity : original.alpha()
+        );
     }
 
     @Redirect(method = "computeFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getTimeOfDay(F)F"))

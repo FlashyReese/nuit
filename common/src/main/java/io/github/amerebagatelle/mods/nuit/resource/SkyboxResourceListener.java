@@ -29,7 +29,7 @@ public class SkyboxResourceListener implements PreparableReloadListener {
                 JsonObject json = GSON.fromJson(new InputStreamReader(resource.open()), JsonObject.class);
                 skyboxManager.addSkybox(resourceLocation, json);
             } catch (Exception e) {
-                NuitClient.getLogger().error("Error reading skybox {}", resourceLocation.toString(), e);
+                NuitClient.logger().error("Error reading skybox {}", resourceLocation.toString(), e);
             }
         });
     }

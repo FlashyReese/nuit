@@ -46,14 +46,14 @@ public class SkyboxManager implements NuitApi {
         try {
             metadata = Metadata.CODEC.decode(JsonOps.INSTANCE, jsonObject).getOrThrow().getFirst();
         } catch (RuntimeException e) {
-            NuitClient.getLogger().warn("Skipping invalid skybox {}", resourceLocation.toString(), e);
-            NuitClient.getLogger().warn(jsonObject.toString());
+            NuitClient.logger().warn("Skipping invalid skybox {}", resourceLocation.toString(), e);
+            NuitClient.logger().warn(jsonObject.toString());
             return Optional.empty();
         }
 
         Optional<Holder.Reference<SkyboxType<? extends Skybox>>> optionalType = NuitPlatformHelper.INSTANCE.getSkyboxTypeRegistry().get(metadata.type());
         if (optionalType.isEmpty()) {
-            NuitClient.getLogger().warn("Skipping skybox {} with unknown type {}", resourceLocation.toString(), metadata.type().getPath().replace('_', '-'));
+            NuitClient.logger().warn("Skipping skybox {} with unknown type {}", resourceLocation.toString(), metadata.type().getPath().replace('_', '-'));
             return Optional.empty();
         }
 
@@ -61,8 +61,8 @@ public class SkyboxManager implements NuitApi {
         try {
             return Optional.of(type.value().getCodec(metadata.schemaVersion()).decode(JsonOps.INSTANCE, jsonObject).getOrThrow().getFirst());
         } catch (RuntimeException e) {
-            NuitClient.getLogger().warn("Skipping invalid skybox {}", resourceLocation.toString(), e);
-            NuitClient.getLogger().warn(jsonObject.toString());
+            NuitClient.logger().warn("Skipping invalid skybox {}", resourceLocation.toString(), e);
+            NuitClient.logger().warn(jsonObject.toString());
             return Optional.empty();
         }
     }
@@ -75,7 +75,7 @@ public class SkyboxManager implements NuitApi {
         Optional<Skybox> skybox = SkyboxManager.parseSkyboxJson(resourceLocation, jsonObject);
         skybox.ifPresent(value -> {
             if (NuitClient.config().generalSettings.debugMode) {
-                NuitClient.getLogger().info("Adding skybox {}", resourceLocation.toString());
+                NuitClient.logger().info("Adding skybox {}", resourceLocation.toString());
             }
 
             this.addSkybox(resourceLocation, value);

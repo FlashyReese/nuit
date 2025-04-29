@@ -64,9 +64,9 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Overrides and makes final here as there are options that should always be respected in a textured skybox.
      *
-     * @param skyRendererAccess Access to the skyRenderer as skyboxes often require it.
-     * @param poseStack         The current PoseStack.
-     * @param tickDelta         The current tick delta.
+     * @param skyRenderer Access to the skyRenderer as skyboxes often require it.
+     * @param poseStack   The current PoseStack.
+     * @param tickDelta   The current tick delta.
      */
     @Override
     public final void render(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {

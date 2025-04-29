@@ -108,7 +108,7 @@ public class Blend {
 
             default -> {
                 if (NuitClient.config().generalSettings.debugMode) {
-                    NuitClient.getLogger().error("Blend mode is set to an invalid or unsupported value.");
+                    NuitClient.logger().error("Blend mode is set to an invalid or unsupported value.");
                 }
 
                 this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ZERO);
