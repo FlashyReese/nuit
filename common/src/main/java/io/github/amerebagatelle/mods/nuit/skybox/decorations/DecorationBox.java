@@ -81,7 +81,10 @@ public class DecorationBox extends AbstractSkybox {
             this.renderMoon(level.getMoonPhase(), rainLevel, bufferSource, poseStack);
         }
 
-        bufferSource.endBatch();
+        if (this.sunEnabled || this.moonEnabled) {
+            bufferSource.endBatch();
+        }
+
         if (this.starsEnabled) {
             float brightness = level.getStarBrightness(tickDelta) * rainLevel;
             ((SkyRendererAccessor) skyRenderer).invokeRenderStars(fogParameters, brightness, poseStack);
