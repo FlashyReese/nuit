@@ -1,10 +1,11 @@
 package io.github.amerebagatelle.mods.nuit.util;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import org.jetbrains.annotations.Nullable;
 
 public class OverrideUtils {
     private static boolean renderTypeBlending = false;
-    private static BlendFunction renderTypeBlendFunction = null;
+    private static @Nullable BlendFunction renderTypeBlendFunction = null;
 
     public static void enableBlendingOverride(BlendFunction blendFunction) {
         renderTypeBlending = true;
@@ -15,7 +16,7 @@ public class OverrideUtils {
         return renderTypeBlending;
     }
 
-    public static BlendFunction getOverridenBlendFunction() {
+    public static @Nullable BlendFunction getOverridenBlendFunction() {
         return renderTypeBlendFunction;
     }
 

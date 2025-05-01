@@ -19,29 +19,31 @@ import java.util.Optional;
 
 public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, Map<Long, Quaternionf> axis,
                        long duration, float speed) {
-    private static final Codec<Quaternionf> QUAT_FROM_VEC_3_F = Codec.FLOAT.listOf().comapFlatMap((list) -> {
+    private static final Codec<Quaternionf> QUATERNIONF_FROM_VEC_3_F = Codec.FLOAT.listOf().comapFlatMap((list) -> {
         if (list.size() != 3) {
             return DataResult.error(() -> "Invalid number of elements in vector");
         } else {
-            return DataResult.success(new Quaternionf().rotateLocalX((float) Math.toRadians(list.get(0))).rotateLocalY((float) Math.toRadians(list.get(1))).rotateLocalZ((float) Math.toRadians(list.get(2))));
+            return DataResult.success(new Quaternionf()
+                    .rotateLocalX((float) Math.toRadians(list.get(0)))
+                    .rotateLocalY((float) Math.toRadians(list.get(1)))
+                    .rotateLocalZ((float) Math.toRadians(list.get(2))));
         }
     }, (vec) -> ImmutableList.of(vec.x(), vec.y(), vec.z()));
 
     public static final Codec<Rotation> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.optionalFieldOf("skyboxRotation", true).forGetter(Rotation::skyboxRotation),
-            CodecUtils.unboundedMapFixed(Long.class, QUAT_FROM_VEC_3_F, Long2ObjectOpenHashMap::new)
+            CodecUtils.unboundedMapFixed(Long.class, QUATERNIONF_FROM_VEC_3_F, Long2ObjectOpenHashMap::new)
                     .optionalFieldOf("mapping", CodecUtils.fastUtilLong2ObjectOpenHashMap())
                     .forGetter(Rotation::mapping),
-            CodecUtils.unboundedMapFixed(Long.class, QUAT_FROM_VEC_3_F, Long2ObjectOpenHashMap::new)
+            CodecUtils.unboundedMapFixed(Long.class, QUATERNIONF_FROM_VEC_3_F, Long2ObjectOpenHashMap::new)
                     .optionalFieldOf("axis", CodecUtils.fastUtilLong2ObjectOpenHashMap())
                     .forGetter(Rotation::axis),
             Codec.LONG.optionalFieldOf("duration", 24000L).forGetter(Rotation::duration),
-            Codec.FLOAT.optionalFieldOf("speed", 1f).forGetter(Rotation::speed)
+            Codec.FLOAT.optionalFieldOf("speed", 1.0F).forGetter(Rotation::speed)
     ).apply(instance, Rotation::new));
 
     public Matrix4f apply(Matrix4f matrix4f, ClientLevel level) {
-        long currentTime = level.getDayTime() % this.duration;
-//         static
+        final long currentTime = level.getDayTime() % this.duration;
         Quaternionf resultRot = new Quaternionf();
 
         Optional<Tuple<Long, Long>> possibleMappingKeyframes = Utils.findClosestKeyframes(this.mapping, currentTime);
@@ -74,10 +76,10 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
     }
 
     public static Rotation of() {
-        return new Rotation(true, Map.of(), Map.of(), 24000L, 1f);
+        return new Rotation(true, Map.of(), Map.of(), 24000L, 1.0F);
     }
 
     public static Rotation decorations() {
-        return new Rotation(false, Map.of(), Map.of(), 24000L, 1f);
+        return new Rotation(false, Map.of(), Map.of(), 24000L, 1.0F);
     }
 }
