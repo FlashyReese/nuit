@@ -76,8 +76,10 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
+        // TODO/NOTE: Should modelViewStack inherit the current pose from poseStack?
+        //  (currently idk if poseStack contains anything so I just ignored it)
         this.rotation.apply(modelViewStack, level);
-        this.renderSkybox(skyRenderer, poseStack, tickDelta, camera, fogParameters);
+        this.renderSkybox(skyRenderer, modelViewStack, tickDelta, camera, fogParameters);
         modelViewStack.popMatrix();
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -87,5 +89,5 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters);
+    public abstract void renderSkybox(SkyRenderer skyRenderer, Matrix4fStack modelViewStack, float tickDelta, Camera camera, FogParameters fogParameters);
 }

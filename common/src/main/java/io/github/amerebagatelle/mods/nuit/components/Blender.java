@@ -57,7 +57,6 @@ public class Blender {
         this.greenAlphaEnabled = greenAlphaEnabled;
         this.blueAlphaEnabled = blueAlphaEnabled;
         this.alphaEnabled = alphaEnabled;
-
         if ((this.separateFunction && this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidFactor(sourceFactorAlpha) && this.isValidFactor(destinationFactorAlpha) && this.isValidEquation(equation)) || (this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidEquation(equation))) {
             if (this.separateFunction) {
                 this.blendFunction = new BlendFunction(Utils.toSourceFactor(this.sourceFactor), Utils.toDestFactor(this.destinationFactor), Utils.toSourceFactor(this.sourceFactorAlpha), Utils.toDestFactor(this.destinationFactorAlpha));
@@ -138,11 +137,11 @@ public class Blender {
     public static Blender normal() {
         return new Blender(
                 false,
-                770,
-                1,
-                32774,
-                0,
-                0,
+                GL46C.GL_SRC_ALPHA,
+                GL46C.GL_ONE,
+                Equation.ADD.value,
+                GL46C.GL_ZERO,
+                GL46C.GL_ZERO,
                 false,
                 false,
                 false,
@@ -152,11 +151,11 @@ public class Blender {
     public static Blender decorations() {
         return new Blender(
                 true,
-                770,
-                1,
-                32774,
-                1,
-                0,
+                GL46C.GL_SRC_ALPHA,
+                GL46C.GL_ONE,
+                Equation.ADD.value,
+                GL46C.GL_ONE,
+                GL46C.GL_ZERO,
                 false,
                 false,
                 false,

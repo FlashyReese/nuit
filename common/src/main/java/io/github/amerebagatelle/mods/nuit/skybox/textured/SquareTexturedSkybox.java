@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import java.util.List;
 import java.util.OptionalDouble;
@@ -69,7 +70,7 @@ public class SquareTexturedSkybox extends TexturedSkybox implements AutoCloseabl
     }
 
     @Override
-    public void renderSkybox(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters) {
+    public void renderSkybox(SkyRenderer skyRenderer, Matrix4fStack modelViewStack, float tickDelta, Camera camera, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         if (vertexBuffer != null) {
             GpuTexture texture = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTexture();

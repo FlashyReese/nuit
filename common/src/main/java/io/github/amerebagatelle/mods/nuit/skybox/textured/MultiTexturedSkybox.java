@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,11 +45,10 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyRenderer skyRenderer, PoseStack poseStack, float tickDelta, Camera camera, FogParameters fogParameters) {
+    public void renderSkybox(SkyRenderer skyRenderer, Matrix4fStack modelViewStack, float tickDelta, Camera camera, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         for (int face = 0; face < 6; ++face) {
             Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-            matrix4f.mul(poseStack.last().pose());
 
             // List of UV ranges for each face of the cube
             UVRange faceUVRange = Utils.TEXTURE_FACES[face];

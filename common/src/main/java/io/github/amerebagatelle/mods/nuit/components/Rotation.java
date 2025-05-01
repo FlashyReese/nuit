@@ -39,7 +39,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             Codec.FLOAT.optionalFieldOf("speed", 1f).forGetter(Rotation::speed)
     ).apply(instance, Rotation::new));
 
-    public void apply(Matrix4f matrix4f, ClientLevel level) {
+    public Matrix4f apply(Matrix4f matrix4f, ClientLevel level) {
         long currentTime = level.getDayTime() % this.duration;
 //         static
         Quaternionf resultRot = new Quaternionf();
@@ -66,13 +66,11 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             resultRot.mul(mappingRot);
         });
 
-        matrix4f.rotate(resultRot);
+        return matrix4f.rotate(resultRot);
     }
 
     public void apply(PoseStack poseStack, ClientLevel level) {
-        Matrix4f matrix4f = new Matrix4f();
-        apply(matrix4f, level);
-        poseStack.mulPose(matrix4f);
+        poseStack.mulPose(apply(new Matrix4f(), level));
     }
 
     public static Rotation of() {
