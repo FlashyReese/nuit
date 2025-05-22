@@ -71,13 +71,12 @@ public class DecorationBox extends AbstractSkybox {
         // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
         RenderSystem.setShader(CoreShaders.POSITION_TEX);
-        float rainLevel = 1.0F - level.getRainLevel(tickDelta);
         if (this.sunEnabled) {
-            this.renderSun(rainLevel, bufferSource, poseStack);
+            this.renderSun(bufferSource, poseStack);
         }
 
         if (this.moonEnabled) {
-            this.renderMoon(level.getMoonPhase(), rainLevel, bufferSource, poseStack);
+            this.renderMoon(level.getMoonPhase(), bufferSource, poseStack);
         }
 
         bufferSource.endBatch();
@@ -91,9 +90,9 @@ public class DecorationBox extends AbstractSkybox {
         RenderSystem.disableBlend();
     }
 
-    public void renderSun(float f, MultiBufferSource multiBufferSource, PoseStack poseStack) {
+    public void renderSun(MultiBufferSource multiBufferSource, PoseStack poseStack) {
         VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.celestial(this.sunTexture));
-        int i = ARGB.white(f);
+        int i = ARGB.white(1F);
         Matrix4f matrix4f = poseStack.last().pose();
         vertexConsumer.addVertex(matrix4f, -30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F).setColor(i);
         vertexConsumer.addVertex(matrix4f, 30.0F, 100.0F, -30.0F).setUv(1.0F, 0.0F).setColor(i);
@@ -101,7 +100,7 @@ public class DecorationBox extends AbstractSkybox {
         vertexConsumer.addVertex(matrix4f, -30.0F, 100.0F, 30.0F).setUv(0.0F, 1.0F).setColor(i);
     }
 
-    public void renderMoon(int moonPhase, float f, MultiBufferSource multiBufferSource, PoseStack poseStack) {
+    public void renderMoon(int moonPhase, MultiBufferSource multiBufferSource, PoseStack poseStack) {
         int xCoord = moonPhase % 4;
         int yCoord = moonPhase / 4 % 2;
         float startX = xCoord / 4.0F;
@@ -109,7 +108,7 @@ public class DecorationBox extends AbstractSkybox {
         float endX = (xCoord + 1) / 4.0F;
         float endY = (yCoord + 1) / 2.0F;
         VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.celestial(this.moonTexture));
-        int p = ARGB.white(f);
+        int p = ARGB.white(1F);
         Matrix4f matrix4f = poseStack.last().pose();
         vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, 20.0F).setUv(endX, endY).setColor(p);
         vertexConsumer.addVertex(matrix4f, 20.0F, -100.0F, 20.0F).setUv(startX, endY).setColor(p);
@@ -118,8 +117,7 @@ public class DecorationBox extends AbstractSkybox {
     }
 
     public void renderStars(SkyRendererAccessor skyRendererAccessor, ClientLevel level, PoseStack poseStack, FogParameters fogParameters, float tickDelta) {
-        float rainLevel = 1.0F - level.getRainLevel(tickDelta);
-        float brightness = level.getStarBrightness(tickDelta) * rainLevel;
+        float brightness = level.getStarBrightness(tickDelta);
         if (brightness > 0.0F) {
             Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
             matrix4fStack.pushMatrix();
