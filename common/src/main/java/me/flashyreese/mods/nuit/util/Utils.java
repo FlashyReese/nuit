@@ -220,14 +220,34 @@ public class Utils {
      * @param currentTime  The current time in game ticks.
      * @return The interpolated quaternion.
      */
-    public static Quaternionf interpolateQuatKeyframes(Map<Long, Quaternionf> keyFrames, Tuple<Long, Long> chosenFrames, long currentTime) {
+    public static Quaternionf interpolateQuatKeyframes(Map<Long, Quaternionf> keyFrames, Tuple<Long, Long> chosenFrames, long currentTime, long duration) {
         if (keyFrames.size() == 1) {
             return keyFrames.values().iterator().next();
         }
 
-        var alpha = Math.abs((float) (currentTime - chosenFrames.getA()) / (chosenFrames.getB() - chosenFrames.getA()));
+        long currentKey = chosenFrames.getA();
+        long nextKey = chosenFrames.getB();
+
+        long cycleDuration;
+        long timePassedInCycle;
+
+        if (currentKey > nextKey) {
+            cycleDuration = duration - currentKey + nextKey;
+
+            if (currentTime < nextKey) {
+                timePassedInCycle = duration - currentKey + currentTime;
+            } else {
+                timePassedInCycle = currentTime - currentKey;
+            }
+        } else {
+            cycleDuration = nextKey - currentKey;
+            timePassedInCycle = currentTime - currentKey;
+        }
+
+        float alpha = (float) timePassedInCycle / cycleDuration;
+
         var result = new Quaternionf();
-        keyFrames.get(chosenFrames.getA()).nlerp(keyFrames.get(chosenFrames.getB()), alpha, result);
+        keyFrames.get(currentKey).nlerp(keyFrames.get(nextKey), alpha, result);
         return result;
     }
 

@@ -59,7 +59,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
 
         possibleAxisKeyframes.ifPresent(axisKeyframe -> {
             // Set the axis rotation to the multiplication of the mapping rot and the axis rot
-            mappingRot.mul(Utils.interpolateQuatKeyframes(this.axis, axisKeyframe, currentTime), axisRot);
+            mappingRot.mul(Utils.interpolateQuatKeyframes(this.axis, axisKeyframe, currentTime, this.duration), axisRot);
             resultRot.mul(axisRot);
 
             double timeRotation = Utils.calculateRotation(this.speed, this.skyboxRotation, level);
@@ -69,7 +69,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
         });
 
         possibleMappingKeyframes.ifPresent(mappingKeyframe -> {
-            mappingRot.set(Utils.interpolateQuatKeyframes(this.mapping, mappingKeyframe, currentTime));
+            mappingRot.set(Utils.interpolateQuatKeyframes(this.mapping, mappingKeyframe, currentTime, this.duration));
             resultRot.mul(mappingRot);
         });
 
