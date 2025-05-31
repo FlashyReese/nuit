@@ -65,7 +65,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         long currentTime = level.getDayTime() % this.properties.fade().duration();
         boolean condition = this.checkConditions();
         float fadeAlpha = 1f;
-        if (this.properties.fade().alwaysOn()) {
+        if (this.properties.fade().keyFrames().isEmpty()) {
             this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(), condition);
         } else {
             if (this.properties.fade().duration() <= NuitClient.config().generalSettings.fadeCacheDuration) {
