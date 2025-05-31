@@ -112,7 +112,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     protected boolean checkConditions() {
         return this.checkDimensions() && this.checkWorlds() && this.checkBiomes() && this.checkXRanges() &&
-                this.checkYRanges() && this.checkZRanges() && this.checkWeather() && this.checkEffects();
+                this.checkYRanges() && this.checkZRanges() && this.checkWeather() && this.checkEffects() && this.checkVanillaBehavior();
     }
 
     /**
@@ -149,8 +149,8 @@ public abstract class AbstractSkybox implements NuitSkybox {
                         this.conditions.getWorlds().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackWorlds());
     }
 
-    /*
-		Check if an effect that should prevent skybox from showing
+    /**
+	 * @return Check if an effect that should prevent skybox from showing
      */
     protected boolean checkEffects() {
         Minecraft client = Minecraft.getInstance();
@@ -178,6 +178,17 @@ public abstract class AbstractSkybox implements NuitSkybox {
         }
 
         return true;
+    }
+
+    /**
+     * @return Whether vanilla checks are performed
+     */
+    protected boolean checkVanillaBehavior() {
+        Minecraft client = Minecraft.getInstance();
+        Objects.requireNonNull(client.level);
+
+        Camera camera = client.gameRenderer.getMainCamera();
+        return this.properties.visibleUnderwater() || camera.getFluidInCamera() != FogType.WATER;
     }
 
     /**
