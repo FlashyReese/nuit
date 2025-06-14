@@ -10,7 +10,7 @@ public record Properties(int layer, Fade fade, int transitionInDuration, int tra
                          boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation) {
     public static final Codec<Properties> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("layer", 0).forGetter(Properties::layer),
-            Fade.CODEC.fieldOf("fade").forGetter(Properties::fade),
+            Fade.CODEC.optionalFieldOf("fade", Fade.of()).forGetter(Properties::fade),
             CodecUtils.getClampedInteger(1, Integer.MAX_VALUE).optionalFieldOf("transitionInDuration", 20).forGetter(Properties::transitionInDuration),
             CodecUtils.getClampedInteger(1, Integer.MAX_VALUE).optionalFieldOf("transitionOutDuration", 20).forGetter(Properties::transitionOutDuration),
             Fog.CODEC.optionalFieldOf("fog", Fog.of()).forGetter(Properties::fog),
