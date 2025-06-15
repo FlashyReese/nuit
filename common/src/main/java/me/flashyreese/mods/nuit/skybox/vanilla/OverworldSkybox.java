@@ -72,9 +72,7 @@ public class OverworldSkybox extends AbstractSkybox {
         Matrix4f transformationMatrix = poseStack.last().pose();
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.sunriseSunset());
 
-        sunriseOrSunsetColor = ARGB.color(sunriseOrSunsetColor, (int) (this.alpha * 255));
-
-        float alpha = ARGB.alphaFloat(sunriseOrSunsetColor);
+        float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
         vertexConsumer.addVertex(transformationMatrix, 0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
 
         int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
