@@ -10,7 +10,7 @@ jobs:
     if: github.repository_owner == 'FlashyReese'
     runs-on: self-hosted
     steps:
-      - name: Checkout sources
+      - name: Checkout Repository
         uses: actions/checkout@v4
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2
@@ -20,23 +20,12 @@ jobs:
           distribution: 'temurin'
           java-version: 21
           check-latest: true
-      - name: Build and Publish with Gradle
+      - name: Upload assets to releases
         run: ./gradlew build publishAllPublicationsToFlashyReeseReleasesRepository -Pbuild.release
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-  publish:
-    needs: build
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        include:
-          - platform: neoforge
-            name: NeoForge
-          - platform: fabric
-            name: Fabric
-    steps:
-      - name: Publish ${{ matrix.name }} to Modrinth, CurseForge & GitHub
+      - name: Publish Fabric to Modrinth, CurseForge & GitHub
         uses: Kir-Antipov/mc-publish@v3.3.0
         with:
           modrinth-id: YBz7DOs8
@@ -47,12 +36,32 @@ jobs:
 
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-          name: '[${{ matrix.name }}] ${{ github.event.release.name }}'
-          version: '${{ github.event.release.tag_name }}+${{ matrix.platform }}'
+          name: '[Fabric] ${{ github.event.release.name }}'
+          version: '${{ github.event.release.tag_name }}+fabric'
           version-type: release
 
-          loaders: ${{ matrix.platform }}
+          loaders: fabric
 
           files: |
-            ${{ matrix.platform }}/build/libs/!(*-@(dev|sources|javadoc|dev-shadow)).jar
-            ${{ matrix.platform }}/build/libs/*-@(dev|sources|javadoc|dev-shadow).jar
+            fabric/build/libs/!(*-@(dev|sources|javadoc|dev-shadow)).jar
+            fabric/build/libs/*-@(dev|sources|javadoc|dev-shadow).jar
+      - name: Publish NeoForge to Modrinth, CurseForge & GitHub
+        uses: Kir-Antipov/mc-publish@v3.3.0
+        with:
+          modrinth-id: YBz7DOs8
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+
+          curseforge-id: 408209
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          name: '[NeoForge] ${{ github.event.release.name }}'
+          version: '${{ github.event.release.tag_name }}+neoforge'
+          version-type: release
+
+          loaders: neoforge
+
+          files: |
+            neoforge/build/libs/!(*-@(dev|sources|javadoc|dev-shadow)).jar
+            neoforge/build/libs/*-@(dev|sources|javadoc|dev-shadow).jar
