@@ -56,5 +56,3 @@ jobs:
           files: |
             ${{ matrix.platform }}/build/libs/!(*-@(dev|sources|javadoc|dev-shadow)).jar
             ${{ matrix.platform }}/build/libs/*-@(dev|sources|javadoc|dev-shadow).jar
-
-          version-resolver: latest
