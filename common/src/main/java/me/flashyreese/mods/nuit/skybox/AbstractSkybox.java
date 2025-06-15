@@ -112,7 +112,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     protected boolean checkConditions() {
         return this.checkDimensions() && this.checkWorlds() && this.checkBiomes() && this.checkXRanges() &&
-                this.checkYRanges() && this.checkZRanges() && this.checkWeather() && this.checkEffects() && this.checkVanillaBehavior();
+                this.checkYRanges() && this.checkZRanges() && this.checkWeather() && this.checkEffects() && this.checkProperties();
     }
 
     /**
@@ -158,19 +158,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         Camera camera = client.gameRenderer.getMainCamera();
         if (this.conditions.getEffects().entries().isEmpty()) {
-            // Vanilla checks
-            boolean thickFog = client.level.effects().isFoggyAt(Mth.floor(camera.getPosition().x()), Mth.floor(camera.getPosition().y())) || client.gui.getBossOverlay().shouldCreateWorldFog();
-            if (thickFog) {
-                // Render skybox in thick fog, enabled by default
-                return this.properties.fog().isShowInDenseFog();
-            }
-
-            FogType cameraSubmersionType = camera.getFluidInCamera();
-            if (cameraSubmersionType == FogType.POWDER_SNOW || cameraSubmersionType == FogType.LAVA)
-                return false;
-
             return !(camera.getEntity() instanceof LivingEntity livingEntity) || (!livingEntity.hasEffect(MobEffects.BLINDNESS) && !livingEntity.hasEffect(MobEffects.DARKNESS));
-
         } else {
             if (camera.getEntity() instanceof LivingEntity livingEntity) {
                 return (this.conditions.getEffects().excludes() ^ this.conditions.getEffects().entries().stream().noneMatch(resourceLocation -> client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).isPresent() && livingEntity.hasEffect(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).get().value()))));
@@ -183,12 +171,25 @@ public abstract class AbstractSkybox implements NuitSkybox {
     /**
      * @return Whether vanilla checks are performed
      */
-    protected boolean checkVanillaBehavior() {
+    protected boolean checkProperties() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
 
         Camera camera = client.gameRenderer.getMainCamera();
-        return this.properties.visibleUnderwater() || camera.getFluidInCamera() != FogType.WATER;
+        FogType cameraSubmersionType = camera.getFluidInCamera();
+
+        boolean visibleUnderwater = this.properties.visibleUnderwater() || cameraSubmersionType != FogType.WATER;
+
+        /*boolean thickFog = client.level.effects().isFoggyAt(
+                Mth.floor(camera.getPosition().x()),
+                Mth.floor(camera.getPosition().y())
+        ) || client.gui.getBossOverlay().shouldCreateWorldFog();
+
+        boolean showInDenseFog = !thickFog || this.properties.fog().isShowInDenseFog();*/
+
+        boolean notInBlockedFog = cameraSubmersionType != FogType.POWDER_SNOW && cameraSubmersionType != FogType.LAVA;
+
+        return visibleUnderwater/* && showInDenseFog*/ && notInBlockedFog;
     }
 
     /**

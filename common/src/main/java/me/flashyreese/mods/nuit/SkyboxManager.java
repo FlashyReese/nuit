@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -123,6 +124,7 @@ public class SkyboxManager implements NuitApi {
             this.currentSkybox = skybox;
             skybox.render(skyRendererAccessor, poseStack, tickDelta, camera, bufferSource, fogParameters);
         }
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }
 
     public boolean isEnabled() {
