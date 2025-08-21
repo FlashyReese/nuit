@@ -1,0 +1,8 @@
+{
+  "category.nuit": "Nuit",
+  "key.nuit.toggle": "Nuit kapcsolása",
+  "nuit.message.enabled": "Nuit bekapcsolva!",
+  "nuit.message.disabled": "Nuit kikapcsolva!",
+  "key.nuit.toggle.debug_hud": "Hibakereső felület kapcsolása",
+  "key.nuit.toggle.debug_screen": "Hibakereső kép kapcsolása"
+}
