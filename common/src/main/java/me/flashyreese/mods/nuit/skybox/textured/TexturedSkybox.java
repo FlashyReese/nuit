@@ -1,25 +1,49 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.Rotation;
+import me.flashyreese.mods.nuit.mixin.RenderPipelinesAccessor;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
-import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.resources.ResourceLocation;
+import org.joml.Matrix4fStack;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
+    public static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_CONSUMER = (blendFunction) -> {
+        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesColorSnippet());
+        builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
+        builder.withVertexShader("core/position_tex");
+        builder.withFragmentShader("core/position_tex");
+        builder.withDepthWrite(false);
+        if (blendFunction != null) {
+            builder.withBlend(blendFunction);
+        } else {
+            builder.withoutBlend();
+        }
+        builder.withSampler("Sampler0");
+        builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
+        return builder.build();
+    };
     private final Rotation rotation;
     private final Blend blend;
 
@@ -46,23 +70,20 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      */
     @Override
     public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
-        RenderSystem.setShader(CoreShaders.POSITION_TEX);
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
-        Utils.enableBlendingOverride();
-        this.blend.apply(this.alpha);
+        Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+        RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
-        ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
-        poseStack.pushPose();
-        this.rotation.apply(poseStack, world);
+        ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
+        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+        modelViewStack.pushMatrix();
+        // TODO/NOTE: Should modelViewStack inherit the current pose from poseStack?
+        //  (currently idk if poseStack contains anything so I just ignored it)
+        this.rotation.apply(modelViewStack, level);
         this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters);
-        poseStack.popPose();
+        modelViewStack.popMatrix();
 
-        RenderSystem.depthMask(true);
-        Utils.disableBlendingOverride();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableBlend();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
     }
 
     /**

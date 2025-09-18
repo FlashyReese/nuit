@@ -1,23 +1,28 @@
 package me.flashyreese.mods.nuit.components;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.opengl.GlConst;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.platform.DestFactor;
+import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.NuitClient;
-import org.lwjgl.opengl.GL14;
+import me.flashyreese.mods.nuit.util.Utils;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class Blender {
     public static Codec<Blender> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.optionalFieldOf("separateFunction", false).forGetter(Blender::isSeparateFunction),
-            Codec.INT.optionalFieldOf("sourceFactor", 770).forGetter(Blender::getSourceFactor),
-            Codec.INT.optionalFieldOf("destinationFactor", 1).forGetter(Blender::getDestinationFactor),
-            Codec.INT.optionalFieldOf("equation", 32774).forGetter(Blender::getEquation),
-            Codec.INT.optionalFieldOf("sourceFactorAlpha", 0).forGetter(Blender::getSourceFactorAlpha),
-            Codec.INT.optionalFieldOf("destinationFactorAlpha", 0).forGetter(Blender::getDestinationFactorAlpha),
+            Codec.INT.optionalFieldOf("sourceFactor", GL46C.GL_SRC_ALPHA).forGetter(Blender::getSourceFactor),
+            Codec.INT.optionalFieldOf("destinationFactor", GL46C.GL_ONE).forGetter(Blender::getDestinationFactor),
+            Codec.INT.optionalFieldOf("equation", GL46C.GL_FUNC_ADD).forGetter(Blender::getEquation),
+            Codec.INT.optionalFieldOf("sourceFactorAlpha", GL46C.GL_ZERO).forGetter(Blender::getSourceFactorAlpha),
+            Codec.INT.optionalFieldOf("destinationFactorAlpha", GL46C.GL_ZERO).forGetter(Blender::getDestinationFactorAlpha),
             Codec.BOOL.optionalFieldOf("redAlphaEnabled", false).forGetter(Blender::isRedAlphaEnabled),
             Codec.BOOL.optionalFieldOf("greenAlphaEnabled", false).forGetter(Blender::isGreenAlphaEnabled),
             Codec.BOOL.optionalFieldOf("blueAlphaEnabled", false).forGetter(Blender::isBlueAlphaEnabled),
@@ -38,7 +43,8 @@ public class Blender {
     private final boolean blueAlphaEnabled;
     private final boolean alphaEnabled;
 
-    private final Consumer<Float> blendFunc;
+    private final BlendFunction blendFunction;
+    private final Function<Float, Vector4f> colorAndEquationFunc;
 
     public Blender(boolean separateFunction, int sourceFactor, int destinationFactor, int equation, int sourceFactorAlpha, int destinationFactorAlpha, boolean redAlphaEnabled, boolean greenAlphaEnabled, boolean blueAlphaEnabled, boolean alphaEnabled) {
         this.separateFunction = separateFunction;
@@ -53,36 +59,34 @@ public class Blender {
         this.alphaEnabled = alphaEnabled;
 
         if ((this.separateFunction && this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidFactor(sourceFactorAlpha) && this.isValidFactor(destinationFactorAlpha) && this.isValidEquation(equation)) || (this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidEquation(equation))) {
-            this.blendFunc = (alpha) -> {
-                if (this.separateFunction) {
-                    RenderSystem.blendFuncSeparate(this.sourceFactor, this.destinationFactor, this.sourceFactorAlpha, this.destinationFactorAlpha);
-                } else {
-                    RenderSystem.blendFunc(this.sourceFactor, this.destinationFactor);
-                }
+            if (this.separateFunction) {
+                this.blendFunction = new BlendFunction(Utils.toSourceFactor(this.sourceFactor), Utils.toDestFactor(this.destinationFactor), Utils.toSourceFactor(this.sourceFactorAlpha), Utils.toDestFactor(this.destinationFactorAlpha));
+            } else {
+                this.blendFunction = new BlendFunction(Utils.toSourceFactor(this.sourceFactor), Utils.toDestFactor(this.destinationFactor));
+            }
 
-                RenderSystem.blendEquation(this.equation);
-                RenderSystem.setShaderColor(this.redAlphaEnabled ? alpha : 1.0F, this.greenAlphaEnabled ? alpha : 1.0F, this.blueAlphaEnabled ? alpha : 1.0F, this.alphaEnabled ? alpha : 1.0F);
+            this.colorAndEquationFunc = (alpha) -> {
+                GL46C.glBlendEquation(this.equation);
+                return new Vector4f(this.redAlphaEnabled ? alpha : 1.0F, this.greenAlphaEnabled ? alpha : 1.0F, this.blueAlphaEnabled ? alpha : 1.0F, this.alphaEnabled ? alpha : 1.0F);
             };
         } else {
             if (NuitClient.config().generalSettings.debugMode) {
                 NuitClient.getLogger().error("Invalid custom blender values!");
             }
 
-            this.blendFunc = (alpha) -> {
-                RenderSystem.defaultBlendFunc();
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-            };
+            this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ZERO);
+            this.colorAndEquationFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
         }
     }
 
     public static Blender normal() {
         return new Blender(
                 false,
-                770,
-                1,
-                32774,
-                0,
-                0,
+                GL46C.GL_SRC_ALPHA,
+                GL46C.GL_ONE,
+                Equation.ADD.value,
+                GL46C.GL_ZERO,
+                GL46C.GL_ZERO,
                 false,
                 false,
                 false,
@@ -92,19 +96,23 @@ public class Blender {
     public static Blender decorations() {
         return new Blender(
                 true,
-                770,
-                1,
-                32774,
-                1,
-                0,
+                GL46C.GL_SRC_ALPHA,
+                GL46C.GL_ONE,
+                Equation.ADD.value,
+                GL46C.GL_ONE,
+                GL46C.GL_ZERO,
                 false,
                 false,
                 false,
                 true);
     }
 
-    public void applyBlendFunc(float alpha) {
-        this.blendFunc.accept(alpha);
+    public Vector4f applyEquationAndGetColor(float alpha) {
+        return this.colorAndEquationFunc.apply(alpha);
+    }
+
+    public @Nullable BlendFunction getBlendFunction() {
+        return this.blendFunction;
     }
 
     public boolean isSeparateFunction() {
@@ -148,7 +156,7 @@ public class Blender {
     }
 
     public boolean isValidFactor(int factor) {
-        return Arrays.stream(GlStateManager.SourceFactor.values()).filter(factor1 -> factor == factor1.value).count() == 1;
+        return Arrays.stream(SourceFactor.values()).filter(factor1 -> factor == GlConst.toGl(factor1)).count() == 1;
     }
 
     public boolean isValidEquation(int equation) {
@@ -156,11 +164,11 @@ public class Blender {
     }
 
     public enum Equation {
-        ADD(GL14.GL_FUNC_ADD),
-        SUBTRACT(GL14.GL_FUNC_SUBTRACT),
-        REVERSE_SUBTRACT(GL14.GL_FUNC_REVERSE_SUBTRACT),
-        MIN(GL14.GL_MIN),
-        MAX(GL14.GL_MAX);
+        ADD(GL46C.GL_FUNC_ADD),
+        SUBTRACT(GL46C.GL_FUNC_SUBTRACT),
+        REVERSE_SUBTRACT(GL46C.GL_FUNC_REVERSE_SUBTRACT),
+        MIN(GL46C.GL_MIN),
+        MAX(GL46C.GL_MAX);
 
         public final int value;
 

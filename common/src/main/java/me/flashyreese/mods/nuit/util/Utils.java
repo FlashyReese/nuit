@@ -1,6 +1,8 @@
 package me.flashyreese.mods.nuit.util;
 
 import com.google.common.collect.Range;
+import com.mojang.blaze3d.platform.DestFactor;
+import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import me.flashyreese.mods.nuit.NuitClient;
@@ -12,7 +14,9 @@ import me.flashyreese.mods.nuit.components.UVRange;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +32,16 @@ public class Utils {
             new UVRange(2.0F / 3.0F, 1.0F / 2.0F, 1, 1), // east
             new UVRange(0, 1.0F / 2.0F, 1.0F / 3.0F, 1) // west
     };
-    private static boolean overrideRenderTypeBlending = false;
+
+    // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
+    private static final Matrix4f[] MATRIX4F_ROTATED_FACE = new Matrix4f[]{
+            new Matrix4f(), // 0 (Bottom)
+            new Matrix4f().rotateX((float) Math.toRadians(90.0F)), // 1 (North)
+            new Matrix4f().rotateX((float) Math.toRadians(-90.0F)).rotateY((float) Math.toRadians(180.0F)), // 2 (South)
+            new Matrix4f().rotateX((float) Math.toRadians(180.0F)), // 3 (Top)
+            new Matrix4f().rotateZ((float) Math.toRadians(90.0F)).rotateY((float) Math.toRadians(-90.0F)), // 4 (East)
+            new Matrix4f().rotateZ((float) Math.toRadians(-90.0F)).rotateY((float) Math.toRadians(90.0F)) // 5 (West)
+    };
 
     /**
      * Maps input intersection to output intersection, does so by taking in input and output UV ranges and then mapping the input intersection to the output intersection.
@@ -102,6 +115,20 @@ public class Utils {
         } else {
             return 0D;
         }
+    }
+
+    /**
+     * Get the Matrix4f rotation for the requested cube face of the skybox
+     *
+     * @param face
+     * @return The Matrix4f rotation for the requested cube face of the skybox
+     */
+    public static Matrix4f getMatrixForRotatedFace(int face) {
+        if (face >= MATRIX4F_ROTATED_FACE.length) {
+            throw new RuntimeException("Face is out of bounds");
+        }
+
+        return MATRIX4F_ROTATED_FACE[face];
     }
 
     /**
@@ -317,15 +344,43 @@ public class Utils {
         return loadedService;
     }
 
-    public static void enableBlendingOverride() {
-        overrideRenderTypeBlending = true;
+    public static SourceFactor toSourceFactor(int glId) {
+        return switch (glId) {
+            case GL46C.GL_CONSTANT_ALPHA -> SourceFactor.CONSTANT_ALPHA;
+            case GL46C.GL_CONSTANT_COLOR -> SourceFactor.CONSTANT_COLOR;
+            case GL46C.GL_DST_ALPHA -> SourceFactor.DST_ALPHA;
+            case GL46C.GL_DST_COLOR -> SourceFactor.DST_COLOR;
+            case GL46C.GL_ONE -> SourceFactor.ONE;
+            case GL46C.GL_ONE_MINUS_CONSTANT_ALPHA -> SourceFactor.ONE_MINUS_CONSTANT_ALPHA;
+            case GL46C.GL_ONE_MINUS_CONSTANT_COLOR -> SourceFactor.ONE_MINUS_CONSTANT_COLOR;
+            case GL46C.GL_ONE_MINUS_DST_ALPHA -> SourceFactor.ONE_MINUS_DST_ALPHA;
+            case GL46C.GL_ONE_MINUS_DST_COLOR -> SourceFactor.ONE_MINUS_DST_COLOR;
+            case GL46C.GL_ONE_MINUS_SRC_ALPHA -> SourceFactor.ONE_MINUS_SRC_ALPHA;
+            case GL46C.GL_ONE_MINUS_SRC_COLOR -> SourceFactor.ONE_MINUS_SRC_COLOR;
+            case GL46C.GL_SRC_ALPHA -> SourceFactor.SRC_ALPHA;
+            case GL46C.GL_SRC_COLOR -> SourceFactor.SRC_COLOR;
+            case GL46C.GL_ZERO -> SourceFactor.ZERO;
+            default -> throw new RuntimeException("Unknown SourceFactor with GL id of " + glId);
+        };
     }
 
-    public static boolean isOverridingBlending() {
-        return overrideRenderTypeBlending;
-    }
-
-    public static void disableBlendingOverride() {
-        overrideRenderTypeBlending = false;
+    public static DestFactor toDestFactor(int glId) {
+        return switch (glId) {
+            case GL46C.GL_CONSTANT_ALPHA -> DestFactor.CONSTANT_ALPHA;
+            case GL46C.GL_CONSTANT_COLOR -> DestFactor.CONSTANT_COLOR;
+            case GL46C.GL_DST_ALPHA -> DestFactor.DST_ALPHA;
+            case GL46C.GL_DST_COLOR -> DestFactor.DST_COLOR;
+            case GL46C.GL_ONE -> DestFactor.ONE;
+            case GL46C.GL_ONE_MINUS_CONSTANT_ALPHA -> DestFactor.ONE_MINUS_CONSTANT_ALPHA;
+            case GL46C.GL_ONE_MINUS_CONSTANT_COLOR -> DestFactor.ONE_MINUS_CONSTANT_COLOR;
+            case GL46C.GL_ONE_MINUS_DST_ALPHA -> DestFactor.ONE_MINUS_DST_ALPHA;
+            case GL46C.GL_ONE_MINUS_DST_COLOR -> DestFactor.ONE_MINUS_DST_COLOR;
+            case GL46C.GL_ONE_MINUS_SRC_ALPHA -> DestFactor.ONE_MINUS_SRC_ALPHA;
+            case GL46C.GL_ONE_MINUS_SRC_COLOR -> DestFactor.ONE_MINUS_SRC_COLOR;
+            case GL46C.GL_SRC_ALPHA -> DestFactor.SRC_ALPHA;
+            case GL46C.GL_SRC_COLOR -> DestFactor.SRC_COLOR;
+            case GL46C.GL_ZERO -> DestFactor.ZERO;
+            default -> throw new RuntimeException("Unknown DestFactor with GL id of " + glId);
+        };
     }
 }

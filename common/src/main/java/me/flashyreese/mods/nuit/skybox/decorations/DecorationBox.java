@@ -10,17 +10,17 @@ import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import me.flashyreese.mods.nuit.util.Utils;
+import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
 
@@ -58,9 +58,10 @@ public class DecorationBox extends AbstractSkybox {
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
-        RenderSystem.enableBlend();
-        Utils.enableBlendingOverride();
-        this.blend.apply(this.alpha);
+        OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
+        Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+        RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+
         poseStack.pushPose();
         this.properties.rotation().apply(poseStack, level);
 
@@ -70,7 +71,6 @@ public class DecorationBox extends AbstractSkybox {
         // poseStack.mulPose(Axis.ZP.rotationDegrees(IrisCompat.getSunPathRotation()));
         // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
-        RenderSystem.setShader(CoreShaders.POSITION_TEX);
         if (this.sunEnabled) {
             this.renderSun(bufferSource, poseStack);
         }
@@ -79,15 +79,17 @@ public class DecorationBox extends AbstractSkybox {
             this.renderMoon(level.getMoonPhase(), bufferSource, poseStack);
         }
 
-        bufferSource.endBatch();
+        if (this.sunEnabled || this.moonEnabled) {
+            bufferSource.endBatch();
+        }
+
         if (this.starsEnabled) {
-            this.renderStars(skyRendererAccessor, level, poseStack, fogParameters, tickDelta);
+            skyRendererAccessor.invokeRenderStars(fogParameters, level.getStarBrightness(tickDelta), poseStack);
         }
 
         poseStack.popPose();
-        RenderSystem.defaultBlendFunc();
-        Utils.disableBlendingOverride();
-        RenderSystem.disableBlend();
+        OverrideUtils.disableBlendingOverride();
+        GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
     }
 
     public void renderSun(MultiBufferSource multiBufferSource, PoseStack poseStack) {
@@ -116,21 +118,6 @@ public class DecorationBox extends AbstractSkybox {
         vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, -20.0F).setUv(endX, startY).setColor(p);
     }
 
-    public void renderStars(SkyRendererAccessor skyRendererAccessor, ClientLevel level, PoseStack poseStack, FogParameters fogParameters, float tickDelta) {
-        float brightness = level.getStarBrightness(tickDelta);
-        if (brightness > 0.0F) {
-            Matrix4fStack matrix4fStack = RenderSystem.getModelViewStack();
-            matrix4fStack.pushMatrix();
-            matrix4fStack.mul(poseStack.last().pose());
-            RenderSystem.setShaderColor(brightness, brightness, brightness, brightness);
-            RenderSystem.setShaderFog(FogParameters.NO_FOG);
-            skyRendererAccessor.getStarsBuffer().drawWithRenderType(RenderType.stars());
-            RenderSystem.setShaderFog(fogParameters);
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            matrix4fStack.popMatrix();
-        }
-    }
-
     public ResourceLocation getSunTexture() {
         return this.sunTexture;
     }
@@ -153,5 +140,9 @@ public class DecorationBox extends AbstractSkybox {
 
     public Blend getBlend() {
         return this.blend;
+    }
+
+    @Override
+    public void close() {
     }
 }

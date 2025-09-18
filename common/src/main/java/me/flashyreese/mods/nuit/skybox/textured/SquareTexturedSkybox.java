@@ -1,6 +1,13 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
+import com.mojang.blaze3d.buffers.BufferType;
+import com.mojang.blaze3d.buffers.BufferUsage;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -9,12 +16,15 @@ import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
 import java.util.List;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 public class SquareTexturedSkybox extends TexturedSkybox {
     public static Codec<SquareTexturedSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -25,30 +35,54 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     ).apply(instance, SquareTexturedSkybox::new));
 
     protected Texture texture;
-
+    private int indexCount = 0;
+    private RenderSystem.AutoStorageIndexBuffer skyIndices;
+    private GpuBuffer vertexBuffer = null;
     public SquareTexturedSkybox(Properties properties, Conditions conditions, Blend blend, Texture texture) {
         super(properties, conditions, blend);
         this.texture = texture;
+        this.buildSky();
+    }
+
+    private void buildSky() {
+        VertexFormat vertexFormat = DefaultVertexFormat.POSITION_TEX;
+        VertexFormat.Mode vertexFormatMode = VertexFormat.Mode.QUADS;
+
+        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(vertexFormat.getVertexSize() * 24);
+        BufferBuilder builder = new BufferBuilder(byteBufferBuilder, vertexFormatMode, vertexFormat);
+        for (int face = 0; face < 6; face++) {
+            UVRange tex = Utils.TEXTURE_FACES[face];
+            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+            builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.minU(), tex.minV());
+            builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.minU(), tex.maxV());
+            builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
+            builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
+        }
+
+        skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
+        try (MeshData meshData = builder.build()) {
+            if (meshData != null) {
+                this.indexCount = meshData.drawState().indexCount();
+                this.vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Square textured skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+            }
+        }
     }
 
     @Override
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
-        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        for (int face = 0; face < 6; face++) {
-            // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
-            UVRange tex = Utils.TEXTURE_FACES[face];
-            poseStack.pushPose();
-            Utils.rotateSkyBoxByFace(poseStack, face);
-            Matrix4f matrix4f = poseStack.last().pose();
-            builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.minU(), tex.minV());
-            builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.minU(), tex.maxV());
-            builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
-            builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
-            poseStack.popPose();
+        if (this.vertexBuffer != null) {
+            GpuTexture texture = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTexture();
+            RenderPipeline pipeline = TEXTURED_SKYBOX_PIPELINE_CONSUMER.apply(this.getBlend().getBlendFunction());
+            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
+                renderPass.setPipeline(pipeline);
+                renderPass.setVertexBuffer(0, this.vertexBuffer);
+                renderPass.setIndexBuffer(this.skyIndices.getBuffer(this.indexCount), this.skyIndices.type());
+                renderPass.bindSampler("Sampler0", texture);
+                renderPass.drawIndexed(0, this.indexCount);
+            }
         }
-        RenderSystem.setShaderTexture(0, this.texture.getTextureId());
-        BufferUploader.drawWithShader(builder.buildOrThrow());
     }
 
     @Override
@@ -58,5 +92,13 @@ public class SquareTexturedSkybox extends TexturedSkybox {
 
     public Texture getTexture() {
         return this.texture;
+    }
+
+    @Override
+    public void close() {
+        if (this.vertexBuffer != null) {
+            this.vertexBuffer.close();
+            this.vertexBuffer = null;
+        }
     }
 }
