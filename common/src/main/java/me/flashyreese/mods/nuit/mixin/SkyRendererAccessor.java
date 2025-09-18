@@ -1,7 +1,6 @@
 package me.flashyreese.mods.nuit.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,5 +20,5 @@ public interface SkyRendererAccessor {
     }
 
     @Invoker("renderStars")
-    void invokeRenderStars(FogParameters fogParameters, float tickDelta, PoseStack poseStack);
+    void invokeRenderStars(float tickDelta, PoseStack poseStack);
 }

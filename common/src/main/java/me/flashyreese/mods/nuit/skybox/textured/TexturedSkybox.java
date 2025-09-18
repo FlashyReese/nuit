@@ -1,5 +1,6 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -18,7 +19,6 @@ import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4fStack;
@@ -30,7 +30,7 @@ import java.util.function.Function;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
     public static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_CONSUMER = (blendFunction) -> {
-        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesColorSnippet());
+        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
         builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
         builder.withVertexShader("core/position_tex");
         builder.withFragmentShader("core/position_tex");
@@ -69,9 +69,9 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      * @param tickDelta         The current tick delta.
      */
     @Override
-    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-        RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+        //RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
@@ -82,12 +82,12 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters);
         modelViewStack.popMatrix();
 
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        //RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
     }
 
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters);
 }

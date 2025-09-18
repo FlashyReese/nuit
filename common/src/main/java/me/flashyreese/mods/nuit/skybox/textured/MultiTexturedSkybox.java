@@ -1,13 +1,12 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
-import com.mojang.blaze3d.buffers.BufferType;
-import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -17,7 +16,6 @@ import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -45,7 +43,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         for (int face = 0; face < 6; ++face) {
             Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
@@ -75,20 +73,20 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                     MeshData meshData = builder.build();
                     if (meshData != null) {
                         indexCount = meshData.drawState().indexCount();
-                        vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Multi textured skybox", BufferType.VERTICES, BufferUsage.DYNAMIC_WRITE, meshData.vertexBuffer());
+                        vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Multi textured skybox", GpuBuffer.USAGE_COPY_DST, meshData.vertexBuffer());
                     }
 
                     if (vertexBuffer != null) {
                         RenderSystem.AutoStorageIndexBuffer autoStorageIndexBuffer = RenderSystem.getSequentialBuffer(vertexFormatMode);
-                        GpuTexture texture = Minecraft.getInstance().getTextureManager().getTexture(animatableTexture.getTexture().getTextureId()).getTexture();
+                        GpuTextureView texture = Minecraft.getInstance().getTextureManager().getTexture(animatableTexture.getTexture().getTextureId()).getTextureView();
                         RenderPipeline pipeline = TEXTURED_SKYBOX_PIPELINE_CONSUMER.apply(this.getBlend().getBlendFunction());
                         RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-                        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
+                        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Nuit Sky Rendering", renderTarget.getColorTextureView(), OptionalInt.empty(), renderTarget.getDepthTextureView(), OptionalDouble.empty())) {
                             renderPass.setPipeline(pipeline);
                             renderPass.setVertexBuffer(0, vertexBuffer);
                             renderPass.setIndexBuffer(autoStorageIndexBuffer.getBuffer(indexCount), autoStorageIndexBuffer.type());
                             renderPass.bindSampler("Sampler0", texture);
-                            renderPass.drawIndexed(0, indexCount);
+                            renderPass.drawIndexed(0, 0, indexCount, 1);
                         } finally {
                             vertexBuffer.close();
                             meshData.close();

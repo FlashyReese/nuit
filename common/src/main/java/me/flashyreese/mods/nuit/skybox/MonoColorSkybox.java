@@ -1,8 +1,7 @@
 package me.flashyreese.mods.nuit.skybox;
 
-import com.mojang.blaze3d.buffers.BufferType;
-import com.mojang.blaze3d.buffers.BufferUsage;
 import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -21,7 +20,6 @@ import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -34,7 +32,7 @@ import java.util.function.Function;
 
 public class MonoColorSkybox extends AbstractSkybox {
     private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_PIPELINE_CONSUMER = (blendFunction) -> {
-        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesColorSnippet());
+        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
         builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/mono_color_skybox"));
         builder.withVertexShader("core/position_color");
         builder.withFragmentShader("core/position_color");
@@ -84,28 +82,28 @@ public class MonoColorSkybox extends AbstractSkybox {
         try (MeshData meshData = builder.build()) {
             if (meshData != null) {
                 this.indexCount = meshData.drawState().indexCount();
-                this.vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Mono color skybox", BufferType.VERTICES, BufferUsage.STATIC_WRITE, meshData.vertexBuffer());
+                this.vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Mono color skybox", GpuBuffer.USAGE_COPY_DST, meshData.vertexBuffer());
             }
         }
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         if (this.alpha > 0 && this.vertexBuffer != null) {
             Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-            RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+            //RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
             RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
             RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty(), renderTarget.getDepthTexture(), OptionalDouble.empty())) {
+            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Nuit Sky Rendering", renderTarget.getColorTextureView(), OptionalInt.empty(), renderTarget.getDepthTextureView(), OptionalDouble.empty())) {
                 renderPass.setPipeline(pipeline);
                 renderPass.setVertexBuffer(0, this.vertexBuffer);
                 renderPass.setIndexBuffer(this.skyIndices.getBuffer(this.indexCount), this.skyIndices.type());
-                renderPass.drawIndexed(0, this.indexCount);
+                renderPass.drawIndexed(0, 0, this.indexCount, 1);
             }
 
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            //RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // fixme: ?????? we should avoid calling gl calls outside of blaze3d
         }
     }

@@ -7,8 +7,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(RenderPipelines.class)
 public interface RenderPipelinesAccessor {
-    @Accessor("MATRICES_COLOR_SNIPPET")
-    static RenderPipeline.Snippet getMatricesColorSnippet() {
+    @Accessor("MATRICES_PROJECTION_SNIPPET")
+    static RenderPipeline.Snippet getMatricesProjectSnippet() {
         return null;
     }
 }

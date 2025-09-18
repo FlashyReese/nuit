@@ -1,5 +1,6 @@
 package me.flashyreese.mods.nuit.skybox.decorations;
 
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -13,7 +14,6 @@ import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
@@ -54,13 +54,13 @@ public class DecorationBox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-        RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+        //RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
 
         poseStack.pushPose();
         this.properties.rotation().apply(poseStack, level);
@@ -84,7 +84,7 @@ public class DecorationBox extends AbstractSkybox {
         }
 
         if (this.starsEnabled) {
-            skyRendererAccessor.invokeRenderStars(fogParameters, level.getStarBrightness(tickDelta), poseStack);
+            skyRendererAccessor.invokeRenderStars(level.getStarBrightness(tickDelta), poseStack);
         }
 
         poseStack.popPose();

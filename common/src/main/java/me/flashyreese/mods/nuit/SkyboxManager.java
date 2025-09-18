@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.JsonOps;
@@ -18,7 +19,6 @@ import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.core.Holder;
@@ -126,12 +126,12 @@ public class SkyboxManager implements NuitApi {
     }
 
     @Internal
-    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, FogParameters fogParameters) {
+    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
         for (Skybox skybox : this.activeSkyboxes) {
             this.currentSkybox = skybox;
             skybox.render(skyRendererAccessor, poseStack, tickDelta, camera, bufferSource, fogParameters);
         }
-        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+        //RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }
 
     public boolean isEnabled() {
