@@ -42,7 +42,7 @@ public abstract class MixinLevelRenderer {
     /**
      * Contains the logic for when skyboxes should be rendered.
      */
-    @Inject(method = {"method_62215", "lambda$addSkyPass$12"}, require = 1, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lnet/minecraft/client/renderer/FogParameters;)V", shift = At.Shift.AFTER), cancellable = true)
+    @Inject(method = {"method_62215", "lambda$addSkyPass$13"}, require = 1, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lnet/minecraft/client/renderer/FogParameters;)V", shift = At.Shift.AFTER), cancellable = true)
     private void nuit$renderCustomSkyboxes(CallbackInfo ci) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {

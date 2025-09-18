@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.johnrengelman.shadow"
+    id 'com.gradleup.shadow'
 }
 
 architectury {
@@ -50,9 +50,9 @@ processResources {
 
 shadowJar {
     configurations = [project.configurations.shadowBundle]
-    archiveClassifier = "dev-shadow"
+    archiveClassifier = 'dev-shadow'
 }
 
 remapJar {
-    input.set shadowJar.archiveFile
+    inputFile.set shadowJar.archiveFile
 }
