@@ -1,50 +1,44 @@
 package me.flashyreese.mods.nuit.skybox.vanilla;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
+import me.flashyreese.mods.nuit.util.BufferUploader;
+import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
-
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
+import org.joml.Matrix4fStack;
 
 public class EndSkybox extends AbstractSkybox {
     public static Codec<EndSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions)
     ).apply(instance, EndSkybox::new));
-    private int indexCount = 0;
-    private RenderSystem.AutoStorageIndexBuffer skyIndices;
-    private GpuBuffer vertexBuffer = null;
+
     public EndSkybox(Properties properties, Conditions conditions) {
         super(properties, conditions);
-        buildSky();
     }
 
-    private void buildSky() {
-        VertexFormat vertexFormat = DefaultVertexFormat.POSITION_TEX_COLOR;
-        VertexFormat.Mode vertexFormatMode = VertexFormat.Mode.QUADS;
-
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(vertexFormat.getVertexSize() * 24);
-        BufferBuilder builder = new BufferBuilder(byteBufferBuilder, vertexFormatMode, vertexFormat);
+    @Override
+    public void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+        RenderPipeline pipeline = RenderPipelines.END_SKY;
+        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24);
+        BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
         for (int face = 0; face < 6; ++face) {
             int color = ARGB.color(0x282828, (int) (255 * this.alpha));
             Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
@@ -54,40 +48,19 @@ public class EndSkybox extends AbstractSkybox {
             builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(color);
         }
 
-        skyIndices = RenderSystem.getSequentialBuffer(vertexFormatMode);
-        try (MeshData meshData = builder.build()) {
-            if (meshData != null) {
-                this.indexCount = meshData.drawState().indexCount();
-                this.vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "End skybox", GpuBuffer.USAGE_COPY_DST, meshData.vertexBuffer());
-            }
-        }
-    }
-
-    @Override
-    public void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
-        if (this.vertexBuffer != null) {
-            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            AbstractTexture abstractTexture = textureManager.getTexture(SkyRenderer.END_SKY_LOCATION);
-            abstractTexture.setFilter(false, false);
-            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Nuit Sky Rendering", renderTarget.getColorTextureView(), OptionalInt.empty(), renderTarget.getDepthTextureView(), OptionalDouble.empty())) {
-                renderPass.setPipeline(RenderPipelines.END_SKY);
-                renderPass.setVertexBuffer(0, null);
-                renderPass.setIndexBuffer(this.skyIndices.getBuffer(this.indexCount), this.skyIndices.type());
-                renderPass.bindSampler("Sampler0", abstractTexture.getTextureView());
-                renderPass.drawIndexed(0, 0, this.indexCount, 1);
-            } finally {
-                this.vertexBuffer.close();
-            }
-        }
+        GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
+        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+        AbstractTexture abstractTexture = textureManager.getTexture(SkyRenderer.END_SKY_LOCATION);
+        abstractTexture.setFilter(false, false);
+        GpuTextureView endSkyTextureView = abstractTexture.getTextureView();
+        BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
+            pass.setUniform("DynamicTransforms", dynamicTransforms);
+            pass.bindSampler("Sampler0", endSkyTextureView);
+        });
     }
 
     @Override
     public void close() {
-        if (this.vertexBuffer != null) {
-            this.vertexBuffer.close();
-            this.vertexBuffer = null;
-        }
     }
 }
 

@@ -24,6 +24,7 @@ import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.ApiStatus.Internal;
+import org.joml.Matrix4fStack;
 
 import java.util.*;
 
@@ -126,10 +127,10 @@ public class SkyboxManager implements NuitApi {
     }
 
     @Internal
-    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
+    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
         for (Skybox skybox : this.activeSkyboxes) {
             this.currentSkybox = skybox;
-            skybox.render(skyRendererAccessor, poseStack, tickDelta, camera, bufferSource, fogParameters);
+            skybox.render(skyRendererAccessor, matrix4fStack, tickDelta, camera, fogParameters);
         }
         //RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }

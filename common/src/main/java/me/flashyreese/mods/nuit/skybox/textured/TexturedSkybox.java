@@ -3,9 +3,7 @@ package me.flashyreese.mods.nuit.skybox.textured;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.components.Blend;
@@ -16,11 +14,12 @@ import me.flashyreese.mods.nuit.mixin.RenderPipelinesAccessor;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
+import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
@@ -69,25 +68,24 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      * @param tickDelta         The current tick delta.
      */
     @Override
-    public final void render(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
+    public final void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-        //RenderSystem.setShaderColor(colorModifier.x, colorModifier.y, colorModifier.z, colorModifier.w);
+        DynamicTransformsBuilder transformsBuilder = new DynamicTransformsBuilder()
+                .withShaderColor(colorModifier);
 
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
-        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
-        modelViewStack.pushMatrix();
-        // TODO/NOTE: Should modelViewStack inherit the current pose from poseStack?
+        matrix4fStack.pushMatrix();
+        // TODO/NOTE: Should matrix4fStack inherit the current pose from poseStack?
         //  (currently idk if poseStack contains anything so I just ignored it)
-        this.rotation.apply(modelViewStack, level);
-        this.renderSkybox(skyRendererAccess, poseStack, tickDelta, camera, bufferSource, fogParameters);
-        modelViewStack.popMatrix();
+        this.rotation.apply(matrix4fStack, level);
+        this.renderSkybox(skyRendererAccess, matrix4fStack, tickDelta, camera, transformsBuilder, fogParameters);
+        matrix4fStack.popMatrix();
 
-        //RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
     }
 
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4f, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters);
 }

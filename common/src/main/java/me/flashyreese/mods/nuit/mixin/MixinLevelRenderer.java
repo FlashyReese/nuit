@@ -2,6 +2,7 @@ package me.flashyreese.mods.nuit.mixin;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import net.minecraft.client.Camera;
@@ -46,13 +47,11 @@ public abstract class MixinLevelRenderer {
     private void nuit$renderCustomSkyboxes(CallbackInfo ci) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {
-            PoseStack poseStack = new PoseStack();
             skyboxManager.renderSkyboxes(
                     (SkyRendererAccessor) skyRenderer,
-                    poseStack,
+                    RenderSystem.getModelViewStack(),
                     this.nuit$tickDelta,
                     Minecraft.getInstance().gameRenderer.getMainCamera(),
-                    this.renderBuffers.bufferSource(),
                     this.nuit$fogParameters
             );
             ci.cancel();

@@ -1,9 +1,10 @@
 package me.flashyreese.mods.nuit.skybox.vanilla;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -13,14 +14,15 @@ import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.skybox.decorations.DecorationBox;
+import me.flashyreese.mods.nuit.util.BufferUploader;
+import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 public class OverworldSkybox extends AbstractSkybox {
     public static Codec<OverworldSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -33,7 +35,7 @@ public class OverworldSkybox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, PoseStack poseStack, float tickDelta, Camera camera, MultiBufferSource.BufferSource bufferSource, GpuBufferSlice fogParameters) {
+    public void render(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
         RenderSystem.setShaderFog(fogParameters);
 
         ClientLevel level = (ClientLevel) camera.getEntity().level();
@@ -49,7 +51,7 @@ public class OverworldSkybox extends AbstractSkybox {
                 sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1);
             }
 
-            this.renderSunriseAndSunset(poseStack, bufferSource, sunAngle, sunriseOrSunsetColor);
+            this.renderSunriseAndSunset(matrix4fStack, sunAngle, sunriseOrSunsetColor);
         }
 
         // Dark Sky
@@ -59,20 +61,21 @@ public class OverworldSkybox extends AbstractSkybox {
         }
     }
 
-    private void renderSunriseAndSunset(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource, float sunAngle, int sunriseOrSunsetColor) {
-        poseStack.pushPose();
+    private void renderSunriseAndSunset(Matrix4fStack matrix4fStack, float sunAngle, int sunriseOrSunsetColor) {
+        matrix4fStack.pushMatrix();
 
         // Rotate to orient the effect properly
-        poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+        matrix4fStack.rotate(Axis.XP.rotationDegrees(90.0F));
         float zRotation = Mth.sin(sunAngle) < 0.0F ? 180.0F : 0.0F;
-        poseStack.mulPose(Axis.ZP.rotationDegrees(zRotation));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
+        matrix4fStack.rotate(Axis.ZP.rotationDegrees(zRotation));
+        matrix4fStack.rotate(Axis.ZP.rotationDegrees(90.0F));
 
-        Matrix4f transformationMatrix = poseStack.last().pose();
-        VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.sunriseSunset());
+        RenderPipeline pipeline = RenderPipelines.SUNRISE_SUNSET;
+        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 17);
+        BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
 
         float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
-        vertexConsumer.addVertex(transformationMatrix, 0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
+        bufferBuilder.addVertex(matrix4fStack, 0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
 
         int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
         for (int i = 0; i <= 16; i++) {
@@ -80,11 +83,11 @@ public class OverworldSkybox extends AbstractSkybox {
             float x = Mth.sin(angleRadians);
             float y = Mth.cos(angleRadians);
             float z = -y * 40.0F * alpha;
-            vertexConsumer.addVertex(transformationMatrix, x * 120.0F, y * 120.0F, z).setColor(transparentColor);
+            bufferBuilder.addVertex(matrix4fStack, x * 120.0F, y * 120.0F, z).setColor(transparentColor);
         }
-
-        bufferSource.endBatch();
-        poseStack.popPose();
+        GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
+        BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> pass.setUniform("DynamicTransforms", dynamicTransforms));
+        matrix4fStack.popMatrix();
     }
 
     @Override
