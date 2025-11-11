@@ -1,0 +1,8 @@
+{
+  "category.nuit": "Nuit",
+  "key.nuit.toggle": "Nuit umstellen",
+  "nuit.message.enabled": "Nuit aktiviert!",
+  "nuit.message.disabled": "Nuit deaktiviert!",
+  "key.nuit.toggle.debug_hud": "Debug Hud umschalten",
+  "key.nuit.toggle.debug_screen": "Debug-ansicht umschalten"
+}
