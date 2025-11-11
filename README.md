@@ -2,36 +2,74 @@
 
 # Nuit
 
-#### Implements custom skyboxes, like OptiFine! (With a different format)
+Formerly known as **FabricSkyBoxes**, **Nuit** is a powerful and flexible custom skybox engine for Minecraft.  
+It goes far beyond OptiFine’s skybox system, offering rich features like **keyframe-based transitions**, **rotation**, **custom weather rendering**, and now full support for both **Fabric** and **NeoForge**!
 
-![](https://cdn.modrinth.com/data/YBz7DOs8/images/49eab46d1e74e8f781404a8f773a1a09dedda5aa.png)
-_Screenshot taken with the [Awesome Skies](https://github.com/heymanMC/Awesome-Skies) resource pack, a pack made to
-run **only** under Nuit_ (Credit: [heyman](https://github.com/heymanMC))
+Design immersive skies with dynamic day/night cycles, custom fog, sunrise/sunset glow, and more — all backed by a robust, extensible skybox format.
 
-</div>
+> ⚠️ Nuit is currently in **beta**. Some features may evolve over time. Feedback is welcome!
 
-## Purpose
+📘 **[View the Wiki and Format Documentation →](https://wiki.nuit.flashyreese.me/)**  
+📘 **[View the Legacy Documentation →](https://github.com/FlashyReese/nuit/tree/1.21.8/dev/docs)**
 
-This mod's purpose is to allow the specification of custom skyboxes, with any textures that you may want!
+🧪 [Source Code on GitHub](https://github.com/FlashyReese/nuit)
 
-## Usage
+---
 
-### Nuit skybox format
+## ✨ Showcase
 
-The documentation on this format can be found [here](docs).
+### [Hyper Realistic Sky](https://www.curseforge.com/minecraft/texture-packs/hyper-realistic-skybox-sun-moon-clouds) by [UsernameGeri](https://modrinth.com/user/UsernameGeri)
+![Day](https://i.imgur.com/dXlfCnp.png)
+![Sunset](https://i.imgur.com/31p2nCQ.png)
 
-### OptiFine skybox format
+### [Awesome Skies](https://www.curseforge.com/minecraft/texture-packs/awesome-skies) by [heyman](https://github.com/heymanMC)
+![Sunset](https://i.imgur.com/AmTrTRh.jpg)
+![Night](https://i.imgur.com/dNaztlK.png)
 
-It is **out of the scope** of this mod to support the OptiFine format by
-itself. [Nuit Interop](https://modrinth.com/mod/nuit-interop) is designed as an add-on to Nuit to achieve
-compatibility with the OptiFine format.
+### [Kal's Grimdark Sky Pack](https://www.curseforge.com/minecraft/texture-packs/grimdark-sky) by [Kalam0n](https://legacy.curseforge.com/members/kalam0n)
+![Twilight](https://media.forgecdn.net/attachments/386/166/grimdark-twilight.png)
+![Sunrise](https://media.forgecdn.net/attachments/386/168/grimdark-sunrise.png)
 
-## Suggestions / Support
+---
 
-You can report bugs-issues or suggest new features in
-the [Issues section](https://github.com/AMereBagatelle/fabricskyboxes/issues), or in
-the [Discord server](https://discord.gg/quvzkaV).
+## 🔧 Features
 
-## License
+- 🌍 Fabric and NeoForge support (multiloader architecture)
+- 🔁 **Keyframeable `fade` and `rotation`** transitions
+- 🌄 Custom sunrise, sunset, night, and weather rendering
+- 🌫️ Fog customization per skybox
+- 🎛️ Modular, JSON-based config system
+- 📦 Optimized texture loading and runtime performance
 
-This mod is licensed under the [MIT License](LICENSE).
+---
+
+## 🌐 Skybox Format
+
+Nuit uses a custom JSON-based format designed for flexibility and future-proofing.  
+You can create highly detailed and dynamic skyboxes with precise control over how and when they're rendered.
+
+📚 Learn how to create your own: [Wiki Format Documentation](https://wiki.nuit.flashyreese.me/)
+
+---
+
+## ❓ Frequently Asked Questions
+
+- **Can I use OptiFine/MCPatcher skybox packs?**  
+  Nuit does **not** support those formats natively. Use tools like [MCPatcherPatcher++](https://www.curseforge.com/minecraft/mc-mods/mcpppp) or [Nuit Interop](https://curseforge.com/minecraft/mc-mods/nuit-interop) to convert them.
+
+- **Is it modpack friendly?**  
+  Yes! Nuit is licensed under MIT and fully modpack-compatible.
+
+- **What happened to FabricSkyBoxes?**  
+  FabricSkyBoxes has been rebranded to **Nuit** to reflect its expanded scope beyond Fabric.
+
+---
+
+## 💬 Community & Support
+
+- 💡 [Feature suggestions & issue tracker](https://github.com/FlashyReese/nuit/issues)
+- 🗨️ Join our [Discord](https://flashyreese.me/discord) for help, discussion, and previews.
+
+---
+
+Breathe new life into your Minecraft skies — with **Nuit** 🌌
