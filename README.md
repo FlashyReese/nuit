@@ -23,7 +23,7 @@ The documentation on this format can be found [here](docs).
 ### OptiFine skybox format
 
 It is **out of the scope** of this mod to support the OptiFine format by
-itself. [FSB-Interop](https://modrinth.com/mod/fabricskyboxes-interop) is designed as an add-on to Nuit to achieve
+itself. [Nuit Interop](https://modrinth.com/mod/nuit-interop) is designed as an add-on to Nuit to achieve
 compatibility with the OptiFine format.
 
 ## Suggestions / Support
