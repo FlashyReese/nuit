@@ -4,6 +4,7 @@
   "package": "me.flashyreese.mods.nuit.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "MixinAirBasedFogEnvironment",
     "MixinFogRenderer",
     "MixinGlCommandEncoder",
     "MixinLevelRenderer",
