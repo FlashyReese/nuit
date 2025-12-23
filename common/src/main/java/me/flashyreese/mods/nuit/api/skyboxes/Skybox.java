@@ -7,7 +7,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4fStack;
 
-public interface Skybox extends AutoCloseable {
+public interface Skybox {
     default int getLayer() {
         return 0;
     }

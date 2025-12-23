@@ -59,9 +59,5 @@ public class EndSkybox extends AbstractSkybox {
             pass.bindSampler("Sampler0", endSkyTextureView);
         });
     }
-
-    @Override
-    public void close() {
-    }
 }
 

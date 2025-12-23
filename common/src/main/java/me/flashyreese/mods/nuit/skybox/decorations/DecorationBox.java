@@ -142,8 +142,4 @@ public class DecorationBox extends AbstractSkybox {
     public Blend getBlend() {
         return this.blend;
     }
-
-    @Override
-    public void close() {
-    }
 }

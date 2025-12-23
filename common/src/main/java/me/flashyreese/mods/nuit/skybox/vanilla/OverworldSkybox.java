@@ -90,8 +90,4 @@ public class OverworldSkybox extends AbstractSkybox {
         BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> pass.setUniform("DynamicTransforms", dynamicTransforms));
         matrix4fStack.popMatrix();
     }
-
-    @Override
-    public void close() {
-    }
 }

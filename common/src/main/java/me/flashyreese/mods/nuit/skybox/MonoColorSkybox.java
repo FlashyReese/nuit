@@ -88,9 +88,4 @@ public class MonoColorSkybox extends AbstractSkybox {
     public Blend getBlend() {
         return this.blend;
     }
-
-
-    @Override
-    public void close() {
-    }
 }

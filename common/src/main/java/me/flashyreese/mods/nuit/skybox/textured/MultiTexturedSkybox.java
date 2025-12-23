@@ -83,8 +83,4 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     public List<ResourceLocation> getTexturesToRegister() {
         return this.animatableTextures.stream().map(texture -> texture.getTexture().getTextureId()).toList();
     }
-
-    @Override
-    public void close() {
-    }
 }

@@ -69,8 +69,4 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     public Texture getTexture() {
         return this.texture;
     }
-
-    @Override
-    public void close() {
-    }
 }

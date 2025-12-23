@@ -111,13 +111,6 @@ public class SkyboxManager implements NuitApi {
     @Internal
     public void clearSkyboxes() {
         DefaultHandler.clearConditionsExcept(this.permanentSkyboxMap.values());
-        this.activeSkyboxes.forEach(skybox -> {
-            try {
-                skybox.close();
-            } catch (Exception e) {
-                NuitClient.getLogger().warn("Error while closing active skybox", e);
-            }
-        });
         this.skyboxMap.clear();
         this.activeSkyboxes.clear();
         this.preloadedTextures.forEach(texture -> Minecraft.getInstance().getTextureManager().release(texture));
