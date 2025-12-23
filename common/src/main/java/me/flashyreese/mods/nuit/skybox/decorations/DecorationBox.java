@@ -1,12 +1,9 @@
 package me.flashyreese.mods.nuit.skybox.decorations;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.components.Blend;
@@ -14,17 +11,15 @@ import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import me.flashyreese.mods.nuit.util.BufferUploader;
-import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
-import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
@@ -59,15 +54,12 @@ public class DecorationBox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+    public void render(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
+        PoseStack poseStack = new PoseStack();
         RenderSystem.setShaderFog(fogParameters);
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
 
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
-        Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-        GpuBufferSlice gpuBufferSlice = new DynamicTransformsBuilder()
-                .withShaderColor(colorModifier)
-                .build();
 
         matrix4fStack.pushMatrix();
         this.properties.rotation().apply(matrix4fStack, level);
@@ -79,15 +71,19 @@ public class DecorationBox extends AbstractSkybox {
         // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
         if (this.sunEnabled) {
-            this.renderSun(matrix4fStack, gpuBufferSlice);
+            this.renderSun(bufferSource, poseStack);
         }
 
         if (this.moonEnabled) {
-            this.renderMoon(matrix4fStack, gpuBufferSlice, level.getMoonPhase());
+            this.renderMoon(level.getMoonPhase(), bufferSource, poseStack);
+        }
+
+        if (this.sunEnabled || this.moonEnabled) {
+            bufferSource.endBatch();
         }
 
         if (this.starsEnabled) {
-            PoseStack poseStack = new PoseStack();
+            //PoseStack poseStack = new PoseStack();
             poseStack.mulPose(matrix4fStack);
             skyRendererAccessor.invokeRenderStars(level.getStarBrightness(tickDelta), poseStack);
         }
@@ -97,42 +93,30 @@ public class DecorationBox extends AbstractSkybox {
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
     }
 
-    public void renderSun(Matrix4fStack matrix4fStack, GpuBufferSlice gpuBufferSlice) {
-        RenderPipeline pipeline = RenderPipelines.CELESTIAL;
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4);
-        BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-        int i = ARGB.white(1F);
-        bufferBuilder.addVertex(matrix4fStack, -30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F).setColor(i);
-        bufferBuilder.addVertex(matrix4fStack, 30.0F, 100.0F, -30.0F).setUv(1.0F, 0.0F).setColor(i);
-        bufferBuilder.addVertex(matrix4fStack, 30.0F, 100.0F, 30.0F).setUv(1.0F, 1.0F).setColor(i);
-        bufferBuilder.addVertex(matrix4fStack, -30.0F, 100.0F, 30.0F).setUv(0.0F, 1.0F).setColor(i);
-        GpuTextureView sunTextureView = Minecraft.getInstance().getTextureManager().getTexture(this.sunTexture).getTextureView();
-        BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> {
-            pass.setUniform("DynamicTransforms", gpuBufferSlice);
-            pass.bindSampler("Sampler0", sunTextureView);
-        });
+    private void renderSun(MultiBufferSource multiBufferSource, PoseStack poseStack) {
+        VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.celestial(this.sunTexture));
+        int i = ARGB.white(this.alpha);
+        Matrix4f matrix4f = poseStack.last().pose();
+        vertexConsumer.addVertex(matrix4f, -30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F).setColor(i);
+        vertexConsumer.addVertex(matrix4f, 30.0F, 100.0F, -30.0F).setUv(1.0F, 0.0F).setColor(i);
+        vertexConsumer.addVertex(matrix4f, 30.0F, 100.0F, 30.0F).setUv(1.0F, 1.0F).setColor(i);
+        vertexConsumer.addVertex(matrix4f, -30.0F, 100.0F, 30.0F).setUv(0.0F, 1.0F).setColor(i);
     }
 
-    public void renderMoon(Matrix4fStack matrix4fStack, GpuBufferSlice gpuBufferSlice, int moonPhase) {
+    private void renderMoon(int moonPhase, MultiBufferSource multiBufferSource, PoseStack poseStack) {
         int xCoord = moonPhase % 4;
         int yCoord = moonPhase / 4 % 2;
         float startX = xCoord / 4.0F;
         float startY = yCoord / 2.0F;
         float endX = (xCoord + 1) / 4.0F;
         float endY = (yCoord + 1) / 2.0F;
-        RenderPipeline pipeline = RenderPipelines.CELESTIAL;
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4);
-        BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-        int p = ARGB.white(1F);
-        bufferBuilder.addVertex(matrix4fStack, -20.0F, -100.0F, 20.0F).setUv(endX, endY).setColor(p);
-        bufferBuilder.addVertex(matrix4fStack, 20.0F, -100.0F, 20.0F).setUv(startX, endY).setColor(p);
-        bufferBuilder.addVertex(matrix4fStack, 20.0F, -100.0F, -20.0F).setUv(startX, startY).setColor(p);
-        bufferBuilder.addVertex(matrix4fStack, -20.0F, -100.0F, -20.0F).setUv(endX, startY).setColor(p);
-        GpuTextureView moonTextureView = Minecraft.getInstance().getTextureManager().getTexture(this.moonTexture).getTextureView();
-        BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> {
-            pass.setUniform("DynamicTransforms", gpuBufferSlice);
-            pass.bindSampler("Sampler0", moonTextureView);
-        });
+        VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.celestial(this.moonTexture));
+        int p = ARGB.white(this.alpha);
+        Matrix4f matrix4f = poseStack.last().pose();
+        vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, 20.0F).setUv(endX, endY).setColor(p);
+        vertexConsumer.addVertex(matrix4f, 20.0F, -100.0F, 20.0F).setUv(startX, endY).setColor(p);
+        vertexConsumer.addVertex(matrix4f, 20.0F, -100.0F, -20.0F).setUv(startX, startY).setColor(p);
+        vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, -20.0F).setUv(endX, startY).setColor(p);
     }
 
     public ResourceLocation getSunTexture() {

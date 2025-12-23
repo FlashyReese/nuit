@@ -18,8 +18,8 @@ import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
-import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
@@ -63,12 +63,13 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Overrides and makes final here as there are options that should always be respected in a textured skybox.
      *
-     * @param skyRendererAccess Access to the skyRenderer as skyboxes often require it.
      * @param poseStack         The current PoseStack.
+     * @param skyRendererAccess Access to the skyRenderer as skyboxes often require it.
      * @param tickDelta         The current tick delta.
+     * @param bufferSource
      */
     @Override
-    public final void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+    public final void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
         DynamicTransformsBuilder transformsBuilder = new DynamicTransformsBuilder()
                 .withShaderColor(colorModifier);
@@ -78,7 +79,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         // TODO/NOTE: Should matrix4fStack inherit the current pose from poseStack?
         //  (currently idk if poseStack contains anything so I just ignored it)
         this.rotation.apply(matrix4fStack, level);
-        this.renderSkybox(skyRendererAccess, matrix4fStack, tickDelta, camera, transformsBuilder, fogParameters);
+        this.renderSkybox(skyRendererAccess, matrix4fStack, tickDelta, camera, transformsBuilder, fogParameters, bufferSource);
         matrix4fStack.popMatrix();
 
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
@@ -87,5 +88,5 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4f, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4f, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource);
 }

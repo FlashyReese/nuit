@@ -52,7 +52,8 @@ public abstract class MixinLevelRenderer {
                     RenderSystem.getModelViewStack(),
                     this.nuit$tickDelta,
                     Minecraft.getInstance().gameRenderer.getMainCamera(),
-                    this.nuit$fogParameters
+                    this.nuit$fogParameters,
+                    this.renderBuffers.bufferSource()
             );
             ci.cancel();
         }
