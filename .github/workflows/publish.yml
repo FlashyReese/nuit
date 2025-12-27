@@ -60,6 +60,8 @@ jobs:
           version: '${{ github.event.release.tag_name }}+neoforge'
           version-type: release
 
+          game-versions: '1.21.8'
+
           loaders: neoforge
 
           files: |
