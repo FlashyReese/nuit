@@ -38,26 +38,26 @@ public class EndSkybox extends AbstractSkybox {
     @Override
     public void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderPipeline pipeline = RenderPipelines.END_SKY;
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24);
-        BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-        for (int face = 0; face < 6; ++face) {
-            int color = ARGB.color(0x282828, (int) (255 * this.alpha));
-            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-            builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(color);
-            builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(color);
-            builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(color);
-            builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(color);
-        }
+        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
+            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+            for (int face = 0; face < 6; ++face) {
+                int color = ARGB.color(0x282828, (int) (255 * this.alpha));
+                Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+                builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(color);
+                builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(0.0F, 16.0F).setColor(color);
+                builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(16.0F, 16.0F).setColor(color);
+                builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(16.0F, 0.0F).setColor(color);
+            }
 
-        GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
-        TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-        AbstractTexture abstractTexture = textureManager.getTexture(SkyRenderer.END_SKY_LOCATION);
-        abstractTexture.setFilter(false, false);
-        GpuTextureView endSkyTextureView = abstractTexture.getTextureView();
-        BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
-            pass.setUniform("DynamicTransforms", dynamicTransforms);
-            pass.bindSampler("Sampler0", endSkyTextureView);
-        });
+            GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
+            TextureManager textureManager = Minecraft.getInstance().getTextureManager();
+            AbstractTexture abstractTexture = textureManager.getTexture(SkyRenderer.END_SKY_LOCATION);
+            abstractTexture.setFilter(false, false);
+            GpuTextureView endSkyTextureView = abstractTexture.getTextureView();
+            BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
+                pass.setUniform("DynamicTransforms", dynamicTransforms);
+                pass.bindSampler("Sampler0", endSkyTextureView);
+            });
+        }
     }
 }
-

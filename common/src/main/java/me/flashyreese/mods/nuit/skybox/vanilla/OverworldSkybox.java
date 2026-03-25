@@ -72,22 +72,23 @@ public class OverworldSkybox extends AbstractSkybox {
         matrix4fStack.rotate(Axis.ZP.rotationDegrees(90.0F));
 
         RenderPipeline pipeline = RenderPipelines.SUNRISE_SUNSET;
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 17);
-        BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 17)) {
+            BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
 
-        float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
-        bufferBuilder.addVertex(matrix4fStack, 0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
+            float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
+            bufferBuilder.addVertex(matrix4fStack, 0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
 
-        int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
-        for (int i = 0; i <= 16; i++) {
-            float angleRadians = (float) i * ((float) Math.PI * 2F) / 16.0F;
-            float x = Mth.sin(angleRadians);
-            float y = Mth.cos(angleRadians);
-            float z = -y * 40.0F * alpha;
-            bufferBuilder.addVertex(matrix4fStack, x * 120.0F, y * 120.0F, z).setColor(transparentColor);
+            int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
+            for (int i = 0; i <= 16; i++) {
+                float angleRadians = (float) i * ((float) Math.PI * 2F) / 16.0F;
+                float x = Mth.sin(angleRadians);
+                float y = Mth.cos(angleRadians);
+                float z = -y * 40.0F * alpha;
+                bufferBuilder.addVertex(matrix4fStack, x * 120.0F, y * 120.0F, z).setColor(transparentColor);
+            }
+            GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
+            BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> pass.setUniform("DynamicTransforms", dynamicTransforms));
         }
-        GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
-        BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> pass.setUniform("DynamicTransforms", dynamicTransforms));
         matrix4fStack.popMatrix();
     }
 }

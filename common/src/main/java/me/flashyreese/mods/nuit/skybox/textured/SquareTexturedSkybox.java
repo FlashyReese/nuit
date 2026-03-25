@@ -43,22 +43,23 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderSystem.setShaderFog(fogParameters);
         RenderPipeline pipeline = TEXTURED_SKYBOX_PIPELINE_CONSUMER.apply(this.getBlend().getBlendFunction());
-        ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24);
-        BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-        for (int face = 0; face < 6; face++) {
-            UVRange tex = Utils.TEXTURE_FACES[face];
-            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-            builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.minU(), tex.minV());
-            builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.minU(), tex.maxV());
-            builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
-            builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
+        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
+            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+            for (int face = 0; face < 6; face++) {
+                UVRange tex = Utils.TEXTURE_FACES[face];
+                Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+                builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(tex.minU(), tex.minV());
+                builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setUv(tex.minU(), tex.maxV());
+                builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
+                builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
+            }
+            GpuBufferSlice dynamicTransforms = transformsBuilder.build();
+            GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTextureView();
+            BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
+                pass.setUniform("DynamicTransforms", dynamicTransforms);
+                pass.bindSampler("Sampler0", textureView);
+            });
         }
-        GpuBufferSlice dynamicTransforms = transformsBuilder.build();
-        GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTextureView();
-        BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
-            pass.setUniform("DynamicTransforms", dynamicTransforms);
-            pass.bindSampler("Sampler0", textureView);
-        });
     }
 
     @Override
