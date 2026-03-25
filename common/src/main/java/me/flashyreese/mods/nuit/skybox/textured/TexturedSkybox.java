@@ -24,11 +24,13 @@ import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
-    public static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_CONSUMER = (blendFunction) -> {
+    private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
         RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
         builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
         builder.withVertexShader("core/position_tex");
@@ -43,6 +45,8 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
         return builder.build();
     };
+    private static final Map<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINES = new IdentityHashMap<>();
+    private static RenderPipeline texturedSkyboxNoBlendPipeline;
     private final Rotation rotation;
     private final Blend blend;
 
@@ -58,6 +62,18 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
 
     public Blend getBlend() {
         return this.blend;
+    }
+
+    protected static RenderPipeline getTexturedSkyboxPipeline(BlendFunction blendFunction) {
+        if (blendFunction == null) {
+            if (texturedSkyboxNoBlendPipeline == null) {
+                texturedSkyboxNoBlendPipeline = TEXTURED_SKYBOX_PIPELINE_FACTORY.apply(null);
+            }
+
+            return texturedSkyboxNoBlendPipeline;
+        }
+
+        return TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, TEXTURED_SKYBOX_PIPELINE_FACTORY);
     }
 
     /**

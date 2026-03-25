@@ -45,7 +45,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderSystem.setShaderFog(fogParameters);
         GpuBufferSlice dynamicTransforms = transformsBuilder.build();
-        RenderPipeline pipeline = TEXTURED_SKYBOX_PIPELINE_CONSUMER.apply(this.getBlend().getBlendFunction());
+        RenderPipeline pipeline = getTexturedSkyboxPipeline(this.getBlend().getBlendFunction());
         for (AnimatableTexture animatableTexture : this.animatableTextures) {
             animatableTexture.tick();
         }

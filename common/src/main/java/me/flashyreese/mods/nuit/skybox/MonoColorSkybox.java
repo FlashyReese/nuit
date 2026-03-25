@@ -27,10 +27,12 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public class MonoColorSkybox extends AbstractSkybox {
-    private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_PIPELINE_CONSUMER = (blendFunction) -> {
+    private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
         RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
         builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/mono_color_skybox"));
         builder.withVertexShader("core/position_color");
@@ -44,6 +46,8 @@ public class MonoColorSkybox extends AbstractSkybox {
         builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS);
         return builder.build();
     };
+    private static final Map<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINES = new IdentityHashMap<>();
+    private static RenderPipeline monoColorSkyboxNoBlendPipeline;
     public static Codec<MonoColorSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions),
@@ -67,7 +71,7 @@ public class MonoColorSkybox extends AbstractSkybox {
             GpuBufferSlice dynamicTransforms = DynamicTransformsBuilder.of()
                     .withShaderColor(colorModifier)
                     .build();
-            RenderPipeline pipeline = MONO_COLOR_SKYBOX_PIPELINE_CONSUMER.apply(this.blend.getBlendFunction());
+            RenderPipeline pipeline = getMonoColorSkyboxPipeline(this.blend.getBlendFunction());
             try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
                 BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
                 for (int face = 0; face < 6; ++face) {
@@ -80,6 +84,18 @@ public class MonoColorSkybox extends AbstractSkybox {
                 BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> pass.setUniform("DynamicTransforms", dynamicTransforms));
             }
         }
+    }
+
+    private static RenderPipeline getMonoColorSkyboxPipeline(BlendFunction blendFunction) {
+        if (blendFunction == null) {
+            if (monoColorSkyboxNoBlendPipeline == null) {
+                monoColorSkyboxNoBlendPipeline = MONO_COLOR_SKYBOX_PIPELINE_FACTORY.apply(null);
+            }
+
+            return monoColorSkyboxNoBlendPipeline;
+        }
+
+        return MONO_COLOR_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, MONO_COLOR_SKYBOX_PIPELINE_FACTORY);
     }
 
     public RGBA getColor() {
