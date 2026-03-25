@@ -12,6 +12,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -25,8 +26,8 @@ public class SkyboxResourceListener implements PreparableReloadListener {
         skyboxManager.clearSkyboxes();
         Map<ResourceLocation, Resource> resources = resourceManager.listResources("sky", resourceLocation -> resourceLocation.getNamespace().startsWith(NuitClient.MOD_ID) && resourceLocation.getPath().endsWith(".json"));
         resources.forEach((resourceLocation, resource) -> {
-            try {
-                JsonObject json = GSON.fromJson(new InputStreamReader(resource.open()), JsonObject.class);
+            try (InputStream inputStream = resource.open(); InputStreamReader reader = new InputStreamReader(inputStream)) {
+                JsonObject json = GSON.fromJson(reader, JsonObject.class);
                 skyboxManager.addSkybox(resourceLocation, json);
             } catch (Exception e) {
                 NuitClient.getLogger().error("Error reading skybox {}", resourceLocation.toString(), e);
