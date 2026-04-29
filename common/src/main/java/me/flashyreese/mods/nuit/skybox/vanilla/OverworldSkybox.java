@@ -23,6 +23,8 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttribute;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.joml.Matrix4fStack;
 
 public class OverworldSkybox extends AbstractSkybox {
@@ -39,15 +41,14 @@ public class OverworldSkybox extends AbstractSkybox {
     public void render(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderSystem.setShaderFog(fogParameters);
 
-        ClientLevel level = (ClientLevel) camera.getEntity().level();
-        float sunAngle = level.getSunAngle(tickDelta);
-        float timeOfDay = level.getTimeOfDay(tickDelta);
-        int sunriseOrSunsetColor = level.effects().getSunriseOrSunsetColor(timeOfDay);
-        int skyColor = level.getSkyColor(camera.getPosition(), tickDelta);
+        ClientLevel level = (ClientLevel) camera.entity().level();
+        float sunAngle = level.environmentAttributes().getDimensionValue(EnvironmentAttributes.SUN_ANGLE);
+        int sunriseOrSunsetColor = level.environmentAttributes().getDimensionValue(EnvironmentAttributes.SUNRISE_SUNSET_COLOR);
+        int skyColor = level.environmentAttributes().getValue(EnvironmentAttributes.SKY_COLOR, camera.position());
 
         // Light Sky
-        ((SkyRenderer) skyRendererAccessor).renderSkyDisc(ARGB.redFloat(skyColor), ARGB.greenFloat(skyColor), ARGB.blueFloat(skyColor));
-        if (level.effects().isSunriseOrSunset(timeOfDay)) {
+        ((SkyRenderer) skyRendererAccessor).renderSkyDisc(skyColor);
+        if (level.environmentAttributes().getDimensionValue(EnvironmentAttributes.SUNRISE_SUNSET_COLOR) > 0) {
             if (NuitApi.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorationBox && decorationBox.getProperties().rotation().skyboxRotation())) {
                 sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1);
             }
@@ -56,7 +57,7 @@ public class OverworldSkybox extends AbstractSkybox {
         }
 
         // Dark Sky
-        double eyeHeight = camera.getEntity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);
+        double eyeHeight = camera.entity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);
         if (eyeHeight < 0.0) {
             ((SkyRenderer) skyRendererAccessor).renderDarkDisc();
         }

@@ -56,6 +56,6 @@ public final class DynamicTransformsBuilder {
     }
 
     public com.mojang.blaze3d.buffers.GpuBufferSlice build() {
-        return RenderSystem.getDynamicUniforms().writeTransform(this.modelViewMatrix.orElse(RenderSystem.getModelViewMatrix()), this.colorModulator.orElse(new Vector4f(1.0F, 1.0F, 1.0F, 1.0F)), this.modelOffset.orElse(new Vector3f()), this.textureMatrix.orElse(RenderSystem.getTextureMatrix()), +this.lineWidth.orElse(RenderSystem.getShaderLineWidth()));
+        return RenderSystem.getDynamicUniforms().writeTransform(this.modelViewMatrix.orElse(RenderSystem.getModelViewMatrix()), this.colorModulator.orElse(new Vector4f(1.0F, 1.0F, 1.0F, 1.0F)), this.modelOffset.orElse(new Vector3f()), this.textureMatrix.orElse(new Matrix4f()));
     }
 }

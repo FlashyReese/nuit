@@ -122,7 +122,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Objects.requireNonNull(client.level);
         Objects.requireNonNull(client.player);
         return this.conditions.getBiomes().entries().isEmpty() || this.conditions.getBiomes().excludes() ^ (
-                this.conditions.getBiomes().entries().contains(client.level.getBiome(client.player.blockPosition()).unwrapKey().orElseThrow().location()) ||
+                this.conditions.getBiomes().entries().contains(client.level.getBiome(client.player.blockPosition()).unwrapKey().orElseThrow().identifier()) ||
                         this.conditions.getBiomes().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackBiomes());
     }
 
@@ -133,7 +133,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
         return this.conditions.getDimensions().entries().isEmpty() || this.conditions.getDimensions().excludes() ^ (
-                this.conditions.getDimensions().entries().contains(client.level.dimension().location()) ||
+                this.conditions.getDimensions().entries().contains(client.level.dimension().identifier()) ||
                         this.conditions.getDimensions().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackDimensions());
     }
 
@@ -144,7 +144,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
         return this.conditions.getWorlds().entries().isEmpty() || this.conditions.getWorlds().excludes() ^ (
-                this.conditions.getWorlds().entries().contains(client.level.dimensionType().effectsLocation()) ||
+                this.conditions.getWorlds().entries().contains(client.level.dimension().identifier()) ||
                         this.conditions.getWorlds().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackWorlds());
     }
 
@@ -157,10 +157,10 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         Camera camera = client.gameRenderer.getMainCamera();
         if (this.conditions.getEffects().entries().isEmpty()) {
-            return !(camera.getEntity() instanceof LivingEntity livingEntity) || (!livingEntity.hasEffect(MobEffects.BLINDNESS) && !livingEntity.hasEffect(MobEffects.DARKNESS));
+            return !(camera.entity() instanceof LivingEntity livingEntity) || (!livingEntity.hasEffect(MobEffects.BLINDNESS) && !livingEntity.hasEffect(MobEffects.DARKNESS));
         } else {
-            if (camera.getEntity() instanceof LivingEntity livingEntity) {
-                return (this.conditions.getEffects().excludes() ^ this.conditions.getEffects().entries().stream().noneMatch(resourceLocation -> client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).isPresent() && livingEntity.hasEffect(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(resourceLocation).get().value()))));
+            if (camera.entity() instanceof LivingEntity livingEntity) {
+                return (this.conditions.getEffects().excludes() ^ this.conditions.getEffects().entries().stream().noneMatch(Identifier -> client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(Identifier).isPresent() && livingEntity.hasEffect(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(client.level.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).get(Identifier).get().value()))));
             }
         }
 

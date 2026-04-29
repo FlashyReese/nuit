@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.skybox.textured;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -17,7 +18,7 @@ import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
@@ -49,6 +50,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         for (AnimatableTexture animatableTexture : this.animatableTextures) {
             animatableTexture.tick();
         }
+
         for (int face = 0; face < 6; ++face) {
             Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
 
@@ -59,7 +61,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                 if (intersect != null && animatableTexture.getCurrentFrame() != null) {
                     UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
                     UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getCurrentFrame(), intersect);
-
                     try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
                         BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
                         builder.addVertex(matrix4f, intersectionOnCurrentTexture.minU(), -this.quadSize, intersectionOnCurrentTexture.minV()).setUv(intersectionOnCurrentFrame.minU(), intersectionOnCurrentFrame.minV());
@@ -70,7 +71,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                         GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(animatableTexture.getTexture().getTextureId()).getTextureView();
                         BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                             pass.setUniform("DynamicTransforms", dynamicTransforms);
-                            pass.bindSampler("Sampler0", textureView);
+                            pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
                         });
                     }
                 }
@@ -83,7 +84,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public List<ResourceLocation> getTexturesToRegister() {
+    public List<Identifier> getTexturesToRegister() {
         return this.animatableTextures.stream().map(texture -> texture.getTexture().getTextureId()).toList();
     }
 }

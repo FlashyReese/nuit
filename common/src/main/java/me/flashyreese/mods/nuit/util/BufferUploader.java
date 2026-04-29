@@ -43,13 +43,6 @@ public class BufferUploader {
                     renderPass.enableScissor(scissorState.x(), scissorState.y(), scissorState.width(), scissorState.height());
                 }
 
-                for (int i = 0; i < 12; ++i) {
-                    GpuTextureView gpuTextureView3 = RenderSystem.getShaderTexture(i);
-                    if (gpuTextureView3 != null) {
-                        renderPass.bindSampler("Sampler" + i, gpuTextureView3);
-                    }
-                }
-
                 renderPassConsumer.accept(renderPass);
                 RenderSystem.bindDefaultUniforms(renderPass);
                 renderPass.drawIndexed(0, 0, meshData.drawState().indexCount(), 1);

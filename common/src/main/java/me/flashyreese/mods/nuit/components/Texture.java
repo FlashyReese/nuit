@@ -1,7 +1,7 @@
 package me.flashyreese.mods.nuit.components;
 
 import com.mojang.serialization.Codec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Encapsulates the location of a texture, the
@@ -9,20 +9,20 @@ import net.minecraft.resources.ResourceLocation;
  * minimum v coordinate and maximum v coordinate.
  */
 public class Texture {
-    public static final Codec<Texture> CODEC = ResourceLocation.CODEC.xmap(Texture::new, Texture::getTextureId);
-    private final ResourceLocation textureId;
+    public static final Codec<Texture> CODEC = Identifier.CODEC.xmap(Texture::new, Texture::getTextureId);
+    private final Identifier textureId;
     private final UVRange uvRange;
 
-    public Texture(ResourceLocation textureId, UVRange uvRange) {
+    public Texture(Identifier textureId, UVRange uvRange) {
         this.textureId = textureId;
         this.uvRange = uvRange;
     }
 
-    public Texture(ResourceLocation textureId) {
+    public Texture(Identifier textureId) {
         this(textureId, new UVRange(0.0F, 0.0F, 1.0F, 1.0F));
     }
 
-    public ResourceLocation getTextureId() {
+    public Identifier getTextureId() {
         return this.textureId;
     }
 

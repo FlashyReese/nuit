@@ -116,7 +116,7 @@ public class Blend {
     }
 
     public static Blend normal() {
-        return new Blend("", Blender.normal());
+        return new Blend("normal", Blender.normal());
     }
 
     public static Blend decorations() {

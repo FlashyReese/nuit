@@ -12,36 +12,36 @@ public class AnimatableTextureTest {
     @ValueSource(strings = {
             """
                     {
-                        "texture": "test:resourcelocation"
+                        "texture": "test:identifier"
                     }
                     """,
             """
                     {
-                        "texture": "test:resourcelocation",
+                        "texture": "test:identifier",
                         "gridColumns": 1
                     }
                     """,
             """
                     {
-                        "texture": "test:resourcelocation",
+                        "texture": "test:identifier",
                         "gridRows": 1
                     }
                     """,
             """
                     {
-                        "texture": "test:resourcelocation",
+                        "texture": "test:identifier",
                         "duration": 1
                     }
                     """,
             """
                     {
-                        "texture": "test:resourcelocation",
+                        "texture": "test:identifier",
                         "interpolate": true
                     }
                     """,
             """
                     {
-                        "texture": "test:resourcelocation",
+                        "texture": "test:identifier",
                         "frameDuration": {
                             "1": 10,
                             "2": 20
