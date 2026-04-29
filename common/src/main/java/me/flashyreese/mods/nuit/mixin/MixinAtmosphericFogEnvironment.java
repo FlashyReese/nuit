@@ -31,11 +31,11 @@ public abstract class MixinAtmosphericFogEnvironment {
 
     @Redirect(method = "getBaseColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/attribute/EnvironmentAttributeProbe;getValue(Lnet/minecraft/world/attribute/EnvironmentAttribute;F)Ljava/lang/Object;", ordinal = 1))
     private <Value> Value nuit$redirectSkyAngleRadian(EnvironmentAttributeProbe instance, EnvironmentAttribute<Value> probe, float tickDelta) {
-        final Value dayTime = instance.getValue(probe, tickDelta);
+        final Value sunAngle = instance.getValue(probe, tickDelta);
         if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorBox && decorBox.getProperties().rotation().skyboxRotation())) {
-            return (Value) (Object) Math.toRadians(Mth.positiveModulo(((int) dayTime) / 24000F + 0.75F, 1));
+            return (Value) (Object) (Mth.positiveModulo(((float) sunAngle) / 24000F + 0.75F, 1) * Mth.DEG_TO_RAD);
         } else {
-            return dayTime;
+            return sunAngle;
         }
     }
 
