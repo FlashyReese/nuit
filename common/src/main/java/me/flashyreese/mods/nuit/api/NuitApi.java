@@ -29,7 +29,7 @@ public interface NuitApi {
     /**
      * Allows mods to add new skyboxes at runtime.
      *
-     * @param Identifier       identifier for skybox.
+     * @param identifier       Identifier for skybox.
      * @param skybox           Skybox implementation.
      */
     void addSkybox(Identifier identifier, Skybox skybox);
@@ -39,7 +39,7 @@ public interface NuitApi {
      * This method applies {@link SkyboxManager#parseSkyboxJson(Identifier, JsonObject)}
      * serialization and adds the skybox with {@link #addSkybox(Identifier, Skybox)}
      *
-     * @param Identifier identifier for skybox.
+     * @param identifier       Identifier for skybox.
      * @param jsonObject       Json Object.
      */
     void addSkybox(Identifier identifier, JsonObject jsonObject);
@@ -47,7 +47,7 @@ public interface NuitApi {
     /**
      * Allows mods to add new permanent skyboxes at runtime.
      *
-     * @param Identifier identifier for skybox.
+     * @param identifier       Identifier for skybox.
      * @param skybox           Skybox implementation.
      */
     void addPermanentSkybox(Identifier identifier, Skybox skybox);
