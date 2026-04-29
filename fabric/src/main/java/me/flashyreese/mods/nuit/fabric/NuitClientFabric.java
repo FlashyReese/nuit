@@ -13,13 +13,13 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.ResourceManager;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -30,15 +30,10 @@ public class NuitClientFabric implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         SkyboxType.registerAll(skyboxType -> Registry.register(REGISTRY, skyboxType.getName(), skyboxType));
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
+        ResourceLoader.get(PackType.CLIENT_RESOURCES).registerReloader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader"), new PreparableReloadListener() {
             @Override
-            public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, Executor executor, Executor executor2) {
-                return NuitClient.skyboxResourceListener().reload(preparationBarrier, resourceManager, executor, executor2);
-            }
-
-            @Override
-            public ResourceLocation getFabricId() {
-                return ResourceLocation.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader");
+            public CompletableFuture<Void> reload(SharedState sharedState, Executor executor, PreparationBarrier preparationBarrier, Executor executor2) {
+                return NuitClient.skyboxResourceListener().reload(sharedState, executor, preparationBarrier, executor2);
             }
         });
 

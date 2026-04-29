@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.Strictness;
 import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.api.NuitApi;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -24,19 +24,19 @@ public class SkyboxResourceListener implements PreparableReloadListener {
     public void readFiles(ResourceManager resourceManager) {
         NuitApi skyboxManager = NuitApi.getInstance();
         skyboxManager.clearSkyboxes();
-        Map<ResourceLocation, Resource> resources = resourceManager.listResources("sky", resourceLocation -> resourceLocation.getNamespace().startsWith(NuitClient.MOD_ID) && resourceLocation.getPath().endsWith(".json"));
-        resources.forEach((resourceLocation, resource) -> {
+        Map<Identifier, Resource> resources = resourceManager.listResources("sky", Identifier -> Identifier.getNamespace().startsWith(NuitClient.MOD_ID) && Identifier.getPath().endsWith(".json"));
+        resources.forEach((Identifier, resource) -> {
             try (InputStream inputStream = resource.open(); InputStreamReader reader = new InputStreamReader(inputStream)) {
                 JsonObject json = GSON.fromJson(reader, JsonObject.class);
-                skyboxManager.addSkybox(resourceLocation, json);
+                skyboxManager.addSkybox(Identifier, json);
             } catch (Exception e) {
-                NuitClient.getLogger().error("Error reading skybox {}", resourceLocation.toString(), e);
+                NuitClient.getLogger().error("Error reading skybox {}", Identifier.toString(), e);
             }
         });
     }
 
     @Override
-    public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, Executor executor, Executor executor2) {
-        return CompletableFuture.runAsync(() -> this.readFiles(resourceManager), executor2).thenCompose(preparationBarrier::wait);
+    public CompletableFuture<Void> reload(SharedState sharedState, Executor executor, PreparationBarrier preparationBarrier, Executor executor2) {
+        return CompletableFuture.runAsync(() -> this.readFiles(sharedState.resourceManager()), executor2).thenCompose(preparationBarrier::wait);
     }
 }

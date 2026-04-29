@@ -9,6 +9,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 import java.io.File;
 import java.io.FileReader;
@@ -72,8 +73,9 @@ public class NuitConfig {
     }
 
     public static class KeyBindingImpl {
-        public final KeyMapping toggleNuit = new KeyMapping("key.nuit.toggle", InputConstants.Type.KEYSYM, -1, "category.nuit");
-        public final KeyMapping toggleSkyboxDebugHud = new KeyMapping("key.nuit.toggle.debug_hud", InputConstants.Type.KEYSYM, -1, "category.nuit");
+        private final KeyMapping.Category nuitCategory = new KeyMapping.Category(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "nuit"));
+        public final KeyMapping toggleNuit = new KeyMapping("key.nuit.toggle", InputConstants.Type.KEYSYM, -1, nuitCategory);
+        public final KeyMapping toggleSkyboxDebugHud = new KeyMapping("key.nuit.toggle.debug_hud", InputConstants.Type.KEYSYM, -1, nuitCategory);
 
         public void tick(Minecraft client) {
             while (this.toggleNuit.consumeClick()) {

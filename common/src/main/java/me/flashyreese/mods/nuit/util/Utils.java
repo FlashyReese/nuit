@@ -3,8 +3,6 @@ package me.flashyreese.mods.nuit.util;
 import com.google.common.collect.Range;
 import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.platform.SourceFactor;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
@@ -14,6 +12,7 @@ import me.flashyreese.mods.nuit.components.UVRange;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.lwjgl.opengl.GL46C;
@@ -99,18 +98,18 @@ public class Utils {
      *
      * @param rotationSpeed    Rotation speed
      * @param isSkyboxRotation Whether it is a skybox rotation or decoration rotation
-     * @param world            Client world
+     * @param level            Client level
      * @return Rotation in degrees
      */
-    public static double calculateRotation(double rotationSpeed, boolean isSkyboxRotation, ClientLevel world) {
+    public static double calculateRotation(double rotationSpeed, boolean isSkyboxRotation, ClientLevel level) {
         if (rotationSpeed != 0F) {
-            long timeOfDay = world.getDayTime();
+            long timeOfDay = level.getDayTime();
             double rotationFraction = timeOfDay / (24000.0D / rotationSpeed);
             double skyAngle = Mth.positiveModulo(rotationFraction, 1);
             if (isSkyboxRotation) {
                 return 360D * skyAngle;
             } else {
-                return 360D * world.dimensionType().timeOfDay((long) (24000 * skyAngle));
+                return 360D * level.environmentAttributes().getDimensionValue(EnvironmentAttributes.SUN_ANGLE);
             }
         } else {
             return 0D;
@@ -129,29 +128,6 @@ public class Utils {
         }
 
         return MATRIX4F_ROTATED_FACE[face];
-    }
-
-    /**
-     * Rotates the faces of the vertexes for the skybox
-     *
-     * @param poseStack
-     * @param face
-     */
-    public static void rotateSkyBoxByFace(PoseStack poseStack, int face) {
-        if (face == 1) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
-        } else if (face == 2) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        } else if (face == 3) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
-        } else if (face == 4) {
-            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
-        } else if (face == 5) {
-            poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
-        }
     }
 
     /**

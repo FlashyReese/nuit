@@ -10,13 +10,13 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(FogRenderer.class)
 public abstract class MixinFogRenderer {
-
     @ModifyReturnValue(method = "computeFogColor", at = @At(value = "RETURN"))
     private static Vector4f nuit$redirectSetShaderFogColor(Vector4f original) {
         if (SkyboxManager.getInstance().isEnabled()) {
             final float fogDensity = Utils.alphaBlendFogDensity(SkyboxManager.getInstance().getActiveSkyboxes(), original.w());
             return new Vector4f(original.x(), original.y(), original.z(), fogDensity);
+        } else {
+            return original;
         }
-        return original;
     }
 }

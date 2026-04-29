@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.skybox.textured;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -17,7 +18,7 @@ import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
@@ -38,7 +39,6 @@ public class SquareTexturedSkybox extends TexturedSkybox {
         this.texture = texture;
     }
 
-
     @Override
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderSystem.setShaderFog(fogParameters);
@@ -53,17 +53,18 @@ public class SquareTexturedSkybox extends TexturedSkybox {
                 builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
                 builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
             }
+
             GpuBufferSlice dynamicTransforms = transformsBuilder.build();
             GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTextureView();
             BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                 pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindSampler("Sampler0", textureView);
+                pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             });
         }
     }
 
     @Override
-    public List<ResourceLocation> getTexturesToRegister() {
+    public List<Identifier> getTexturesToRegister() {
         return List.of(this.texture.getTextureId());
     }
 

@@ -3,7 +3,7 @@ package me.flashyreese.mods.nuit.api;
 import com.google.gson.JsonObject;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -29,28 +29,28 @@ public interface NuitApi {
     /**
      * Allows mods to add new skyboxes at runtime.
      *
-     * @param resourceLocation Identifier for skybox.
+     * @param identifier       Identifier for skybox.
      * @param skybox           Skybox implementation.
      */
-    void addSkybox(ResourceLocation resourceLocation, Skybox skybox);
+    void addSkybox(Identifier identifier, Skybox skybox);
 
     /**
      * Allows mods to add new skyboxes with a {@link JsonObject} at runtime.
-     * This method applies {@link SkyboxManager#parseSkyboxJson(ResourceLocation, JsonObject)}
-     * serialization and adds the skybox with {@link #addSkybox(ResourceLocation, Skybox)}
+     * This method applies {@link SkyboxManager#parseSkyboxJson(Identifier, JsonObject)}
+     * serialization and adds the skybox with {@link #addSkybox(Identifier, Skybox)}
      *
-     * @param resourceLocation Identifier for skybox.
+     * @param identifier       Identifier for skybox.
      * @param jsonObject       Json Object.
      */
-    void addSkybox(ResourceLocation resourceLocation, JsonObject jsonObject);
+    void addSkybox(Identifier identifier, JsonObject jsonObject);
 
     /**
      * Allows mods to add new permanent skyboxes at runtime.
      *
-     * @param resourceLocation Identifier for skybox.
+     * @param identifier       Identifier for skybox.
      * @param skybox           Skybox implementation.
      */
-    void addPermanentSkybox(ResourceLocation resourceLocation, Skybox skybox);
+    void addPermanentSkybox(Identifier identifier, Skybox skybox);
 
     /**
      * Clears all non-permanent skyboxes.

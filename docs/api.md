@@ -33,10 +33,10 @@ if (FabricLoader.getInstance().isModLoaded("Nuit")) {
         NuitApi.getInstance().clearSkyboxes();
 
         // Adds a temporary skybox
-        NuitApi.getInstance().addSkybox(ResourceLocation.fromNamespaceAndPath("my_mod", "my_temporary_skybox"), /*JsonObject or Skybox implementation*/);
+        NuitApi.getInstance().addSkybox(Identifier.fromNamespaceAndPath("my_mod", "my_temporary_skybox"), /*JsonObject or Skybox implementation*/);
         
         // Adds a permanent skybox
-        NuitApi.getInstance().addPermanentSkybox(ResourceLocation.fromNamespaceAndPath("my_mod", "my_permanent_skybox"), /*Skybox implementation*/);
+        NuitApi.getInstance().addPermanentSkybox(Identifier.fromNamespaceAndPath("my_mod", "my_permanent_skybox"), /*Skybox implementation*/);
     }
 }
 ```
