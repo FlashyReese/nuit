@@ -20,7 +20,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.joml.Matrix4fStack;
 
@@ -28,19 +28,19 @@ import java.util.*;
 
 public class SkyboxManager implements NuitApi {
     private static final SkyboxManager INSTANCE = new SkyboxManager();
-    private final List<ResourceLocation> preloadedTextures = new ArrayList<>();
-    private final Map<ResourceLocation, Skybox> skyboxMap = new Object2ObjectLinkedOpenHashMap<>();
+    private final List<Identifier> preloadedTextures = new ArrayList<>();
+    private final Map<Identifier, Skybox> skyboxMap = new Object2ObjectLinkedOpenHashMap<>();
     /**
      * Stores a list of permanent skyboxes
      *
-     * @see #addPermanentSkybox(ResourceLocation, Skybox)
+     * @see #addPermanentSkybox(Identifier, Skybox)
      */
-    private final Map<ResourceLocation, Skybox> permanentSkyboxMap = new Object2ObjectLinkedOpenHashMap<>();
+    private final Map<Identifier, Skybox> permanentSkyboxMap = new Object2ObjectLinkedOpenHashMap<>();
     private final List<Skybox> activeSkyboxes = new LinkedList<>();
     private Skybox currentSkybox = null;
     private boolean enabled = true;
 
-    public static Optional<Skybox> parseSkyboxJson(ResourceLocation resourceLocation, JsonObject jsonObject) {
+    public static Optional<Skybox> parseSkyboxJson(Identifier resourceLocation, JsonObject jsonObject) {
         Metadata metadata;
 
         try {
@@ -71,7 +71,7 @@ public class SkyboxManager implements NuitApi {
         return INSTANCE;
     }
 
-    public void addSkybox(ResourceLocation resourceLocation, JsonObject jsonObject) {
+    public void addSkybox(Identifier resourceLocation, JsonObject jsonObject) {
         Optional<Skybox> skybox = SkyboxManager.parseSkyboxJson(resourceLocation, jsonObject);
         if (skybox.isPresent()) {
             NuitClient.getLogger().info("Adding skybox {}", resourceLocation.toString());
@@ -79,15 +79,15 @@ public class SkyboxManager implements NuitApi {
         }
     }
 
-    public void addSkybox(ResourceLocation resourceLocation, Skybox skybox) {
+    public void addSkybox(Identifier resourceLocation, Skybox skybox) {
         Preconditions.checkNotNull(resourceLocation, "Identifier was null");
         Preconditions.checkNotNull(skybox, "Skybox was null");
         DefaultHandler.addConditions(skybox);
 
         if (skybox instanceof TextureRegistrar textureRegistrar) {
-            textureRegistrar.getTexturesToRegister().forEach((theResourceLocation) -> {
-                Minecraft.getInstance().getTextureManager().registerAndLoad(theResourceLocation, new SimpleTexture(theResourceLocation));
-                this.preloadedTextures.add(theResourceLocation);
+            textureRegistrar.getTexturesToRegister().forEach((theIdentifier) -> {
+                Minecraft.getInstance().getTextureManager().registerAndLoad(theIdentifier, new SimpleTexture(theIdentifier));
+                this.preloadedTextures.add(theIdentifier);
             });
         }
 
@@ -101,7 +101,7 @@ public class SkyboxManager implements NuitApi {
      *
      * @param skybox the skybox to be added to the list of permanent skyboxes
      */
-    public void addPermanentSkybox(ResourceLocation resourceLocation, Skybox skybox) {
+    public void addPermanentSkybox(Identifier resourceLocation, Skybox skybox) {
         Preconditions.checkNotNull(resourceLocation, "Identifier was null");
         Preconditions.checkNotNull(skybox, "Skybox was null");
         DefaultHandler.addConditions(skybox);
@@ -159,7 +159,7 @@ public class SkyboxManager implements NuitApi {
         this.activeSkyboxes.sort(Comparator.comparingInt(Skybox::getLayer));
     }
 
-    public Map<ResourceLocation, Skybox> getSkyboxMap() {
+    public Map<Identifier, Skybox> getSkyboxMap() {
         return this.skyboxMap;
     }
 }

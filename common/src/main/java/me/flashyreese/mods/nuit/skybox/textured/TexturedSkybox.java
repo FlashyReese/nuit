@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.skybox.textured;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import me.flashyreese.mods.nuit.NuitClient;
@@ -19,7 +20,8 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
@@ -32,10 +34,11 @@ import java.util.function.Function;
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
     private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
         RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
-        builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
+        builder.withLocation(Identifier.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
         builder.withVertexShader("core/position_tex");
         builder.withFragmentShader("core/position_tex");
         builder.withDepthWrite(false);
+        builder.withCull(false);
         if (blendFunction != null) {
             builder.withBlend(blendFunction);
         } else {
@@ -91,12 +94,12 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
                 .withShaderColor(colorModifier);
 
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
-        matrix4fStack.pushMatrix();
-        // TODO/NOTE: Should matrix4fStack inherit the current pose from poseStack?
-        //  (currently idk if poseStack contains anything so I just ignored it)
-        this.rotation.apply(matrix4fStack, level);
-        this.renderSkybox(skyRendererAccess, matrix4fStack, tickDelta, camera, transformsBuilder, fogParameters, bufferSource);
-        matrix4fStack.popMatrix();
+        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+        modelViewStack.pushMatrix();
+        this.rotation.apply(modelViewStack, level);
+        transformsBuilder.withModelViewMatrix(new Matrix4f(modelViewStack));
+        this.renderSkybox(skyRendererAccess, modelViewStack, tickDelta, camera, transformsBuilder, fogParameters, bufferSource);
+        modelViewStack.popMatrix();
 
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
     }

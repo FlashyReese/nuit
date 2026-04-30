@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
@@ -74,6 +74,6 @@ public final class NuitNeoForge {
 
     @SubscribeEvent
     public void registerClientReloadListener(AddClientReloadListenersEvent event) {
-        event.addListener(ResourceLocation.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader"), NuitClient.skyboxResourceListener());
+        event.addListener(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader"), NuitClient.skyboxResourceListener());
     }
 }

@@ -22,7 +22,7 @@ import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 public class MonoColorSkybox extends AbstractSkybox {
     private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
         RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
-        builder.withLocation(ResourceLocation.tryBuild(NuitClient.MOD_ID, "pipeline/mono_color_skybox"));
+        builder.withLocation(Identifier.tryBuild(NuitClient.MOD_ID, "pipeline/mono_color_skybox"));
         builder.withVertexShader("core/position_color");
         builder.withFragmentShader("core/position_color");
         builder.withDepthWrite(false);

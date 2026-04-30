@@ -2,6 +2,7 @@ package me.flashyreese.mods.nuit.skybox.vanilla;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -51,12 +52,11 @@ public class EndSkybox extends AbstractSkybox {
 
             GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
             TextureManager textureManager = Minecraft.getInstance().getTextureManager();
-            AbstractTexture abstractTexture = textureManager.getTexture(SkyRenderer.END_SKY_LOCATION);
-            abstractTexture.setFilter(false, false);
+            AbstractTexture abstractTexture = textureManager.getTexture(SkyRendererAccessor.getEndSky());
             GpuTextureView endSkyTextureView = abstractTexture.getTextureView();
             BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                 pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindSampler("Sampler0", endSkyTextureView);
+                pass.bindTexture("Sampler0", endSkyTextureView, RenderSystem.getSamplerCache().getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR));
             });
         }
     }

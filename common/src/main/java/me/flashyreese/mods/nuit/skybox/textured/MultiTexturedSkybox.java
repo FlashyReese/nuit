@@ -17,7 +17,7 @@ import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
@@ -32,7 +32,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             AnimatableTexture.CODEC.listOf().optionalFieldOf("animatableTextures", new ArrayList<>()).forGetter(MultiTexturedSkybox::getAnimations)
     ).apply(instance, MultiTexturedSkybox::new));
     protected final List<AnimatableTexture> animatableTextures;
-
     private final float quadSize = 100F;
     private final UVRange quad = new UVRange(-this.quadSize, -this.quadSize, this.quadSize, this.quadSize);
 
@@ -51,8 +50,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         }
         for (int face = 0; face < 6; ++face) {
             Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-
-            // List of UV ranges for each face of the cube
             UVRange faceUVRange = Utils.TEXTURE_FACES[face];
             for (AnimatableTexture animatableTexture : this.animatableTextures) {
                 UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
@@ -70,7 +67,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                         GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(animatableTexture.getTexture().getTextureId()).getTextureView();
                         BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                             pass.setUniform("DynamicTransforms", dynamicTransforms);
-                            pass.bindSampler("Sampler0", textureView);
+                            pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR));
                         });
                     }
                 }
@@ -83,7 +80,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public List<ResourceLocation> getTexturesToRegister() {
+    public List<Identifier> getTexturesToRegister() {
         return this.animatableTextures.stream().map(texture -> texture.getTexture().getTextureId()).toList();
     }
 }

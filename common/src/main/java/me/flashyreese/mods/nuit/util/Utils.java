@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.util;
 import com.google.common.collect.Range;
 import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.platform.SourceFactor;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import me.flashyreese.mods.nuit.NuitClient;
@@ -16,6 +17,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL46C;
 
 import java.util.List;
@@ -24,6 +26,8 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 public class Utils {
+    private static final float SKYBOX_MIN = -100.0F;
+    private static final float SKYBOX_MAX = 100.0F;
     public static final UVRange[] TEXTURE_FACES = new UVRange[]{
             new UVRange(0, 0, 1.0F / 3.0F, 1.0F / 2.0F), // bottom
             new UVRange(1.0F / 3.0F, 1.0F / 2.0F, 2.0F / 3.0F, 1), // north
@@ -31,6 +35,14 @@ public class Utils {
             new UVRange(1.0F / 3.0F, 0, 2.0F / 3.0F, 1.0F / 2.0F), // top
             new UVRange(2.0F / 3.0F, 1.0F / 2.0F, 1, 1), // east
             new UVRange(0, 1.0F / 2.0F, 1.0F / 3.0F, 1) // west
+    };
+    public static final SkyboxFace[] SKYBOX_FACES = new SkyboxFace[]{
+            new SkyboxFace(TEXTURE_FACES[0], new Vector3f(SKYBOX_MIN, SKYBOX_MIN, SKYBOX_MIN), new Vector3f(SKYBOX_MAX - SKYBOX_MIN, 0.0F, 0.0F), new Vector3f(0.0F, 0.0F, SKYBOX_MAX - SKYBOX_MIN)),
+            new SkyboxFace(TEXTURE_FACES[1], new Vector3f(SKYBOX_MIN, SKYBOX_MAX, SKYBOX_MIN), new Vector3f(SKYBOX_MAX - SKYBOX_MIN, 0.0F, 0.0F), new Vector3f(0.0F, SKYBOX_MIN - SKYBOX_MAX, 0.0F)),
+            new SkyboxFace(TEXTURE_FACES[2], new Vector3f(SKYBOX_MAX, SKYBOX_MAX, SKYBOX_MAX), new Vector3f(SKYBOX_MIN - SKYBOX_MAX, 0.0F, 0.0F), new Vector3f(0.0F, SKYBOX_MIN - SKYBOX_MAX, 0.0F)),
+            new SkyboxFace(TEXTURE_FACES[3], new Vector3f(SKYBOX_MIN, SKYBOX_MAX, SKYBOX_MAX), new Vector3f(SKYBOX_MAX - SKYBOX_MIN, 0.0F, 0.0F), new Vector3f(0.0F, 0.0F, SKYBOX_MIN - SKYBOX_MAX)),
+            new SkyboxFace(TEXTURE_FACES[4], new Vector3f(SKYBOX_MAX, SKYBOX_MAX, SKYBOX_MIN), new Vector3f(0.0F, 0.0F, SKYBOX_MAX - SKYBOX_MIN), new Vector3f(0.0F, SKYBOX_MIN - SKYBOX_MAX, 0.0F)),
+            new SkyboxFace(TEXTURE_FACES[5], new Vector3f(SKYBOX_MIN, SKYBOX_MAX, SKYBOX_MAX), new Vector3f(0.0F, 0.0F, SKYBOX_MIN - SKYBOX_MAX), new Vector3f(0.0F, SKYBOX_MIN - SKYBOX_MAX, 0.0F))
     };
 
     // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
@@ -110,7 +122,7 @@ public class Utils {
             if (isSkyboxRotation) {
                 return 360D * skyAngle;
             } else {
-                return 360D * world.dimensionType().timeOfDay((long) (24000 * skyAngle));
+                return 360D * skyAngle;
             }
         } else {
             return 0D;
@@ -129,6 +141,17 @@ public class Utils {
         }
 
         return MATRIX4F_ROTATED_FACE[face];
+    }
+
+    public static void addTexturedSkyboxFace(BufferBuilder builder, Matrix4f matrix4f, SkyboxFace face, UVRange positionRange, UVRange textureRange) {
+        Vector3f minMin = face.getPosition(positionRange.minU(), positionRange.minV());
+        Vector3f minMax = face.getPosition(positionRange.minU(), positionRange.maxV());
+        Vector3f maxMax = face.getPosition(positionRange.maxU(), positionRange.maxV());
+        Vector3f maxMin = face.getPosition(positionRange.maxU(), positionRange.minV());
+        builder.addVertex(matrix4f, minMin.x(), minMin.y(), minMin.z()).setUv(textureRange.minU(), textureRange.minV());
+        builder.addVertex(matrix4f, minMax.x(), minMax.y(), minMax.z()).setUv(textureRange.minU(), textureRange.maxV());
+        builder.addVertex(matrix4f, maxMax.x(), maxMax.y(), maxMax.z()).setUv(textureRange.maxU(), textureRange.maxV());
+        builder.addVertex(matrix4f, maxMin.x(), maxMin.y(), maxMin.z()).setUv(textureRange.maxU(), textureRange.minV());
     }
 
     /**
@@ -151,6 +174,14 @@ public class Utils {
         } else if (face == 5) {
             poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
             poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+        }
+    }
+
+    public record SkyboxFace(UVRange textureRange, Vector3f origin, Vector3f uAxis, Vector3f vAxis) {
+        public Vector3f getPosition(float u, float v) {
+            float normalizedU = (u - this.textureRange.minU()) / (this.textureRange.maxU() - this.textureRange.minU());
+            float normalizedV = (v - this.textureRange.minV()) / (this.textureRange.maxV() - this.textureRange.minV());
+            return new Vector3f(this.origin).fma(normalizedU, this.uAxis).fma(normalizedV, this.vAxis);
         }
     }
 

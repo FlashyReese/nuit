@@ -16,7 +16,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.NotNull;
@@ -32,13 +32,13 @@ public class NuitClientFabric implements ClientModInitializer {
         SkyboxType.registerAll(skyboxType -> Registry.register(REGISTRY, skyboxType.getName(), skyboxType));
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
             @Override
-            public @NotNull CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager, Executor executor, Executor executor2) {
-                return NuitClient.skyboxResourceListener().reload(preparationBarrier, resourceManager, executor, executor2);
+            public @NotNull CompletableFuture<Void> reload(SharedState sharedState, Executor preparationExecutor, PreparationBarrier preparationBarrier, Executor reloadExecutor) {
+                return NuitClient.skyboxResourceListener().reload(sharedState, preparationExecutor, preparationBarrier, reloadExecutor);
             }
 
             @Override
-            public ResourceLocation getFabricId() {
-                return ResourceLocation.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader");
+            public Identifier getFabricId() {
+                return Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader");
             }
         });
 

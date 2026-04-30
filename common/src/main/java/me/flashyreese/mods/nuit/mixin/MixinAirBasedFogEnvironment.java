@@ -8,34 +8,15 @@ import me.flashyreese.mods.nuit.skybox.decorations.DecorationBox;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.fog.environment.AirBasedFogEnvironment;
+import net.minecraft.client.renderer.fog.environment.AtmosphericFogEnvironment;
 import net.minecraft.util.ARGB;
-import net.minecraft.util.Mth;
 import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(AirBasedFogEnvironment.class)
+@Mixin(AtmosphericFogEnvironment.class)
 public class MixinAirBasedFogEnvironment {
-    @Redirect(method = "getBaseColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getTimeOfDay(F)F"))
-    private float nuit$redirectSkyAngle(ClientLevel instance, float v) {
-        if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorBox && decorBox.getProperties().rotation().skyboxRotation())) {
-            return Mth.positiveModulo(instance.getDayTime() / 24000F + 0.75F, 1);
-        } else {
-            return instance.getTimeOfDay(v);
-        }
-    }
-
-    @Redirect(method = "getBaseColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getSunAngle(F)F"))
-    private float nuit$redirectSkyAngleRadian(ClientLevel instance, float v) {
-        if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorBox && decorBox.getProperties().rotation().skyboxRotation())) {
-            return (float) Math.toRadians(Mth.positiveModulo(instance.getDayTime() / 24000F + 0.75F, 1));
-        } else {
-            return instance.getSunAngle(v);
-        }
-    }
-
     @ModifyConstant(method = "getBaseColor", slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/util/CubicSampler;gaussianSampleVec3(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/util/CubicSampler$Vec3Fetcher;)Lnet/minecraft/world/phys/Vec3;")), constant = @Constant(intValue = 4, ordinal = 0))
     private int nuit$renderSkyColor(int original) {
         final SkyboxManager skyboxManager = SkyboxManager.getInstance();

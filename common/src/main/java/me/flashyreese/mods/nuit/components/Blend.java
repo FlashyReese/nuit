@@ -67,7 +67,7 @@ public class Blend {
                 };
             }
 
-            case "normal" -> {
+            case "", "alpha", "normal" -> {
                 this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
                 this.colorAndEquationFunc = (alpha) -> {
                     GL46C.glBlendEquation(Blender.Equation.ADD.value);
@@ -116,7 +116,7 @@ public class Blend {
     }
 
     public static Blend normal() {
-        return new Blend("", Blender.normal());
+        return new Blend("normal", Blender.normal());
     }
 
     public static Blend decorations() {

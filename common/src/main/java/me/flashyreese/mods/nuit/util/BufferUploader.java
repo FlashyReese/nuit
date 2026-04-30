@@ -42,16 +42,8 @@ public class BufferUploader {
                 if (scissorState.enabled()) {
                     renderPass.enableScissor(scissorState.x(), scissorState.y(), scissorState.width(), scissorState.height());
                 }
-
-                for (int i = 0; i < 12; ++i) {
-                    GpuTextureView gpuTextureView3 = RenderSystem.getShaderTexture(i);
-                    if (gpuTextureView3 != null) {
-                        renderPass.bindSampler("Sampler" + i, gpuTextureView3);
-                    }
-                }
-
-                renderPassConsumer.accept(renderPass);
                 RenderSystem.bindDefaultUniforms(renderPass);
+                renderPassConsumer.accept(renderPass);
                 renderPass.drawIndexed(0, 0, meshData.drawState().indexCount(), 1);
             }
         } catch (Throwable var17) {

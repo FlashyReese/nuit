@@ -17,7 +17,7 @@ import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
@@ -57,13 +57,13 @@ public class SquareTexturedSkybox extends TexturedSkybox {
             GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTextureView();
             BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                 pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindSampler("Sampler0", textureView);
+                pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR));
             });
         }
     }
 
     @Override
-    public List<ResourceLocation> getTexturesToRegister() {
+    public List<Identifier> getTexturesToRegister() {
         return List.of(this.texture.getTextureId());
     }
 

@@ -13,10 +13,13 @@ import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -28,21 +31,21 @@ public class DecorationBox extends AbstractSkybox {
     public static Codec<DecorationBox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(DecorationBox::getConditions),
-            ResourceLocation.CODEC.optionalFieldOf("sun", SkyRendererAccessor.getSun()).forGetter(DecorationBox::getSunTexture),
-            ResourceLocation.CODEC.optionalFieldOf("moon", SkyRendererAccessor.getMoonPhases()).forGetter(DecorationBox::getMoonTexture),
+            Identifier.CODEC.optionalFieldOf("sun", Identifier.withDefaultNamespace("textures/environment/sun.png")).forGetter(DecorationBox::getSunTexture),
+            Identifier.CODEC.optionalFieldOf("moon", Identifier.withDefaultNamespace("textures/environment/moon_phases.png")).forGetter(DecorationBox::getMoonTexture),
             Codec.BOOL.optionalFieldOf("showSun", false).forGetter(DecorationBox::isSunEnabled),
             Codec.BOOL.optionalFieldOf("showMoon", false).forGetter(DecorationBox::isMoonEnabled),
             Codec.BOOL.optionalFieldOf("showStars", false).forGetter(DecorationBox::isStarsEnabled),
             Blend.CODEC.optionalFieldOf("blend", Blend.decorations()).forGetter(DecorationBox::getBlend)
     ).apply(instance, DecorationBox::new));
-    private final ResourceLocation sunTexture;
-    private final ResourceLocation moonTexture;
+    private final Identifier sunTexture;
+    private final Identifier moonTexture;
     private final boolean sunEnabled;
     private final boolean moonEnabled;
     private final boolean starsEnabled;
     private final Blend blend;
 
-    public DecorationBox(Properties properties, Conditions conditions, ResourceLocation sun, ResourceLocation moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, Blend blend) {
+    public DecorationBox(Properties properties, Conditions conditions, Identifier sun, Identifier moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, Blend blend) {
         this.properties = properties;
         this.conditions = conditions;
         this.sunTexture = sun;
@@ -57,12 +60,11 @@ public class DecorationBox extends AbstractSkybox {
     public void render(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         PoseStack poseStack = new PoseStack();
         RenderSystem.setShaderFog(fogParameters);
-        ClientLevel level = Objects.requireNonNull((ClientLevel) camera.getEntity().level());
+        ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
 
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
-
-        matrix4fStack.pushMatrix();
-        this.properties.rotation().apply(matrix4fStack, level);
+        poseStack.pushPose();
+        this.properties.rotation().apply(poseStack, level);
 
         // poseStack.mulPose(Axis.YP.rotation(-90F));
         // poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
@@ -75,7 +77,7 @@ public class DecorationBox extends AbstractSkybox {
         }
 
         if (this.moonEnabled) {
-            this.renderMoon(level.getMoonPhase(), bufferSource, poseStack);
+            this.renderMoon(camera.attributeProbe().getValue(EnvironmentAttributes.MOON_PHASE, tickDelta).index(), bufferSource, poseStack);
         }
 
         if (this.sunEnabled || this.moonEnabled) {
@@ -83,24 +85,23 @@ public class DecorationBox extends AbstractSkybox {
         }
 
         if (this.starsEnabled) {
-            //PoseStack poseStack = new PoseStack();
-            poseStack.mulPose(matrix4fStack);
-            skyRendererAccessor.invokeRenderStars(level.getStarBrightness(tickDelta), poseStack);
+            skyRendererAccessor.invokeRenderStars(camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta), poseStack);
         }
 
-        matrix4fStack.popMatrix();
+        poseStack.popPose();
         OverrideUtils.disableBlendingOverride();
         GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
     }
 
     private void renderSun(MultiBufferSource multiBufferSource, PoseStack poseStack) {
-        VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.celestial(this.sunTexture));
+        VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderTypes.entityTranslucent(this.sunTexture));
         int i = ARGB.white(this.alpha);
-        Matrix4f matrix4f = poseStack.last().pose();
-        vertexConsumer.addVertex(matrix4f, -30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F).setColor(i);
-        vertexConsumer.addVertex(matrix4f, 30.0F, 100.0F, -30.0F).setUv(1.0F, 0.0F).setColor(i);
-        vertexConsumer.addVertex(matrix4f, 30.0F, 100.0F, 30.0F).setUv(1.0F, 1.0F).setColor(i);
-        vertexConsumer.addVertex(matrix4f, -30.0F, 100.0F, 30.0F).setUv(0.0F, 1.0F).setColor(i);
+        PoseStack.Pose pose = poseStack.last();
+        Matrix4f matrix4f = pose.pose();
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, -30.0F, 100.0F, -30.0F, 0.0F, 0.0F, i);
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, 30.0F, 100.0F, -30.0F, 1.0F, 0.0F, i);
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, 30.0F, 100.0F, 30.0F, 1.0F, 1.0F, i);
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, -30.0F, 100.0F, 30.0F, 0.0F, 1.0F, i);
     }
 
     private void renderMoon(int moonPhase, MultiBufferSource multiBufferSource, PoseStack poseStack) {
@@ -110,20 +111,30 @@ public class DecorationBox extends AbstractSkybox {
         float startY = yCoord / 2.0F;
         float endX = (xCoord + 1) / 4.0F;
         float endY = (yCoord + 1) / 2.0F;
-        VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderType.celestial(this.moonTexture));
+        VertexConsumer vertexConsumer = multiBufferSource.getBuffer(RenderTypes.entityTranslucent(this.moonTexture));
         int p = ARGB.white(this.alpha);
-        Matrix4f matrix4f = poseStack.last().pose();
-        vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, 20.0F).setUv(endX, endY).setColor(p);
-        vertexConsumer.addVertex(matrix4f, 20.0F, -100.0F, 20.0F).setUv(startX, endY).setColor(p);
-        vertexConsumer.addVertex(matrix4f, 20.0F, -100.0F, -20.0F).setUv(startX, startY).setColor(p);
-        vertexConsumer.addVertex(matrix4f, -20.0F, -100.0F, -20.0F).setUv(endX, startY).setColor(p);
+        PoseStack.Pose pose = poseStack.last();
+        Matrix4f matrix4f = pose.pose();
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, -20.0F, -100.0F, 20.0F, endX, endY, p);
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, 20.0F, -100.0F, 20.0F, startX, endY, p);
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, 20.0F, -100.0F, -20.0F, startX, startY, p);
+        this.addCelestialVertex(vertexConsumer, pose, matrix4f, -20.0F, -100.0F, -20.0F, endX, startY, p);
     }
 
-    public ResourceLocation getSunTexture() {
+    private void addCelestialVertex(VertexConsumer vertexConsumer, PoseStack.Pose pose, Matrix4f matrix4f, float x, float y, float z, float u, float v, int color) {
+        vertexConsumer.addVertex(matrix4f, x, y, z)
+                .setUv(u, v)
+                .setColor(color)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(pose, 0.0F, 1.0F, 0.0F);
+    }
+
+    public Identifier getSunTexture() {
         return this.sunTexture;
     }
 
-    public ResourceLocation getMoonTexture() {
+    public Identifier getMoonTexture() {
         return this.moonTexture;
     }
 

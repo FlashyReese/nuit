@@ -6,13 +6,13 @@ import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
 import me.flashyreese.mods.nuit.components.Conditions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Collection;
 import java.util.Objects;
 
 public class DefaultHandler {
-    public static final ResourceLocation DEFAULT = ResourceLocation.tryBuild(NuitClient.MOD_ID, "default");
+    public static final Identifier DEFAULT = Identifier.tryBuild(NuitClient.MOD_ID, "default");
 
     /**
      * Stores a Conditions instance concatenated from all Conditions instances in skyboxes in SkyboxManager.
@@ -34,19 +34,19 @@ public class DefaultHandler {
     }
 
     public static void addConditions(Conditions conditions) {
-        for (ResourceLocation location : conditions.getBiomes().entries()) {
+        for (Identifier location : conditions.getBiomes().entries()) {
             if (!concatConditions.getBiomes().entries().contains(location)) {
                 concatConditions.getBiomes().entries().add(location);
             }
         }
 
-        for (ResourceLocation resourceLocation : conditions.getWorlds().entries()) {
+        for (Identifier resourceLocation : conditions.getWorlds().entries()) {
             if (!concatConditions.getWorlds().entries().contains(resourceLocation)) {
                 concatConditions.getWorlds().entries().add(resourceLocation);
             }
         }
 
-        for (ResourceLocation resource : conditions.getDimensions().entries()) {
+        for (Identifier resource : conditions.getDimensions().entries()) {
             if (!concatConditions.getDimensions().entries().contains(resource)) {
                 concatConditions.getDimensions().entries().add(resource);
             }
@@ -84,7 +84,7 @@ public class DefaultHandler {
     public static boolean checkFallbackWorlds() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return !concatConditions.getWorlds().entries().contains(client.level.dimensionType().effectsLocation());
+        return !concatConditions.getWorlds().entries().contains(Identifier.withDefaultNamespace(client.level.dimensionType().skybox().getSerializedName()));
     }
 
     /**
@@ -93,6 +93,6 @@ public class DefaultHandler {
     public static boolean checkFallbackDimensions() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return !concatConditions.getDimensions().entries().contains(client.level.dimension().location());
+        return !concatConditions.getDimensions().entries().contains(client.level.dimension().identifier());
     }
 }

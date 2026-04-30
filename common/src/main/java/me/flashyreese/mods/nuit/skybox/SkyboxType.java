@@ -12,7 +12,7 @@ import me.flashyreese.mods.nuit.skybox.vanilla.EndSkybox;
 import me.flashyreese.mods.nuit.skybox.vanilla.OverworldSkybox;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Map;
 import java.util.Objects;
@@ -20,22 +20,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class SkyboxType<T extends Skybox> {
-    public static final Codec<ResourceLocation> SKYBOX_ID_CODEC;
-    public static final ResourceKey<Registry<SkyboxType<? extends Skybox>>> SKYBOX_TYPE_REGISTRY_KEY = ResourceKey.createRegistryKey(ResourceLocation.tryBuild(NuitClient.MOD_ID, "skybox_type"));
+    public static final Codec<Identifier> SKYBOX_ID_CODEC;
+    public static final ResourceKey<Registry<SkyboxType<? extends Skybox>>> SKYBOX_TYPE_REGISTRY_KEY = ResourceKey.createRegistryKey(Identifier.tryBuild(NuitClient.MOD_ID, "skybox_type"));
     public static final SkyboxType<OverworldSkybox> OVERWORLD;
     public static final SkyboxType<EndSkybox> END;
     public static final SkyboxType<MonoColorSkybox> MONO_COLOR_SKYBOX;
     public static final SkyboxType<SquareTexturedSkybox> SQUARE_TEXTURED_SKYBOX;
     public static final SkyboxType<MultiTexturedSkybox> MULTI_TEXTURED_SKYBOX;
     public static final SkyboxType<DecorationBox> DECORATION_BOX;
-    private static final Map<ResourceLocation, SkyboxType<?>> SKYBOX_TYPES = new ConcurrentHashMap<>();
+    private static final Map<Identifier, SkyboxType<?>> SKYBOX_TYPES = new ConcurrentHashMap<>();
 
     static {
         SKYBOX_ID_CODEC = Codec.STRING.xmap((s) -> {
             if (!s.contains(":")) {
-                return ResourceLocation.tryBuild(NuitClient.MOD_ID, s);
+                return Identifier.tryBuild(NuitClient.MOD_ID, s);
             }
-            return ResourceLocation.tryParse(s);
+            return Identifier.tryParse(s);
         }, (id) -> {
             if (id.getNamespace().equals(NuitClient.MOD_ID)) {
                 return id.getPath();
@@ -54,17 +54,17 @@ public class SkyboxType<T extends Skybox> {
     }
 
     private final BiMap<Integer, Codec<T>> codecBiMap;
-    private final ResourceLocation name;
+    private final Identifier name;
 
     private SkyboxType(String name, int schemaVersion, Codec<T> codec) {
-        this(ResourceLocation.tryBuild(NuitClient.MOD_ID, name), schemaVersion, codec);
+        this(Identifier.tryBuild(NuitClient.MOD_ID, name), schemaVersion, codec);
     }
 
-    public SkyboxType(ResourceLocation name, int schemaVersion, Codec<T> codec) {
+    public SkyboxType(Identifier name, int schemaVersion, Codec<T> codec) {
         this(ImmutableBiMap.<Integer, Codec<T>>builder().put(schemaVersion, codec).build(), name);
     }
 
-    public SkyboxType(BiMap<Integer, Codec<T>> codecBiMap, ResourceLocation name) {
+    public SkyboxType(BiMap<Integer, Codec<T>> codecBiMap, Identifier name) {
         this.codecBiMap = codecBiMap;
         this.name = name;
     }
@@ -80,7 +80,7 @@ public class SkyboxType<T extends Skybox> {
         SKYBOX_TYPES.values().forEach(function);
     }
 
-    public ResourceLocation getName() {
+    public Identifier getName() {
         return this.name;
     }
 
