@@ -10,14 +10,26 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.fog.environment.AtmosphericFogEnvironment;
 import net.minecraft.util.ARGB;
-import org.joml.Vector4f;
+import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttribute;
+import net.minecraft.world.attribute.EnvironmentAttributeProbe;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AtmosphericFogEnvironment.class)
-public class MixinAirBasedFogEnvironment {
-    @ModifyConstant(method = "getBaseColor", slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/util/CubicSampler;gaussianSampleVec3(Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/util/CubicSampler$Vec3Fetcher;)Lnet/minecraft/world/phys/Vec3;")), constant = @Constant(intValue = 4, ordinal = 0))
+public abstract class MixinAtmosphericFogEnvironment {
+    @Redirect(method = "getBaseColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/attribute/EnvironmentAttributeProbe;getValue(Lnet/minecraft/world/attribute/EnvironmentAttribute;F)Ljava/lang/Object;", ordinal = 1))
+    private <Value> Value nuit$redirectSkyAngle(EnvironmentAttributeProbe instance, EnvironmentAttribute<Value> attribute, float tickDelta, ClientLevel clientLevel, Camera camera, int distance, float partialTick) {
+        final Value sunAngle = instance.getValue(attribute, tickDelta);
+        if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorBox && decorBox.getProperties().rotation().skyboxRotation())) {
+            return (Value) (Object) (Mth.positiveModulo(clientLevel.getDayTime() / 24000F + 0.75F, 1) * 360.0F);
+        } else {
+            return sunAngle;
+        }
+    }
+
+    @ModifyConstant(method = "getBaseColor", slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/world/attribute/EnvironmentAttributeProbe;getValue(Lnet/minecraft/world/attribute/EnvironmentAttribute;F)Ljava/lang/Object;", ordinal = 0)), constant = @Constant(intValue = 4, ordinal = 0))
     private int nuit$renderSkyColor(int original) {
         final SkyboxManager skyboxManager = SkyboxManager.getInstance();
         final Skybox skybox = skyboxManager.getCurrentSkybox();

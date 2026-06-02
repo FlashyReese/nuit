@@ -41,7 +41,7 @@ public class OverworldSkybox extends AbstractSkybox {
         RenderSystem.setShaderFog(fogParameters);
 
         ClientLevel level = (ClientLevel) camera.entity().level();
-        float sunAngle = camera.attributeProbe().getValue(EnvironmentAttributes.SUN_ANGLE, tickDelta);
+        float sunAngle = camera.attributeProbe().getValue(EnvironmentAttributes.SUN_ANGLE, tickDelta) * Mth.DEG_TO_RAD;
         int sunriseOrSunsetColor = camera.attributeProbe().getValue(EnvironmentAttributes.SUNRISE_SUNSET_COLOR, tickDelta);
         int skyColor = camera.attributeProbe().getValue(EnvironmentAttributes.SKY_COLOR, tickDelta);
 
@@ -49,7 +49,7 @@ public class OverworldSkybox extends AbstractSkybox {
         ((SkyRenderer) skyRendererAccessor).renderSkyDisc(skyColor);
         if (ARGB.alphaFloat(sunriseOrSunsetColor) > 0.0F) {
             if (NuitApi.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorationBox && decorationBox.getProperties().rotation().skyboxRotation())) {
-                sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1);
+                sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1) * ((float) Math.PI * 2.0F);
             }
 
             this.renderSunriseAndSunset(matrix4fStack, sunAngle, sunriseOrSunsetColor);

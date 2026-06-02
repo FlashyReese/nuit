@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.skybox.textured;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -57,7 +58,7 @@ public class SquareTexturedSkybox extends TexturedSkybox {
             GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTextureView();
             BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                 pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR));
+                pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             });
         }
     }

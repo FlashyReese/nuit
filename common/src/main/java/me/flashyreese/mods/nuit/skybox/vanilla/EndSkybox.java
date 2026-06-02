@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.skybox.vanilla;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -56,7 +57,7 @@ public class EndSkybox extends AbstractSkybox {
             GpuTextureView endSkyTextureView = abstractTexture.getTextureView();
             BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
                 pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindTexture("Sampler0", endSkyTextureView, RenderSystem.getSamplerCache().getClampToEdge(com.mojang.blaze3d.textures.FilterMode.LINEAR));
+                pass.bindTexture("Sampler0", endSkyTextureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             });
         }
     }
