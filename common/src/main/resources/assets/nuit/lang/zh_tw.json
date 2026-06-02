@@ -1,5 +1,5 @@
 {
-  "category.nuit": "Nuit",
+  "key.category.nuit.nuit": "Nuit",
   "key.nuit.toggle": "切換 Nuit",
   "nuit.message.enabled": "Nuit 已啟用！",
   "nuit.message.disabled": "Nuit 已停用！",

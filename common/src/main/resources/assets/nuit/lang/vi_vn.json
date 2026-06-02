@@ -1,5 +1,5 @@
 {
-  "category.nuit": "Nuit",
+  "key.category.nuit.nuit": "Nuit",
   "key.nuit.toggle": "Bật Nuit",
   "nuit.message.enabled": "Nuit đã được bật!",
   "nuit.message.disabled": "Nuit đã bị vô hiệu hoá!"
