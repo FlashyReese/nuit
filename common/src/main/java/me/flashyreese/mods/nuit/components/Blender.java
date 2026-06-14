@@ -1,6 +1,5 @@
 package me.flashyreese.mods.nuit.components;
 
-import com.mojang.blaze3d.opengl.GlConst;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.platform.SourceFactor;
@@ -58,7 +57,7 @@ public class Blender {
         this.blueAlphaEnabled = blueAlphaEnabled;
         this.alphaEnabled = alphaEnabled;
 
-        if ((this.separateFunction && this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidFactor(sourceFactorAlpha) && this.isValidFactor(destinationFactorAlpha) && this.isValidEquation(equation)) || (this.isValidFactor(sourceFactor) && this.isValidFactor(destinationFactor) && this.isValidEquation(equation))) {
+        if ((this.separateFunction && this.isValidSourceFactor(sourceFactor) && this.isValidDestFactor(destinationFactor) && this.isValidSourceFactor(sourceFactorAlpha) && this.isValidDestFactor(destinationFactorAlpha) && this.isValidEquation(equation)) || (this.isValidSourceFactor(sourceFactor) && this.isValidDestFactor(destinationFactor) && this.isValidEquation(equation))) {
             if (this.separateFunction) {
                 this.blendFunction = new BlendFunction(Utils.toSourceFactor(this.sourceFactor), Utils.toDestFactor(this.destinationFactor), Utils.toSourceFactor(this.sourceFactorAlpha), Utils.toDestFactor(this.destinationFactorAlpha));
             } else {
@@ -155,12 +154,16 @@ public class Blender {
         return this.alphaEnabled;
     }
 
-    public boolean isValidFactor(int factor) {
-        return Arrays.stream(SourceFactor.values()).filter(factor1 -> factor == GlConst.toGl(factor1)).count() == 1;
+    public boolean isValidSourceFactor(int factor) {
+        return Utils.isSourceFactor(factor);
+    }
+
+    public boolean isValidDestFactor(int factor) {
+        return Utils.isDestFactor(factor);
     }
 
     public boolean isValidEquation(int equation) {
-        return Arrays.stream(Equation.values()).filter(equation1 -> equation == equation1.value).count() == 1;
+        return Arrays.stream(Equation.values()).anyMatch(equation1 -> equation == equation1.value);
     }
 
     public enum Equation {

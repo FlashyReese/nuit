@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import me.flashyreese.mods.nuit.util.CodecUtils;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -24,9 +25,9 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             return DataResult.error(() -> "Invalid number of elements in vector");
         } else {
             return DataResult.success(new Quaternionf()
-                    .rotateLocalX((float) Math.toRadians(list.get(0)))
-                    .rotateLocalY((float) Math.toRadians(list.get(1)))
-                    .rotateLocalZ((float) Math.toRadians(list.get(2))));
+                    .rotateLocalX(list.get(0) * Mth.DEG_TO_RAD)
+                    .rotateLocalY(list.get(1) * Mth.DEG_TO_RAD)
+                    .rotateLocalZ(list.get(2) * Mth.DEG_TO_RAD));
         }
     }, (vec) -> ImmutableList.of(vec.x(), vec.y(), vec.z()));
 

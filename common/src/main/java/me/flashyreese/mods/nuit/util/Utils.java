@@ -1,6 +1,6 @@
 package me.flashyreese.mods.nuit.util;
 
-import com.google.common.collect.Range;
+import com.mojang.blaze3d.opengl.GlConst;
 import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.platform.SourceFactor;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -18,16 +18,22 @@ import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import org.lwjgl.opengl.GL46C;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Utils {
     private static final float SKYBOX_MIN = -100.0F;
     private static final float SKYBOX_MAX = 100.0F;
+    private static final Map<Integer, SourceFactor> SOURCE_FACTORS_BY_GL_ID = Arrays.stream(SourceFactor.values())
+            .collect(Collectors.toUnmodifiableMap(GlConst::toGl, Function.identity()));
+    private static final Map<Integer, DestFactor> DEST_FACTORS_BY_GL_ID = Arrays.stream(DestFactor.values())
+            .collect(Collectors.toUnmodifiableMap(GlConst::toGl, Function.identity()));
     public static final UVRange[] TEXTURE_FACES = new UVRange[]{
             new UVRange(0, 0, 1.0F / 3.0F, 1.0F / 2.0F), // bottom
             new UVRange(1.0F / 3.0F, 1.0F / 2.0F, 2.0F / 3.0F, 1), // north
@@ -48,11 +54,11 @@ public class Utils {
     // 0 = bottom | 1 = north | 2 = south | 3 = top | 4 = east | 5 = west
     private static final Matrix4f[] MATRIX4F_ROTATED_FACE = new Matrix4f[]{
             new Matrix4f(), // 0 (Bottom)
-            new Matrix4f().rotateX((float) Math.toRadians(90.0F)), // 1 (North)
-            new Matrix4f().rotateX((float) Math.toRadians(-90.0F)).rotateY((float) Math.toRadians(180.0F)), // 2 (South)
-            new Matrix4f().rotateX((float) Math.toRadians(180.0F)), // 3 (Top)
-            new Matrix4f().rotateZ((float) Math.toRadians(90.0F)).rotateY((float) Math.toRadians(-90.0F)), // 4 (East)
-            new Matrix4f().rotateZ((float) Math.toRadians(-90.0F)).rotateY((float) Math.toRadians(90.0F)) // 5 (West)
+            new Matrix4f().rotateX(90.0F * Mth.DEG_TO_RAD), // 1 (North)
+            new Matrix4f().rotateX(-90.0F * Mth.DEG_TO_RAD).rotateY(180.0F * Mth.DEG_TO_RAD), // 2 (South)
+            new Matrix4f().rotateX(180.0F * Mth.DEG_TO_RAD), // 3 (Top)
+            new Matrix4f().rotateZ(90.0F * Mth.DEG_TO_RAD).rotateY(-90.0F * Mth.DEG_TO_RAD), // 4 (East)
+            new Matrix4f().rotateZ(-90.0F * Mth.DEG_TO_RAD).rotateY(90.0F * Mth.DEG_TO_RAD) // 5 (West)
     };
 
     /**
@@ -102,8 +108,7 @@ public class Utils {
      */
     public static boolean checkRanges(double value, List<RangeEntry> rangeEntries, boolean inverse) {
         return rangeEntries.isEmpty() || (inverse ^ rangeEntries.stream()
-                .map(entry -> Range.closedOpen(entry.min(), entry.max()))
-                .anyMatch(range -> range.contains((float) value)));
+                .anyMatch(entry -> value >= entry.min() && value < entry.max()));
     }
 
     /**
@@ -376,42 +381,26 @@ public class Utils {
     }
 
     public static SourceFactor toSourceFactor(int glId) {
-        return switch (glId) {
-            case GL46C.GL_CONSTANT_ALPHA -> SourceFactor.CONSTANT_ALPHA;
-            case GL46C.GL_CONSTANT_COLOR -> SourceFactor.CONSTANT_COLOR;
-            case GL46C.GL_DST_ALPHA -> SourceFactor.DST_ALPHA;
-            case GL46C.GL_DST_COLOR -> SourceFactor.DST_COLOR;
-            case GL46C.GL_ONE -> SourceFactor.ONE;
-            case GL46C.GL_ONE_MINUS_CONSTANT_ALPHA -> SourceFactor.ONE_MINUS_CONSTANT_ALPHA;
-            case GL46C.GL_ONE_MINUS_CONSTANT_COLOR -> SourceFactor.ONE_MINUS_CONSTANT_COLOR;
-            case GL46C.GL_ONE_MINUS_DST_ALPHA -> SourceFactor.ONE_MINUS_DST_ALPHA;
-            case GL46C.GL_ONE_MINUS_DST_COLOR -> SourceFactor.ONE_MINUS_DST_COLOR;
-            case GL46C.GL_ONE_MINUS_SRC_ALPHA -> SourceFactor.ONE_MINUS_SRC_ALPHA;
-            case GL46C.GL_ONE_MINUS_SRC_COLOR -> SourceFactor.ONE_MINUS_SRC_COLOR;
-            case GL46C.GL_SRC_ALPHA -> SourceFactor.SRC_ALPHA;
-            case GL46C.GL_SRC_COLOR -> SourceFactor.SRC_COLOR;
-            case GL46C.GL_ZERO -> SourceFactor.ZERO;
-            default -> throw new RuntimeException("Unknown SourceFactor with GL id of " + glId);
-        };
+        SourceFactor factor = SOURCE_FACTORS_BY_GL_ID.get(glId);
+        if (factor == null) {
+            throw new IllegalArgumentException("Unknown SourceFactor with GL id of " + glId);
+        }
+        return factor;
     }
 
     public static DestFactor toDestFactor(int glId) {
-        return switch (glId) {
-            case GL46C.GL_CONSTANT_ALPHA -> DestFactor.CONSTANT_ALPHA;
-            case GL46C.GL_CONSTANT_COLOR -> DestFactor.CONSTANT_COLOR;
-            case GL46C.GL_DST_ALPHA -> DestFactor.DST_ALPHA;
-            case GL46C.GL_DST_COLOR -> DestFactor.DST_COLOR;
-            case GL46C.GL_ONE -> DestFactor.ONE;
-            case GL46C.GL_ONE_MINUS_CONSTANT_ALPHA -> DestFactor.ONE_MINUS_CONSTANT_ALPHA;
-            case GL46C.GL_ONE_MINUS_CONSTANT_COLOR -> DestFactor.ONE_MINUS_CONSTANT_COLOR;
-            case GL46C.GL_ONE_MINUS_DST_ALPHA -> DestFactor.ONE_MINUS_DST_ALPHA;
-            case GL46C.GL_ONE_MINUS_DST_COLOR -> DestFactor.ONE_MINUS_DST_COLOR;
-            case GL46C.GL_ONE_MINUS_SRC_ALPHA -> DestFactor.ONE_MINUS_SRC_ALPHA;
-            case GL46C.GL_ONE_MINUS_SRC_COLOR -> DestFactor.ONE_MINUS_SRC_COLOR;
-            case GL46C.GL_SRC_ALPHA -> DestFactor.SRC_ALPHA;
-            case GL46C.GL_SRC_COLOR -> DestFactor.SRC_COLOR;
-            case GL46C.GL_ZERO -> DestFactor.ZERO;
-            default -> throw new RuntimeException("Unknown DestFactor with GL id of " + glId);
-        };
+        DestFactor factor = DEST_FACTORS_BY_GL_ID.get(glId);
+        if (factor == null) {
+            throw new IllegalArgumentException("Unknown DestFactor with GL id of " + glId);
+        }
+        return factor;
+    }
+
+    public static boolean isSourceFactor(int glId) {
+        return SOURCE_FACTORS_BY_GL_ID.containsKey(glId);
+    }
+
+    public static boolean isDestFactor(int glId) {
+        return DEST_FACTORS_BY_GL_ID.containsKey(glId);
     }
 }

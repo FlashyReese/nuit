@@ -49,7 +49,7 @@ public class OverworldSkybox extends AbstractSkybox {
         ((SkyRenderer) skyRendererAccessor).renderSkyDisc(skyColor);
         if (ARGB.alphaFloat(sunriseOrSunsetColor) > 0.0F) {
             if (NuitApi.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorationBox && decorationBox.getProperties().rotation().skyboxRotation())) {
-                sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1) * ((float) Math.PI * 2.0F);
+                sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1) * Mth.TWO_PI;
             }
 
             this.renderSunriseAndSunset(matrix4fStack, sunAngle, sunriseOrSunsetColor);
@@ -80,7 +80,7 @@ public class OverworldSkybox extends AbstractSkybox {
 
             int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
             for (int i = 0; i <= 16; i++) {
-                float angleRadians = (float) i * ((float) Math.PI * 2F) / 16.0F;
+                float angleRadians = (float) i * Mth.TWO_PI / 16.0F;
                 float x = Mth.sin(angleRadians);
                 float y = Mth.cos(angleRadians);
                 float z = -y * 40.0F * alpha;
