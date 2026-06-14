@@ -17,8 +17,10 @@ import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
@@ -32,6 +34,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(TexturedSkybox::getBlend),
             AnimatableTexture.CODEC.listOf().optionalFieldOf("animatableTextures", new ArrayList<>()).forGetter(MultiTexturedSkybox::getAnimations)
     ).apply(instance, MultiTexturedSkybox::new));
+    private static final int PACKED_UV_MAX = Short.MAX_VALUE;
     protected final List<AnimatableTexture> animatableTextures;
     private final float quadSize = 100F;
     private final UVRange quad = new UVRange(-this.quadSize, -this.quadSize, this.quadSize, this.quadSize);
@@ -45,9 +48,14 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderSystem.setShaderFog(fogParameters);
         GpuBufferSlice dynamicTransforms = transformsBuilder.build();
-        RenderPipeline pipeline = getTexturedSkyboxPipeline(this.getBlend().getBlendFunction());
+        RenderPipeline texturedPipeline = getTexturedSkyboxPipeline(this.getBlend().getBlendFunction());
+        RenderPipeline frameBlendedPipeline = null;
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) {
+            return;
+        }
         for (AnimatableTexture animatableTexture : this.animatableTextures) {
-            animatableTexture.tick();
+            animatableTexture.update(level.getGameTime(), tickDelta);
         }
         for (int face = 0; face < 6; ++face) {
             Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
@@ -55,15 +63,23 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             for (AnimatableTexture animatableTexture : this.animatableTextures) {
                 UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
                 if (intersect != null && animatableTexture.getCurrentFrame() != null) {
+                    boolean interpolate = shouldInterpolate(animatableTexture);
+                    if (interpolate && frameBlendedPipeline == null) {
+                        frameBlendedPipeline = getFrameBlendedTexturedSkyboxPipeline(this.getBlend().getBlendFunction());
+                    }
+                    RenderPipeline pipeline = interpolate ? frameBlendedPipeline : texturedPipeline;
                     UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
                     UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getCurrentFrame(), intersect);
+                    UVRange intersectionOnNextFrame = interpolate ? Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getNextFrame(), intersect) : null;
 
                     try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
                         BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-                        builder.addVertex(matrix4f, intersectionOnCurrentTexture.minU(), -this.quadSize, intersectionOnCurrentTexture.minV()).setUv(intersectionOnCurrentFrame.minU(), intersectionOnCurrentFrame.minV());
-                        builder.addVertex(matrix4f, intersectionOnCurrentTexture.minU(), -this.quadSize, intersectionOnCurrentTexture.maxV()).setUv(intersectionOnCurrentFrame.minU(), intersectionOnCurrentFrame.maxV());
-                        builder.addVertex(matrix4f, intersectionOnCurrentTexture.maxU(), -this.quadSize, intersectionOnCurrentTexture.maxV()).setUv(intersectionOnCurrentFrame.maxU(), intersectionOnCurrentFrame.maxV());
-                        builder.addVertex(matrix4f, intersectionOnCurrentTexture.maxU(), -this.quadSize, intersectionOnCurrentTexture.minV()).setUv(intersectionOnCurrentFrame.maxU(), intersectionOnCurrentFrame.minV());
+                        if (interpolate) {
+                            float frameBlend = animatableTexture.getFrameBlend();
+                            addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, frameBlend);
+                        } else {
+                            addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
+                        }
 
                         GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(animatableTexture.getTexture().getTextureId()).getTextureView();
                         BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
@@ -74,6 +90,38 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                 }
             }
         }
+    }
+
+    private static boolean shouldInterpolate(AnimatableTexture animatableTexture) {
+        return animatableTexture.isInterpolate()
+                && animatableTexture.hasMultipleFrames()
+                && animatableTexture.getNextFrame() != null
+                && animatableTexture.getFrameBlend() > 0.0F;
+    }
+
+    private void addTexturedVertices(BufferBuilder builder, Matrix4f matrix4f, UVRange textureQuad, UVRange currentFrame) {
+        builder.addVertex(matrix4f, textureQuad.minU(), -this.quadSize, textureQuad.minV()).setUv(currentFrame.minU(), currentFrame.minV());
+        builder.addVertex(matrix4f, textureQuad.minU(), -this.quadSize, textureQuad.maxV()).setUv(currentFrame.minU(), currentFrame.maxV());
+        builder.addVertex(matrix4f, textureQuad.maxU(), -this.quadSize, textureQuad.maxV()).setUv(currentFrame.maxU(), currentFrame.maxV());
+        builder.addVertex(matrix4f, textureQuad.maxU(), -this.quadSize, textureQuad.minV()).setUv(currentFrame.maxU(), currentFrame.minV());
+    }
+
+    private void addFrameBlendedVertices(BufferBuilder builder, Matrix4f matrix4f, UVRange textureQuad, UVRange currentFrame, UVRange nextFrame, float frameBlend) {
+        addFrameBlendedVertex(builder, matrix4f, textureQuad.minU(), textureQuad.minV(), currentFrame.minU(), currentFrame.minV(), nextFrame.minU(), nextFrame.minV(), frameBlend);
+        addFrameBlendedVertex(builder, matrix4f, textureQuad.minU(), textureQuad.maxV(), currentFrame.minU(), currentFrame.maxV(), nextFrame.minU(), nextFrame.maxV(), frameBlend);
+        addFrameBlendedVertex(builder, matrix4f, textureQuad.maxU(), textureQuad.maxV(), currentFrame.maxU(), currentFrame.maxV(), nextFrame.maxU(), nextFrame.maxV(), frameBlend);
+        addFrameBlendedVertex(builder, matrix4f, textureQuad.maxU(), textureQuad.minV(), currentFrame.maxU(), currentFrame.minV(), nextFrame.maxU(), nextFrame.minV(), frameBlend);
+    }
+
+    private void addFrameBlendedVertex(BufferBuilder builder, Matrix4f matrix4f, float x, float z, float currentU, float currentV, float nextU, float nextV, float frameBlend) {
+        builder.addVertex(matrix4f, x, -this.quadSize, z)
+                .setUv(currentU, currentV)
+                .setUv1(packUv(nextU), packUv(nextV))
+                .setLineWidth(frameBlend);
+    }
+
+    private static int packUv(float uv) {
+        return Math.round(Mth.clamp(uv, 0.0F, 1.0F) * PACKED_UV_MAX);
     }
 
     public List<AnimatableTexture> getAnimations() {

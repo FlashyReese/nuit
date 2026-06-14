@@ -6,6 +6,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
 import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
@@ -32,6 +33,13 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
+    protected static final VertexFormat FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT = VertexFormat.builder()
+            .add("Position", VertexFormatElement.POSITION)
+            .add("UV0", VertexFormatElement.UV0)
+            .add("UV1", VertexFormatElement.UV1)
+            .add("FrameBlend", VertexFormatElement.LINE_WIDTH)
+            .build();
+
     private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
         RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
         builder.withLocation(Identifier.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
@@ -48,8 +56,26 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
         return builder.build();
     };
+    private static final Function<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
+        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
+        builder.withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "pipeline/textured_skybox_frame_blend"));
+        builder.withVertexShader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/position_tex_frame_blend"));
+        builder.withFragmentShader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/position_tex_frame_blend"));
+        builder.withDepthWrite(false);
+        builder.withCull(false);
+        if (blendFunction != null) {
+            builder.withBlend(blendFunction);
+        } else {
+            builder.withoutBlend();
+        }
+        builder.withSampler("Sampler0");
+        builder.withVertexFormat(FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT, VertexFormat.Mode.QUADS);
+        return builder.build();
+    };
     private static final Map<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINES = new IdentityHashMap<>();
+    private static final Map<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINES = new IdentityHashMap<>();
     private static RenderPipeline texturedSkyboxNoBlendPipeline;
+    private static RenderPipeline frameBlendedTexturedSkyboxNoBlendPipeline;
     private final Rotation rotation;
     private final Blend blend;
 
@@ -77,6 +103,18 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         }
 
         return TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, TEXTURED_SKYBOX_PIPELINE_FACTORY);
+    }
+
+    protected static RenderPipeline getFrameBlendedTexturedSkyboxPipeline(BlendFunction blendFunction) {
+        if (blendFunction == null) {
+            if (frameBlendedTexturedSkyboxNoBlendPipeline == null) {
+                frameBlendedTexturedSkyboxNoBlendPipeline = FRAME_BLENDED_TEXTURED_SKYBOX_PIPELINE_FACTORY.apply(null);
+            }
+
+            return frameBlendedTexturedSkyboxNoBlendPipeline;
+        }
+
+        return FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, FRAME_BLENDED_TEXTURED_SKYBOX_PIPELINE_FACTORY);
     }
 
     /**
