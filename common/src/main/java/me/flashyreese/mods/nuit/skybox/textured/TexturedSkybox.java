@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
 
@@ -53,14 +52,13 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
         try {
-            Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+            Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
             modelViewStack.set(matrix4fStack);
             this.rotation.apply(modelViewStack, level);
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
             this.renderSkybox(skyRendererAccess, modelViewStack, tickDelta, camera, dynamicTransforms, fogParameters, bufferSource);
         } finally {
             modelViewStack.popMatrix();
-            GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
         }
     }
 

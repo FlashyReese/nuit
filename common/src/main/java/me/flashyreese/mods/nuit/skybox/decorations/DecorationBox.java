@@ -25,7 +25,6 @@ import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
 
@@ -79,7 +78,7 @@ public class DecorationBox extends AbstractSkybox {
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
         try {
             Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(matrix4fStack), level);
-            Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+            Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
 
             // poseStack.mulPose(Axis.YP.rotation(-90F));
@@ -104,7 +103,6 @@ public class DecorationBox extends AbstractSkybox {
 
         } finally {
             OverrideUtils.disableBlendingOverride();
-            GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
         }
     }
 

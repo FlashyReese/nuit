@@ -20,7 +20,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL46C;
 
 public class MonoColorSkybox extends AbstractSkybox {
     public static Codec<MonoColorSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -45,23 +44,19 @@ public class MonoColorSkybox extends AbstractSkybox {
             return;
         }
 
-        try {
-            Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
-            RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.blend.getBlendFunction());
-            try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
-                BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-                for (int face = 0; face < 6; ++face) {
-                    Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-                    builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
-                    builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
-                    builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
-                    builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
-                }
-                NuitRenderBackend.draw(pipeline, builder.buildOrThrow(), dynamicTransforms);
+        Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
+        RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.blend.getBlendFunction());
+        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
+            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+            for (int face = 0; face < 6; ++face) {
+                Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+                builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
+                builder.addVertex(matrix4f, -100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
+                builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
+                builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setColor(this.color.getRed(), this.color.getGreen(), this.color.getBlue(), this.color.getAlpha());
             }
-        } finally {
-            GL46C.glBlendEquation(GL46C.GL_FUNC_ADD);
+            NuitRenderBackend.draw(pipeline, builder.buildOrThrow(), dynamicTransforms);
         }
     }
 
