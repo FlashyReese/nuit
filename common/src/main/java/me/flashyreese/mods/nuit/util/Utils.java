@@ -13,8 +13,10 @@ import me.flashyreese.mods.nuit.components.RGB;
 import me.flashyreese.mods.nuit.components.RangeEntry;
 import me.flashyreese.mods.nuit.components.UVRange;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
+import net.minecraft.world.level.dimension.DimensionType;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -146,6 +148,19 @@ public class Utils {
         }
 
         return MATRIX4F_ROTATED_FACE[face];
+    }
+
+    public static Identifier getVanillaSkyboxId(DimensionType.Skybox skybox) {
+        return switch (skybox) {
+            case NONE -> Identifier.withDefaultNamespace("none");
+            case OVERWORLD -> Identifier.withDefaultNamespace("overworld");
+            case END -> Identifier.withDefaultNamespace("end");
+        };
+    }
+
+    @Deprecated(forRemoval = true)
+    public static Identifier getVanillaWorldId(DimensionType.Skybox skybox) {
+        return getVanillaSkyboxId(skybox);
     }
 
     public static void addTexturedSkyboxFace(BufferBuilder builder, Matrix4f matrix4f, SkyboxFace face, UVRange positionRange, UVRange textureRange) {

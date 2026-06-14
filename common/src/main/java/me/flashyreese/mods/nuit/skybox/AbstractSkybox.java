@@ -111,7 +111,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      * @return Whether all conditions were met
      */
     protected boolean checkConditions() {
-        return this.checkDimensions() && this.checkWorlds() && this.checkBiomes() && this.checkXRanges() &&
+        return this.checkDimensions() && this.checkSkyboxes() && this.checkBiomes() && this.checkXRanges() &&
                 this.checkYRanges() && this.checkZRanges() && this.checkWeather() && this.checkEffects() && this.checkProperties();
     }
 
@@ -139,14 +139,19 @@ public abstract class AbstractSkybox implements NuitSkybox {
     }
 
     /**
-     * @return Whether the current dimension sky effect is valid for this skybox
+     * @return Whether the current vanilla skybox is valid for this skybox
      */
-    protected boolean checkWorlds() {
+    protected boolean checkSkyboxes() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return this.conditions.getWorlds().entries().isEmpty() || this.conditions.getWorlds().excludes() ^ (
-                this.conditions.getWorlds().entries().contains(Identifier.withDefaultNamespace(client.level.dimensionType().skybox().getSerializedName())) ||
-                        this.conditions.getWorlds().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackWorlds());
+        return this.conditions.getSkyboxes().entries().isEmpty() || this.conditions.getSkyboxes().excludes() ^ (
+                this.conditions.getSkyboxes().entries().contains(Utils.getVanillaSkyboxId(client.level.dimensionType().skybox())) ||
+                        this.conditions.getSkyboxes().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackSkyboxes());
+    }
+
+    @Deprecated(forRemoval = true)
+    protected boolean checkWorlds() {
+        return this.checkSkyboxes();
     }
 
     /**
@@ -281,6 +286,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
     @Override
     public String toString() {
-        return String.format("[layer=%s, alpha=%s, dimension=%s, world=%s, biomes=%s, xranges=%s, yranges=%s, zranges=%s, weather=%s, effects=%s]", getProperties().layer(), getAlpha(), checkDimensions(), checkWorlds(), checkBiomes(), checkXRanges(), checkYRanges(), checkZRanges(), checkWeather(), checkEffects());
+        return String.format("[layer=%s, alpha=%s, dimension=%s, skybox=%s, biomes=%s, xranges=%s, yranges=%s, zranges=%s, weather=%s, effects=%s]", getProperties().layer(), getAlpha(), checkDimensions(), checkSkyboxes(), checkBiomes(), checkXRanges(), checkYRanges(), checkZRanges(), checkWeather(), checkEffects());
     }
 }

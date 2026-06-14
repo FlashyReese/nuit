@@ -4,6 +4,7 @@ import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
 import me.flashyreese.mods.nuit.components.Conditions;
+import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -40,9 +41,9 @@ public class DefaultHandler {
             }
         }
 
-        for (Identifier resourceLocation : conditions.getWorlds().entries()) {
-            if (!concatConditions.getWorlds().entries().contains(resourceLocation)) {
-                concatConditions.getWorlds().entries().add(resourceLocation);
+        for (Identifier resourceLocation : conditions.getSkyboxes().entries()) {
+            if (!concatConditions.getSkyboxes().entries().contains(resourceLocation)) {
+                concatConditions.getSkyboxes().entries().add(resourceLocation);
             }
         }
 
@@ -79,12 +80,17 @@ public class DefaultHandler {
     }
 
     /**
-     * @return true if the current world is not listed as a condition in any loaded skybox.
+     * @return true if the current vanilla skybox is not listed as a condition in any loaded skybox.
      */
-    public static boolean checkFallbackWorlds() {
+    public static boolean checkFallbackSkyboxes() {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
-        return !concatConditions.getWorlds().entries().contains(Identifier.withDefaultNamespace(client.level.dimensionType().skybox().getSerializedName()));
+        return !concatConditions.getSkyboxes().entries().contains(Utils.getVanillaSkyboxId(client.level.dimensionType().skybox()));
+    }
+
+    @Deprecated(forRemoval = true)
+    public static boolean checkFallbackWorlds() {
+        return checkFallbackSkyboxes();
     }
 
     /**
