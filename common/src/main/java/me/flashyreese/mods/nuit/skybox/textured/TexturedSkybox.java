@@ -1,81 +1,27 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
-import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.Rotation;
-import me.flashyreese.mods.nuit.mixin.RenderPipelinesAccessor;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
-import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
-    protected static final VertexFormat FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT = VertexFormat.builder()
-            .add("Position", VertexFormatElement.POSITION)
-            .add("UV0", VertexFormatElement.UV0)
-            .add("UV1", VertexFormatElement.UV1)
-            .add("FrameBlend", VertexFormatElement.LINE_WIDTH)
-            .build();
-
-    private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
-        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
-        builder.withLocation(Identifier.tryBuild(NuitClient.MOD_ID, "pipeline/textured_skybox"));
-        builder.withVertexShader("core/position_tex");
-        builder.withFragmentShader("core/position_tex");
-        builder.withDepthWrite(false);
-        builder.withCull(false);
-        if (blendFunction != null) {
-            builder.withBlend(blendFunction);
-        } else {
-            builder.withoutBlend();
-        }
-        builder.withSampler("Sampler0");
-        builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
-        return builder.build();
-    };
-    private static final Function<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_PIPELINE_FACTORY = (blendFunction) -> {
-        RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesAccessor.getMatricesProjectSnippet());
-        builder.withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "pipeline/textured_skybox_frame_blend"));
-        builder.withVertexShader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/position_tex_frame_blend"));
-        builder.withFragmentShader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/position_tex_frame_blend"));
-        builder.withDepthWrite(false);
-        builder.withCull(false);
-        if (blendFunction != null) {
-            builder.withBlend(blendFunction);
-        } else {
-            builder.withoutBlend();
-        }
-        builder.withSampler("Sampler0");
-        builder.withVertexFormat(FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT, VertexFormat.Mode.QUADS);
-        return builder.build();
-    };
-    private static final Map<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINES = new IdentityHashMap<>();
-    private static final Map<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINES = new IdentityHashMap<>();
-    private static RenderPipeline texturedSkyboxNoBlendPipeline;
-    private static RenderPipeline frameBlendedTexturedSkyboxNoBlendPipeline;
     private final Rotation rotation;
     private final Blend blend;
 
@@ -93,30 +39,6 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
         return this.blend;
     }
 
-    protected static RenderPipeline getTexturedSkyboxPipeline(BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (texturedSkyboxNoBlendPipeline == null) {
-                texturedSkyboxNoBlendPipeline = TEXTURED_SKYBOX_PIPELINE_FACTORY.apply(null);
-            }
-
-            return texturedSkyboxNoBlendPipeline;
-        }
-
-        return TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, TEXTURED_SKYBOX_PIPELINE_FACTORY);
-    }
-
-    protected static RenderPipeline getFrameBlendedTexturedSkyboxPipeline(BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (frameBlendedTexturedSkyboxNoBlendPipeline == null) {
-                frameBlendedTexturedSkyboxNoBlendPipeline = FRAME_BLENDED_TEXTURED_SKYBOX_PIPELINE_FACTORY.apply(null);
-            }
-
-            return frameBlendedTexturedSkyboxNoBlendPipeline;
-        }
-
-        return FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, FRAME_BLENDED_TEXTURED_SKYBOX_PIPELINE_FACTORY);
-    }
-
     /**
      * Overrides and makes final here as there are options that should always be respected in a textured skybox.
      *
@@ -127,23 +49,23 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
      */
     @Override
     public final void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
-        Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
-        DynamicTransformsBuilder transformsBuilder = new DynamicTransformsBuilder()
-                .withShaderColor(colorModifier);
-
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
-        this.rotation.apply(modelViewStack, level);
-        transformsBuilder.withModelViewMatrix(new Matrix4f(modelViewStack));
-        this.renderSkybox(skyRendererAccess, modelViewStack, tickDelta, camera, transformsBuilder, fogParameters, bufferSource);
-        modelViewStack.popMatrix();
-
-        GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
+        try {
+            Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+            modelViewStack.set(matrix4fStack);
+            this.rotation.apply(modelViewStack, level);
+            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
+            this.renderSkybox(skyRendererAccess, modelViewStack, tickDelta, camera, dynamicTransforms, fogParameters, bufferSource);
+        } finally {
+            modelViewStack.popMatrix();
+            GL46C.glBlendEquation(GL46C.GL_FUNC_ADD); // Fixme: avoid direct gl calls
+        }
     }
 
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4f, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource);
+    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4f, float tickDelta, Camera camera, GpuBufferSlice dynamicTransforms, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource);
 }

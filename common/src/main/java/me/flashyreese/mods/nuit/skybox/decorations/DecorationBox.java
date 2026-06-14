@@ -3,8 +3,6 @@ package me.flashyreese.mods.nuit.skybox.decorations;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -14,20 +12,19 @@ import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitRenderBackend;
+import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import me.flashyreese.mods.nuit.util.BufferUploader;
-import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL46C;
 
 import java.util.Objects;
@@ -82,10 +79,8 @@ public class DecorationBox extends AbstractSkybox {
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
         try {
             Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(matrix4fStack), level);
-            GpuBufferSlice dynamicTransforms = DynamicTransformsBuilder.of()
-                    .withModelViewMatrix(decorationMatrix)
-                    .withShaderColor(1.0F, 1.0F, 1.0F, this.alpha)
-                    .build();
+            Vector4f colorModifier = this.blend.applyEquationAndGetColor(this.alpha);
+            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
 
             // poseStack.mulPose(Axis.YP.rotation(-90F));
             // poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
@@ -114,7 +109,7 @@ public class DecorationBox extends AbstractSkybox {
     }
 
     private void renderSun(GpuBufferSlice dynamicTransforms) {
-        RenderPipeline pipeline = RenderPipelines.CELESTIAL;
+        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.blend.getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
             BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
             builder.addVertex(-30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F);
@@ -122,11 +117,7 @@ public class DecorationBox extends AbstractSkybox {
             builder.addVertex(30.0F, 100.0F, 30.0F).setUv(1.0F, 1.0F);
             builder.addVertex(-30.0F, 100.0F, 30.0F).setUv(0.0F, 1.0F);
 
-            GpuTextureView sunTextureView = Minecraft.getInstance().getTextureManager().getTexture(this.sunTexture).getTextureView();
-            BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
-                pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindTexture("Sampler0", sunTextureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
-            });
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", this.sunTexture);
         }
     }
 
@@ -147,7 +138,7 @@ public class DecorationBox extends AbstractSkybox {
             endY = (yCoord + 1) / 2.0F;
         }
 
-        RenderPipeline pipeline = RenderPipelines.CELESTIAL;
+        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.blend.getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
             BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
             builder.addVertex(-20.0F, -100.0F, 20.0F).setUv(endX, endY);
@@ -155,11 +146,7 @@ public class DecorationBox extends AbstractSkybox {
             builder.addVertex(20.0F, -100.0F, -20.0F).setUv(startX, startY);
             builder.addVertex(-20.0F, -100.0F, -20.0F).setUv(endX, startY);
 
-            GpuTextureView moonTextureView = Minecraft.getInstance().getTextureManager().getTexture(texture).getTextureView();
-            BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
-                pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindTexture("Sampler0", moonTextureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
-            });
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", texture);
         }
     }
 

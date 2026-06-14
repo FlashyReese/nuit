@@ -12,10 +12,9 @@ import me.flashyreese.mods.nuit.api.NuitApi;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.skybox.decorations.DecorationBox;
-import me.flashyreese.mods.nuit.util.BufferUploader;
-import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -86,8 +85,8 @@ public class OverworldSkybox extends AbstractSkybox {
                 float z = -y * 40.0F * alpha;
                 bufferBuilder.addVertex(matrix4fStack, x * 120.0F, y * 120.0F, z).setColor(transparentColor);
             }
-            GpuBufferSlice dynamicTransforms = new DynamicTransformsBuilder().build();
-            BufferUploader.drawWithShader(pipeline, bufferBuilder.buildOrThrow(), (pass) -> pass.setUniform("DynamicTransforms", dynamicTransforms));
+            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms();
+            NuitRenderBackend.draw(pipeline, bufferBuilder.buildOrThrow(), dynamicTransforms);
         }
         matrix4fStack.popMatrix();
     }

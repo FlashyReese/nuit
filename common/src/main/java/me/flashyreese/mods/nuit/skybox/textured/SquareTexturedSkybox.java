@@ -3,20 +3,17 @@ package me.flashyreese.mods.nuit.skybox.textured;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.components.*;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitRenderBackend;
+import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import me.flashyreese.mods.nuit.util.BufferUploader;
-import me.flashyreese.mods.nuit.util.DynamicTransformsBuilder;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
@@ -41,9 +38,9 @@ public class SquareTexturedSkybox extends TexturedSkybox {
 
 
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, DynamicTransformsBuilder transformsBuilder, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
+    public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice dynamicTransforms, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
         RenderSystem.setShaderFog(fogParameters);
-        RenderPipeline pipeline = getTexturedSkyboxPipeline(this.getBlend().getBlendFunction());
+        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.getBlend().getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
             BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
             for (int face = 0; face < 6; face++) {
@@ -54,12 +51,7 @@ public class SquareTexturedSkybox extends TexturedSkybox {
                 builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
                 builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
             }
-            GpuBufferSlice dynamicTransforms = transformsBuilder.build();
-            GpuTextureView textureView = Minecraft.getInstance().getTextureManager().getTexture(this.texture.getTextureId()).getTextureView();
-            BufferUploader.drawWithShader(pipeline, builder.buildOrThrow(), (pass) -> {
-                pass.setUniform("DynamicTransforms", dynamicTransforms);
-                pass.bindTexture("Sampler0", textureView, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
-            });
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", this.texture.getTextureId());
         }
     }
 
