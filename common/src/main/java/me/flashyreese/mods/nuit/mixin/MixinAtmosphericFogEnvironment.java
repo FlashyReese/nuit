@@ -47,9 +47,9 @@ public abstract class MixinAtmosphericFogEnvironment {
     private void nuit$modifyColors(ClientLevel clientLevel, Camera camera, int i, float f, CallbackInfoReturnable<Integer> cir) {
         int color = cir.getReturnValue();
         float red = ARGB.redFloat(color);
-        float blue = ARGB.blueFloat(color);
         float green = ARGB.greenFloat(color);
-        final RGB initialFogColor = new RGB(red, blue, green);
+        float blue = ARGB.blueFloat(color);
+        final RGB initialFogColor = new RGB(red, green, blue);
         final RGB fogColor = Utils.alphaBlendFogColors(SkyboxManager.getInstance().getActiveSkyboxes(), initialFogColor);
         if (SkyboxManager.getInstance().isEnabled() && !fogColor.equals(initialFogColor)) {
             cir.setReturnValue(ARGB.colorFromFloat(1.0F, fogColor.getRed(), fogColor.getGreen(), fogColor.getBlue()));
