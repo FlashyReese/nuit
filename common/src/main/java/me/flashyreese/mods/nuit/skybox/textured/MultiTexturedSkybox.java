@@ -54,32 +54,44 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         for (AnimatableTexture animatableTexture : this.animatableTextures) {
             animatableTexture.update(level.getGameTime(), tickDelta);
         }
-        for (int face = 0; face < 6; ++face) {
-            Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-            UVRange faceUVRange = Utils.TEXTURE_FACES[face];
-            for (AnimatableTexture animatableTexture : this.animatableTextures) {
-                UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
-                if (intersect != null && animatableTexture.getCurrentFrame() != null) {
-                    boolean interpolate = shouldInterpolate(animatableTexture);
-                    if (interpolate && frameBlendedPipeline == null) {
-                        frameBlendedPipeline = NuitRenderPipelines.frameBlendedTexturedSkybox(this.getBlend().getBlendFunction());
+        for (AnimatableTexture animatableTexture : this.animatableTextures) {
+            if (animatableTexture.getCurrentFrame() == null) {
+                continue;
+            }
+
+            boolean interpolate = shouldInterpolate(animatableTexture);
+            if (interpolate && frameBlendedPipeline == null) {
+                frameBlendedPipeline = NuitRenderPipelines.frameBlendedTexturedSkybox(this.getBlend().getBlendFunction());
+            }
+
+            RenderPipeline pipeline = interpolate ? frameBlendedPipeline : texturedPipeline;
+            try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
+                BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+                int quads = 0;
+
+                for (int face = 0; face < 6; ++face) {
+                    Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+                    UVRange faceUVRange = Utils.TEXTURE_FACES[face];
+                    UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
+                    if (intersect == null) {
+                        continue;
                     }
-                    RenderPipeline pipeline = interpolate ? frameBlendedPipeline : texturedPipeline;
+
                     UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
                     UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getCurrentFrame(), intersect);
-                    UVRange intersectionOnNextFrame = interpolate ? Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getNextFrame(), intersect) : null;
 
-                    try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
-                        BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-                        if (interpolate) {
-                            float frameBlend = animatableTexture.getFrameBlend();
-                            addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, frameBlend);
-                        } else {
-                            addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
-                        }
-
-                        NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
+                    if (interpolate) {
+                        UVRange intersectionOnNextFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getNextFrame(), intersect);
+                        addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, animatableTexture.getFrameBlend());
+                    } else {
+                        addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
                     }
+
+                    quads++;
+                }
+
+                if (quads > 0) {
+                    NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
                 }
             }
         }
