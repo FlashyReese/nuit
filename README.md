@@ -33,7 +33,7 @@ Supported loaders:
 - Custom fog color and density behavior
 - Vanilla overworld/end skybox integration
 - Square textured, multi-textured, monocolor, and decoration skyboxes
-- Animated texture support
+- Animated texture support with optional frame interpolation
 - Runtime API for mods to register and manage skyboxes
 - Multiloader architecture for Fabric and NeoForge
 
@@ -58,17 +58,24 @@ Supported loaders:
 
 Nuit uses its own JSON format instead of copying OptiFine or MCPatcher directly. The format is designed around explicit skybox types, composable conditions, and predictable behavior across loaders.
 
-Start here: [Nuit format documentation](https://wiki.nuit.flashyreese.me/)
+Start here:
+
+- [Current schema reference](docs/schema.md)
+- [Blend modes](docs/blend.md)
+- [Square textured layout](docs/square-textured.md)
+- [Wiki and format documentation](https://wiki.nuit.flashyreese.me/)
 
 ## Compatibility
 
 Nuit does not load OptiFine, MCPatcher, or legacy FabricSkyBoxes formats natively.
 
-Use [Nuit Interop](https://curseforge.com/minecraft/mc-mods/nuit-interop) if you want to load legacy custom sky resource packs through Nuit. Nuit Interop supports MCPatcher/OptiFine custom skies and legacy FabricSkyBoxes skybox JSON.
+Use [Nuit Interop](https://modrinth.com/nuit-interop) if you want to load legacy custom sky resource packs through Nuit. Nuit Interop supports MCPatcher/OptiFine custom skies and legacy FabricSkyBoxes skybox JSON.
 
 ## For Mod Developers
 
-Nuit exposes an API for registering skyboxes at runtime. See the legacy API documentation in [docs/api.md](docs/api.md) while the wiki is being updated.
+Nuit exposes an API for registering custom skybox types and managing skyboxes at runtime. See [docs/api.md](docs/api.md).
+
+Use `NuitApi.registerSkyboxType(...)` as the documented skybox type registration path.
 
 ## Community and Support
 

@@ -7,18 +7,15 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.RGBA;
-import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.util.Utils;
-import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 
 public class MonoColorSkybox extends AbstractSkybox {
@@ -38,14 +35,14 @@ public class MonoColorSkybox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack modelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
-        RenderSystem.setShaderFog(fogParameters);
+    public void render(SkyboxRenderContext context) {
+        context.applyFog();
         if (this.alpha <= 0.0F) {
             return;
         }
 
         Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(context.matrixStack()), colorModifier);
         RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.blend.getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
             BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());

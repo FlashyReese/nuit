@@ -1,14 +1,14 @@
-package me.flashyreese.mods.nuit.fabric;
+package me.flashyreese.mods.nuit;
 
-import me.flashyreese.mods.nuit.api.NuitPlatformHelper;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
-import me.flashyreese.mods.nuit.skybox.SkyboxType;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
+import me.flashyreese.mods.nuit.fabric.NuitClientFabric;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Registry;
 
 import java.nio.file.Path;
 
-public class NuitFabricPlatformHelper implements NuitPlatformHelper {
+final class NuitFabricPlatformHelper implements NuitPlatformHelper {
     @Override
     public Path getConfigDir() {
         return FabricLoader.getInstance().getConfigDir();

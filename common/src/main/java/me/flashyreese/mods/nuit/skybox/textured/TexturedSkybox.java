@@ -2,25 +2,23 @@ package me.flashyreese.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.Rotation;
-import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 
 import java.util.Objects;
 
-public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
+public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTextureProvider {
     private final Rotation rotation;
     private final Blend blend;
 
@@ -41,22 +39,19 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Overrides and makes final here as there are options that should always be respected in a textured skybox.
      *
-     * @param poseStack         The current PoseStack.
-     * @param skyRendererAccess Access to the skyRenderer as skyboxes often require it.
-     * @param tickDelta         The current tick delta.
-     * @param bufferSource
+     * @param context The current skybox render context.
      */
     @Override
-    public final void render(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
+    public final void render(SkyboxRenderContext context) {
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
         try {
             Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-            modelViewStack.set(matrix4fStack);
+            modelViewStack.set(context.matrixStack());
             this.rotation.apply(modelViewStack, level);
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
-            this.renderSkybox(skyRendererAccess, modelViewStack, tickDelta, camera, dynamicTransforms, fogParameters, bufferSource);
+            this.renderSkybox(context, modelViewStack, dynamicTransforms);
         } finally {
             modelViewStack.popMatrix();
         }
@@ -65,5 +60,5 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
     /**
      * Override this method instead of render if you are extending this skybox.
      */
-    public abstract void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4f, float tickDelta, Camera camera, GpuBufferSlice dynamicTransforms, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource);
+    public abstract void renderSkybox(SkyboxRenderContext context, Matrix4fStack matrixStack, GpuBufferSlice dynamicTransforms);
 }

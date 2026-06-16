@@ -7,16 +7,19 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import me.flashyreese.mods.nuit.components.*;
-import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
+import me.flashyreese.mods.nuit.components.AnimatableTexture;
+import me.flashyreese.mods.nuit.components.Blend;
+import me.flashyreese.mods.nuit.components.Conditions;
+import me.flashyreese.mods.nuit.components.Properties;
+import me.flashyreese.mods.nuit.components.Texture;
+import me.flashyreese.mods.nuit.components.UVRange;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
@@ -43,8 +46,8 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice dynamicTransforms, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
-        RenderSystem.setShaderFog(fogParameters);
+    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack matrixStack, GpuBufferSlice dynamicTransforms) {
+        context.applyFog();
         RenderPipeline texturedPipeline = NuitRenderPipelines.texturedSkybox(this.getBlend().getBlendFunction());
         RenderPipeline frameBlendedPipeline = null;
         ClientLevel level = Minecraft.getInstance().level;
@@ -52,7 +55,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             return;
         }
         for (AnimatableTexture animatableTexture : this.animatableTextures) {
-            animatableTexture.update(level.getGameTime(), tickDelta);
+            animatableTexture.update(level.getGameTime(), context.tickDelta());
         }
         for (AnimatableTexture animatableTexture : this.animatableTextures) {
             if (animatableTexture.getCurrentFrame() == null) {
@@ -135,6 +138,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
 
     @Override
     public List<Identifier> getTexturesToRegister() {
-        return this.animatableTextures.stream().map(texture -> texture.getTexture().getTextureId()).toList();
+        return this.animatableTextures.stream().map(AnimatableTexture::getTexture).map(Texture::getTextureId).toList();
     }
 }

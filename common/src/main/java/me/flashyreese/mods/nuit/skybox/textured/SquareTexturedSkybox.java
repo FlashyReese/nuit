@@ -7,14 +7,16 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import me.flashyreese.mods.nuit.components.*;
-import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
+import me.flashyreese.mods.nuit.components.Blend;
+import me.flashyreese.mods.nuit.components.Conditions;
+import me.flashyreese.mods.nuit.components.Properties;
+import me.flashyreese.mods.nuit.components.Texture;
+import me.flashyreese.mods.nuit.components.UVRange;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
-import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -36,10 +38,9 @@ public class SquareTexturedSkybox extends TexturedSkybox {
         this.texture = texture;
     }
 
-
     @Override
-    public void renderSkybox(SkyRendererAccessor skyRendererAccess, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice dynamicTransforms, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
-        RenderSystem.setShaderFog(fogParameters);
+    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack matrixStack, GpuBufferSlice dynamicTransforms) {
+        context.applyFog();
         RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.getBlend().getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
             BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());

@@ -1,6 +1,5 @@
 package me.flashyreese.mods.nuit;
 
-import me.flashyreese.mods.nuit.api.NuitPlatformHelper;
 import me.flashyreese.mods.nuit.config.NuitConfig;
 import me.flashyreese.mods.nuit.resource.SkyboxResourceListener;
 import org.apache.logging.log4j.LogManager;

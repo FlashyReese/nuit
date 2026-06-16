@@ -4,7 +4,7 @@ import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
 import me.flashyreese.mods.nuit.screen.SkyboxDebugScreen;
-import me.flashyreese.mods.nuit.skybox.SkyboxType;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Registry;

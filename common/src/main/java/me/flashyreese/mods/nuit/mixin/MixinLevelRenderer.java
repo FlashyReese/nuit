@@ -42,18 +42,17 @@ public abstract class MixinLevelRenderer {
     )
     private static void nuit$renderCustomSkyboxes(CallbackInfo ci, @Local(argsOnly = true) SkyRenderer skyRenderer) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (skyboxManager.isEnabled() && !skyboxManager.getActiveSkyboxes().isEmpty()) {
+        if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
             Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
             skyModelViewMatrix.setTranslation(0.0F, 0.0F, 0.0F);
             Matrix4fStack skyModelViewStack = new Matrix4fStack(32);
             skyModelViewStack.set(skyModelViewMatrix);
             skyboxManager.renderSkyboxes(
-                    (SkyRendererAccessor) skyRenderer,
+                    skyRenderer,
                     skyModelViewStack,
                     nuit$tickDelta,
                     Minecraft.getInstance().gameRenderer.getMainCamera(),
-                    nuit$fogParameters,
-                    Minecraft.getInstance().levelRenderer.renderBuffers.bufferSource()
+                    nuit$fogParameters
             );
             ci.cancel();
         }

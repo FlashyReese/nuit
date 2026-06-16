@@ -1,14 +1,14 @@
-package me.flashyreese.mods.nuit.neoforge;
+package me.flashyreese.mods.nuit;
 
-import me.flashyreese.mods.nuit.api.NuitPlatformHelper;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
-import me.flashyreese.mods.nuit.skybox.SkyboxType;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
+import me.flashyreese.mods.nuit.neoforge.NuitNeoForge;
 import net.minecraft.core.Registry;
 import net.neoforged.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 
-public class NuitNeoForgePlatformHelper implements NuitPlatformHelper {
+final class NuitNeoForgePlatformHelper implements NuitPlatformHelper {
     @Override
     public Path getConfigDir() {
         return FMLPaths.CONFIGDIR.get();

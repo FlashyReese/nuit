@@ -1,9 +1,7 @@
 package me.flashyreese.mods.nuit.skybox;
 
-import net.minecraft.resources.Identifier;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
 
-import java.util.List;
-
-public interface TextureRegistrar {
-    List<Identifier> getTexturesToRegister();
+@Deprecated(forRemoval = true)
+public interface TextureRegistrar extends SkyboxTextureProvider {
 }

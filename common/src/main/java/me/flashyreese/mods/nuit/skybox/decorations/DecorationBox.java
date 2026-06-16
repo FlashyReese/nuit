@@ -8,22 +8,20 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
-import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 
 import java.util.Objects;
@@ -71,13 +69,15 @@ public class DecorationBox extends AbstractSkybox {
     }
 
     @Override
-    public void render(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
-        RenderSystem.setShaderFog(fogParameters);
+    public void render(SkyboxRenderContext context) {
+        context.applyFog();
+        Camera camera = context.camera();
+        float tickDelta = context.tickDelta();
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
 
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
         try {
-            Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(matrix4fStack), level);
+            Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.matrixStack()), level);
             Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
 
@@ -98,7 +98,7 @@ public class DecorationBox extends AbstractSkybox {
             if (this.starsEnabled) {
                 PoseStack poseStack = new PoseStack();
                 this.properties.rotation().apply(poseStack, level);
-                skyRendererAccessor.invokeRenderStars(camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta), poseStack);
+                context.renderStars(camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta), poseStack);
             }
 
         } finally {

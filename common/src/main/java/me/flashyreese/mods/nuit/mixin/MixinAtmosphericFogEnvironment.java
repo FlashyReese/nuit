@@ -32,7 +32,7 @@ public abstract class MixinAtmosphericFogEnvironment {
     @ModifyConstant(method = "getBaseColor", slice = @Slice(from = @At(value = "INVOKE", target = "Lnet/minecraft/world/attribute/EnvironmentAttributeProbe;getValue(Lnet/minecraft/world/attribute/EnvironmentAttribute;F)Ljava/lang/Object;", ordinal = 0)), constant = @Constant(intValue = 4, ordinal = 0))
     private int nuit$renderSkyColor(int original) {
         final SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        final Skybox skybox = skyboxManager.getCurrentSkybox();
+        final Skybox skybox = skyboxManager.getCurrentSkybox().orElse(null);
         if (skyboxManager.isEnabled() && skybox instanceof NuitSkybox nuitSkybox && !nuitSkybox.getProperties().renderSunSkyTint()) {
             return Integer.MAX_VALUE;
         } else {

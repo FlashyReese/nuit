@@ -2,7 +2,7 @@ package me.flashyreese.mods.nuit.components;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import me.flashyreese.mods.nuit.skybox.SkyboxType;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
 import net.minecraft.resources.Identifier;
 
 public record Metadata(int schemaVersion, Identifier type) {

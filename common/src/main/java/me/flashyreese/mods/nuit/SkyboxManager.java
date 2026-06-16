@@ -4,22 +4,24 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import me.flashyreese.mods.nuit.api.NuitApi;
-import me.flashyreese.mods.nuit.api.NuitPlatformHelper;
+import me.flashyreese.mods.nuit.api.skyboxes.RenderableSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderAccess;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
 import me.flashyreese.mods.nuit.components.Metadata;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.skybox.DefaultHandler;
-import me.flashyreese.mods.nuit.skybox.SkyboxType;
-import me.flashyreese.mods.nuit.skybox.TextureRegistrar;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.texture.SimpleTexture;
-import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.joml.Matrix4fStack;
@@ -51,15 +53,15 @@ public class SkyboxManager implements NuitApi {
             return Optional.empty();
         }
 
-        Optional<Holder.Reference<SkyboxType<? extends Skybox>>> optionalType = NuitPlatformHelper.INSTANCE.getSkyboxTypeRegistry().get(metadata.type());
+        Optional<SkyboxType<?>> optionalType = SkyboxType.get(metadata.type());
         if (optionalType.isEmpty()) {
             NuitClient.getLogger().warn("Skipping skybox {} with unknown type {}", resourceLocation.toString(), metadata.type().getPath().replace('_', '-'));
             return Optional.empty();
         }
 
-        Holder.Reference<SkyboxType<? extends Skybox>> type = optionalType.get();
+        SkyboxType<?> type = optionalType.get();
         try {
-            return Optional.of(type.value().getCodec(metadata.schemaVersion()).decode(JsonOps.INSTANCE, jsonObject).getOrThrow().getFirst());
+            return Optional.of(type.getCodec(metadata.schemaVersion()).decode(JsonOps.INSTANCE, jsonObject).getOrThrow().getFirst());
         } catch (RuntimeException e) {
             NuitClient.getLogger().warn("Skipping invalid skybox {}", resourceLocation.toString(), e);
             NuitClient.getLogger().warn(jsonObject.toString());
@@ -72,11 +74,16 @@ public class SkyboxManager implements NuitApi {
     }
 
     public void addSkybox(Identifier resourceLocation, JsonObject jsonObject) {
-        Optional<Skybox> skybox = SkyboxManager.parseSkyboxJson(resourceLocation, jsonObject);
+        Optional<Skybox> skybox = this.parseSkybox(resourceLocation, jsonObject);
         if (skybox.isPresent()) {
             NuitClient.getLogger().info("Adding skybox {}", resourceLocation.toString());
             this.addSkybox(resourceLocation, skybox.get());
         }
+    }
+
+    @Override
+    public Optional<Skybox> parseSkybox(Identifier resourceLocation, JsonObject jsonObject) {
+        return SkyboxManager.parseSkyboxJson(resourceLocation, jsonObject);
     }
 
     public void addSkybox(Identifier resourceLocation, Skybox skybox) {
@@ -84,14 +91,14 @@ public class SkyboxManager implements NuitApi {
         Preconditions.checkNotNull(skybox, "Skybox was null");
         DefaultHandler.addConditions(skybox);
 
-        if (skybox instanceof TextureRegistrar textureRegistrar) {
-            textureRegistrar.getTexturesToRegister().forEach((theIdentifier) -> {
-                Minecraft.getInstance().getTextureManager().registerAndLoad(theIdentifier, new SimpleTexture(theIdentifier));
-                this.preloadedTextures.add(theIdentifier);
-            });
+        this.registerTextures(skybox);
+        Skybox previousSkybox = this.skyboxMap.put(resourceLocation, skybox);
+        if (previousSkybox != null) {
+            this.activeSkyboxes.remove(previousSkybox);
+            this.clearCurrentSkyboxIfRemoved(previousSkybox);
+            this.releaseTextures(previousSkybox);
+            this.rebuildDefaultConditions();
         }
-
-        this.skyboxMap.put(resourceLocation, skybox);
     }
 
     /**
@@ -105,25 +112,99 @@ public class SkyboxManager implements NuitApi {
         Preconditions.checkNotNull(resourceLocation, "Identifier was null");
         Preconditions.checkNotNull(skybox, "Skybox was null");
         DefaultHandler.addConditions(skybox);
-        this.permanentSkyboxMap.put(resourceLocation, skybox);
+        this.registerTextures(skybox);
+        Skybox previousSkybox = this.permanentSkyboxMap.put(resourceLocation, skybox);
+        if (previousSkybox != null) {
+            this.activeSkyboxes.remove(previousSkybox);
+            this.clearCurrentSkyboxIfRemoved(previousSkybox);
+            this.releaseTextures(previousSkybox);
+            this.rebuildDefaultConditions();
+        }
+    }
+
+    @Override
+    public boolean removeSkybox(Identifier resourceLocation) {
+        Preconditions.checkNotNull(resourceLocation, "Identifier was null");
+        Skybox skybox = this.skyboxMap.remove(resourceLocation);
+        if (skybox == null) {
+            return false;
+        }
+
+        this.activeSkyboxes.remove(skybox);
+        this.clearCurrentSkyboxIfRemoved(skybox);
+        this.releaseTextures(skybox);
+        this.rebuildDefaultConditions();
+        return true;
+    }
+
+    @Override
+    public boolean removePermanentSkybox(Identifier resourceLocation) {
+        Preconditions.checkNotNull(resourceLocation, "Identifier was null");
+        Skybox skybox = this.permanentSkyboxMap.remove(resourceLocation);
+        if (skybox == null) {
+            return false;
+        }
+
+        this.activeSkyboxes.remove(skybox);
+        this.clearCurrentSkyboxIfRemoved(skybox);
+        this.releaseTextures(skybox);
+        this.rebuildDefaultConditions();
+        return true;
     }
 
     @Internal
     public void clearSkyboxes() {
         DefaultHandler.clearConditionsExcept(this.permanentSkyboxMap.values());
+        this.skyboxMap.values().forEach(this::releaseTextures);
         this.skyboxMap.clear();
         this.activeSkyboxes.clear();
-        this.preloadedTextures.forEach(texture -> Minecraft.getInstance().getTextureManager().release(texture));
-        this.preloadedTextures.clear();
+        this.currentSkybox = null;
     }
 
     @Internal
-    public void renderSkyboxes(SkyRendererAccessor skyRendererAccessor, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, MultiBufferSource.BufferSource bufferSource) {
+    public void renderSkyboxes(SkyRenderer skyRenderer, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+        SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), matrix4fStack, tickDelta, camera, fogParameters);
         for (Skybox skybox : this.activeSkyboxes) {
-            this.currentSkybox = skybox;
-            skybox.render(skyRendererAccessor, matrix4fStack, tickDelta, camera, fogParameters, bufferSource);
+            if (skybox instanceof RenderableSkybox renderableSkybox) {
+                this.currentSkybox = skybox;
+                renderableSkybox.render(context);
+            }
         }
         //RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+    }
+
+    private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer) {
+        SkyRendererAccessor skyRendererAccessor = (SkyRendererAccessor) skyRenderer;
+        return new SkyboxRenderAccess() {
+            @Override
+            public void renderSkyDisc(int color) {
+                skyRenderer.renderSkyDisc(color);
+            }
+
+            @Override
+            public void renderDarkDisc() {
+                skyRenderer.renderDarkDisc();
+            }
+
+            @Override
+            public void renderStars(float brightness, PoseStack poseStack) {
+                skyRendererAccessor.invokeRenderStars(brightness, poseStack);
+            }
+
+            @Override
+            public void renderEndFlash(float intensity, float xAngle, float yAngle) {
+                skyRenderer.renderEndFlash(new PoseStack(), intensity, xAngle, yAngle);
+            }
+
+            @Override
+            public Identifier endSkyTexture() {
+                return SkyRendererAccessor.getEndSky();
+            }
+        };
+    }
+
+    public boolean hasActiveRenderableSkyboxes() {
+        return this.activeSkyboxes.stream().anyMatch(RenderableSkybox.class::isInstance);
     }
 
     public boolean isEnabled() {
@@ -134,13 +215,28 @@ public class SkyboxManager implements NuitApi {
         this.enabled = enabled;
     }
 
-    public Skybox getCurrentSkybox() {
-        return this.currentSkybox;
+    public Optional<Skybox> getCurrentSkybox() {
+        return Optional.ofNullable(this.currentSkybox);
+    }
+
+    @Override
+    public Optional<Skybox> getSkybox(Identifier resourceLocation) {
+        Preconditions.checkNotNull(resourceLocation, "Identifier was null");
+        Skybox skybox = this.skyboxMap.get(resourceLocation);
+        if (skybox == null) {
+            skybox = this.permanentSkyboxMap.get(resourceLocation);
+        }
+        return Optional.ofNullable(skybox);
+    }
+
+    @Override
+    public Map<Identifier, Skybox> getSkyboxes() {
+        return Collections.unmodifiableMap(this.skyboxMap);
     }
 
     @Override
     public List<Skybox> getActiveSkyboxes() {
-        return this.activeSkyboxes;
+        return Collections.unmodifiableList(this.activeSkyboxes);
     }
 
     public void tick(ClientLevel level) {
@@ -160,6 +256,37 @@ public class SkyboxManager implements NuitApi {
     }
 
     public Map<Identifier, Skybox> getSkyboxMap() {
-        return this.skyboxMap;
+        return Collections.unmodifiableMap(this.skyboxMap);
+    }
+
+    private void registerTextures(Skybox skybox) {
+        if (skybox instanceof SkyboxTextureProvider textureProvider) {
+            textureProvider.getTexturesToRegister().forEach((theIdentifier) -> {
+                Minecraft.getInstance().getTextureManager().registerAndLoad(theIdentifier, new SimpleTexture(theIdentifier));
+                this.preloadedTextures.add(theIdentifier);
+            });
+        }
+    }
+
+    private void releaseTextures(Skybox skybox) {
+        if (skybox instanceof SkyboxTextureProvider textureProvider) {
+            textureProvider.getTexturesToRegister().forEach(texture -> {
+                if (this.preloadedTextures.remove(texture) && !this.preloadedTextures.contains(texture)) {
+                    Minecraft.getInstance().getTextureManager().release(texture);
+                }
+            });
+        }
+    }
+
+    private void clearCurrentSkyboxIfRemoved(Skybox skybox) {
+        if (this.currentSkybox == skybox) {
+            this.currentSkybox = null;
+        }
+    }
+
+    private void rebuildDefaultConditions() {
+        List<Skybox> skyboxes = new ArrayList<>(this.permanentSkyboxMap.values());
+        skyboxes.addAll(this.skyboxMap.values());
+        DefaultHandler.clearConditionsExcept(skyboxes);
     }
 }
