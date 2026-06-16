@@ -39,7 +39,7 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack matrixStack, GpuBufferSlice dynamicTransforms) {
+    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack modelViewStack, GpuBufferSlice dynamicTransforms) {
         context.applyFog();
         RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.getBlend().getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {

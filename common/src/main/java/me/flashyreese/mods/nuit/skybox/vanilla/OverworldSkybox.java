@@ -50,7 +50,7 @@ public class OverworldSkybox extends AbstractSkybox {
                 sunAngle = Mth.positiveModulo(level.getDayTime() / 24000F + 0.75F, 1) * Mth.TWO_PI;
             }
 
-            this.renderSunriseAndSunset(context.matrixStack(), sunAngle, sunriseOrSunsetColor);
+            this.renderSunriseAndSunset(context.skyModelViewStack(), sunAngle, sunriseOrSunsetColor);
         }
 
         double eyeHeight = camera.entity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);

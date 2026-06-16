@@ -162,8 +162,8 @@ public class SkyboxManager implements NuitApi {
     }
 
     @Internal
-    public void renderSkyboxes(SkyRenderer skyRenderer, Matrix4fStack matrix4fStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
-        SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), matrix4fStack, tickDelta, camera, fogParameters);
+    public void renderSkyboxes(SkyRenderer skyRenderer, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+        SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), skyModelViewStack, tickDelta, camera, fogParameters);
         for (Skybox skybox : this.activeSkyboxes) {
             if (skybox instanceof RenderableSkybox renderableSkybox) {
                 this.currentSkybox = skybox;

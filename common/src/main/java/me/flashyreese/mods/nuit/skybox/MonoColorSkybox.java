@@ -42,7 +42,7 @@ public class MonoColorSkybox extends AbstractSkybox {
         }
 
         Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(context.matrixStack()), colorModifier);
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(context.skyModelViewStack()), colorModifier);
         RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.blend.getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
             BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());

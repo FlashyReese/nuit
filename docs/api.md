@@ -119,7 +119,7 @@ public interface SkyboxTextureProvider {
 `SkyboxRenderContext` is the public render boundary. It exposes the frame state and stable vanilla helpers Nuit supports:
 
 ```java
-context.matrixStack();
+context.skyModelViewStack();
 context.tickDelta();
 context.camera();
 context.applyFog();

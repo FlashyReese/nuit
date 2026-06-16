@@ -48,7 +48,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTex
         modelViewStack.pushMatrix();
         try {
             Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-            modelViewStack.set(context.matrixStack());
+            modelViewStack.set(context.skyModelViewStack());
             this.rotation.apply(modelViewStack, level);
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
             this.renderSkybox(context, modelViewStack, dynamicTransforms);
@@ -59,6 +59,10 @@ public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTex
 
     /**
      * Override this method instead of render if you are extending this skybox.
+     *
+     * @param context the current skybox render context
+     * @param modelViewStack the mutable model-view stack after this skybox's rotation has been applied
+     * @param dynamicTransforms dynamic transform uniforms created from {@code modelViewStack}
      */
-    public abstract void renderSkybox(SkyboxRenderContext context, Matrix4fStack matrixStack, GpuBufferSlice dynamicTransforms);
+    public abstract void renderSkybox(SkyboxRenderContext context, Matrix4fStack modelViewStack, GpuBufferSlice dynamicTransforms);
 }

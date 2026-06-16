@@ -13,22 +13,25 @@ import org.joml.Matrix4fStack;
  */
 public final class SkyboxRenderContext {
     private final SkyboxRenderAccess skyboxRenderAccess;
-    private final Matrix4fStack matrixStack;
+    private final Matrix4fStack skyModelViewStack;
     private final float tickDelta;
     private final Camera camera;
     private final GpuBufferSlice fogParameters;
 
     @ApiStatus.Internal
-    public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, Matrix4fStack matrixStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+    public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
         this.skyboxRenderAccess = skyboxRenderAccess;
-        this.matrixStack = matrixStack;
+        this.skyModelViewStack = skyModelViewStack;
         this.tickDelta = tickDelta;
         this.camera = camera;
         this.fogParameters = fogParameters;
     }
 
-    public Matrix4fStack matrixStack() {
-        return this.matrixStack;
+    /**
+     * @return the frame's sky model-view stack before skybox-specific transforms.
+     */
+    public Matrix4fStack skyModelViewStack() {
+        return this.skyModelViewStack;
     }
 
     public float tickDelta() {

@@ -46,7 +46,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack matrixStack, GpuBufferSlice dynamicTransforms) {
+    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack modelViewStack, GpuBufferSlice dynamicTransforms) {
         context.applyFog();
         RenderPipeline texturedPipeline = NuitRenderPipelines.texturedSkybox(this.getBlend().getBlendFunction());
         RenderPipeline frameBlendedPipeline = null;

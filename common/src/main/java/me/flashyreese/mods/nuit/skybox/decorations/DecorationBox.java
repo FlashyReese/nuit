@@ -77,7 +77,7 @@ public class DecorationBox extends AbstractSkybox {
 
         OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
         try {
-            Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.matrixStack()), level);
+            Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.skyModelViewStack()), level);
             Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
 
