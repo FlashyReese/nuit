@@ -6,6 +6,7 @@ import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
@@ -81,7 +82,9 @@ public final class NuitRenderPipelines {
         builder.withDepthWrite(false);
         applyBlend(builder, blendFunction);
         builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS);
-        return builder.build();
+        RenderPipeline pipeline = builder.build();
+        IrisCompat.assignSkyBasicPipeline(pipeline);
+        return pipeline;
     }
 
     private static RenderPipeline buildTexturedSkyboxPipeline(@Nullable BlendFunction blendFunction, boolean frameBlended) {
@@ -103,7 +106,9 @@ public final class NuitRenderPipelines {
         builder.withCull(false);
         applyBlend(builder, blendFunction);
         builder.withSampler("Sampler0");
-        return builder.build();
+        RenderPipeline pipeline = builder.build();
+        IrisCompat.assignSkyTexturedPipeline(pipeline);
+        return pipeline;
     }
 
     private static void applyBlend(RenderPipeline.Builder builder, @Nullable BlendFunction blendFunction) {
