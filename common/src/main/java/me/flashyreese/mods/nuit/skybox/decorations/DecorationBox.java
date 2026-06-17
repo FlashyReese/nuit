@@ -2,13 +2,13 @@ package me.flashyreese.mods.nuit.skybox.decorations;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
+import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
 import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
@@ -24,9 +24,12 @@ import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
-public class DecorationBox extends AbstractSkybox {
+public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvider {
     private static final Identifier DEFAULT_SUN = Identifier.withDefaultNamespace("textures/environment/celestial/sun.png");
     private static final Identifier DEFAULT_MOON = Identifier.withDefaultNamespace("textures/environment/celestial/moon/full_moon.png");
     private static final Identifier[] DEFAULT_MOON_PHASES = new Identifier[]{
@@ -170,5 +173,23 @@ public class DecorationBox extends AbstractSkybox {
 
     public Blend getBlend() {
         return this.blend;
+    }
+
+    @Override
+    public Collection<Identifier> getTexturesToRegister() {
+        Collection<Identifier> textures = new ArrayList<>();
+        if (this.sunEnabled) {
+            textures.add(this.sunTexture);
+        }
+
+        if (this.moonEnabled) {
+            if (this.moonTexture.equals(DEFAULT_MOON)) {
+                textures.addAll(List.of(DEFAULT_MOON_PHASES));
+            } else {
+                textures.add(this.moonTexture);
+            }
+        }
+
+        return textures;
     }
 }
