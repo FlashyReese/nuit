@@ -170,7 +170,6 @@ public class SkyboxManager implements NuitApi {
                 renderableSkybox.render(context);
             }
         }
-        //RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }
 
     private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer) {
