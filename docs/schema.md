@@ -45,6 +45,16 @@ All skybox types share these metadata and optional objects.
 | `multi-textured` | Renders one or more animated texture regions. |
 | `decorations` | Renders custom sun, moon, and/or vanilla stars. |
 
+## Shader Overrides
+
+Nuit skybox shaders are normal client resources. Resource packs can override them by replacing the matching files under `assets/nuit/shaders/core/`.
+
+| Shader | Files | Used by |
+|--------|-------|---------|
+| `mono_color_skybox` | `mono_color_skybox.vsh`, `mono_color_skybox.fsh` | `monocolor` skyboxes. |
+| `textured_skybox` | `textured_skybox.vsh`, `textured_skybox.fsh` | `square-textured`, non-interpolated `multi-textured`, sun, moon, and decoration textures. |
+| `multi_textured_skybox` | `multi_textured_skybox.vsh`, `multi_textured_skybox.fsh` | Interpolated `multi-textured` animation frames. |
+
 ## `properties`
 
 ```json

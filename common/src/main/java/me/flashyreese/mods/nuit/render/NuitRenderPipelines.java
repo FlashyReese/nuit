@@ -16,6 +16,10 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class NuitRenderPipelines {
+    private static final Identifier MONO_COLOR_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/mono_color_skybox");
+    private static final Identifier TEXTURED_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/textured_skybox");
+    private static final Identifier MULTI_TEXTURED_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/multi_textured_skybox");
+
     // fixme: 1.21.11 BufferBuilder has no generic custom float attribute setter
     // Reuse LINE_WIDTH as the frame blend carrier until the 26.2 vertex format API
     public static final VertexFormat FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT = VertexFormat.builder()
@@ -77,8 +81,8 @@ public final class NuitRenderPipelines {
     private static RenderPipeline buildMonoColorSkyboxPipeline(@Nullable BlendFunction blendFunction) {
         RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET);
         builder.withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "pipeline/mono_color_skybox/" + pipelineSuffix(blendFunction)));
-        builder.withVertexShader("core/position_color");
-        builder.withFragmentShader("core/position_color");
+        builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER);
+        builder.withFragmentShader(MONO_COLOR_SKYBOX_SHADER);
         builder.withDepthWrite(false);
         applyBlend(builder, blendFunction);
         builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS);
@@ -94,12 +98,12 @@ public final class NuitRenderPipelines {
                 (frameBlended ? "pipeline/textured_skybox_frame_blend/" : "pipeline/textured_skybox/") + pipelineSuffix(blendFunction)
         ));
         if (frameBlended) {
-            builder.withVertexShader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/position_tex_frame_blend"));
-            builder.withFragmentShader(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/position_tex_frame_blend"));
+            builder.withVertexShader(MULTI_TEXTURED_SKYBOX_SHADER);
+            builder.withFragmentShader(MULTI_TEXTURED_SKYBOX_SHADER);
             builder.withVertexFormat(FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT, VertexFormat.Mode.QUADS);
         } else {
-            builder.withVertexShader("core/position_tex");
-            builder.withFragmentShader("core/position_tex");
+            builder.withVertexShader(TEXTURED_SKYBOX_SHADER);
+            builder.withFragmentShader(TEXTURED_SKYBOX_SHADER);
             builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
         }
         builder.withDepthWrite(false);
