@@ -13,6 +13,7 @@ public final class IrisCompat {
     private static final Set<RenderPipeline> REGISTERED_PIPELINES = Collections.newSetFromMap(new IdentityHashMap<>());
     private static boolean irisPresent;
     private static Object apiInstance;
+    private static Method shaderPackInUseMethod;
     private static Method sunPathRotationMethod;
     private static Method assignPipelineMethod;
     private static Object skyBasicProgram;
@@ -22,6 +23,7 @@ public final class IrisCompat {
         try {
             Class<?> api = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
             apiInstance = api.cast(api.getDeclaredMethod("getInstance").invoke(null));
+            shaderPackInUseMethod = findMethod(api, "isShaderPackInUse");
             sunPathRotationMethod = findMethod(api, "getSunPathRotation");
             irisPresent = true;
 
@@ -43,6 +45,18 @@ public final class IrisCompat {
 
     public static boolean canAssignPipelines() {
         return assignPipelineMethod != null;
+    }
+
+    public static boolean isShaderPackInUse() {
+        if (irisPresent && shaderPackInUseMethod != null) {
+            try {
+                return (boolean) shaderPackInUseMethod.invoke(apiInstance);
+            } catch (IllegalAccessException | InvocationTargetException exception) {
+                NuitClient.getLogger().debug("Failed to query Iris shader pack state", exception);
+            }
+        }
+
+        return false;
     }
 
     public static float getSunPathRotation() {

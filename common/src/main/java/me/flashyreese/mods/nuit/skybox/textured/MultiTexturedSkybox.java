@@ -2,11 +2,11 @@ package me.flashyreese.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.components.AnimatableTexture;
 import me.flashyreese.mods.nuit.components.Blend;
@@ -68,34 +68,59 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             }
 
             RenderPipeline pipeline = interpolate ? frameBlendedPipeline : texturedPipeline;
-            try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
-                BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
-                int quads = 0;
+            if (interpolate && IrisCompat.isShaderPackInUse()) {
+                this.renderIrisCompatibleInterpolatedTexture(texturedPipeline, modelViewStack, animatableTexture);
+                continue;
+            }
 
-                for (int face = 0; face < 6; ++face) {
-                    Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
-                    UVRange faceUVRange = Utils.TEXTURE_FACES[face];
-                    UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
-                    if (intersect == null) {
-                        continue;
-                    }
+            this.renderTextureFrame(pipeline, dynamicTransforms, animatableTexture, animatableTexture.getCurrentFrame(), interpolate ? animatableTexture.getNextFrame() : null, animatableTexture.getFrameBlend());
+        }
+    }
 
-                    UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
-                    UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getCurrentFrame(), intersect);
+    private void renderIrisCompatibleInterpolatedTexture(RenderPipeline pipeline, Matrix4fStack modelViewStack, AnimatableTexture animatableTexture) {
+        // Iris replaces Nuit's shader with the shader-pack sky program, so use weighted two-pass blending there.
+        float frameBlend = Mth.clamp(animatableTexture.getFrameBlend(), 0.0F, 1.0F);
+        this.renderWeightedTextureFrame(pipeline, modelViewStack, animatableTexture, animatableTexture.getCurrentFrame(), 1.0F - frameBlend);
+        this.renderWeightedTextureFrame(pipeline, modelViewStack, animatableTexture, animatableTexture.getNextFrame(), frameBlend);
+    }
 
-                    if (interpolate) {
-                        UVRange intersectionOnNextFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), animatableTexture.getNextFrame(), intersect);
-                        addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, animatableTexture.getFrameBlend());
-                    } else {
-                        addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
-                    }
+    private void renderWeightedTextureFrame(RenderPipeline pipeline, Matrix4fStack modelViewStack, AnimatableTexture animatableTexture, UVRange frame, float alphaWeight) {
+        if (alphaWeight <= 0.0F) {
+            return;
+        }
 
-                    quads++;
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), this.getBlend().getColorModifier(this.alpha * alphaWeight));
+        this.renderTextureFrame(pipeline, dynamicTransforms, animatableTexture, frame, null, 0.0F);
+    }
+
+    private void renderTextureFrame(RenderPipeline pipeline, GpuBufferSlice dynamicTransforms, AnimatableTexture animatableTexture, UVRange currentFrame, UVRange nextFrame, float frameBlend) {
+        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
+            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+            int quads = 0;
+
+            for (int face = 0; face < 6; ++face) {
+                Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+                UVRange faceUVRange = Utils.TEXTURE_FACES[face];
+                UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
+                if (intersect == null) {
+                    continue;
                 }
 
-                if (quads > 0) {
-                    NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
+                UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
+                UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), currentFrame, intersect);
+
+                if (nextFrame != null) {
+                    UVRange intersectionOnNextFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), nextFrame, intersect);
+                    this.addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, frameBlend);
+                } else {
+                    this.addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
                 }
+
+                quads++;
+            }
+
+            if (quads > 0) {
+                NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
             }
         }
     }
