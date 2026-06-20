@@ -319,6 +319,7 @@ UV values are clamped from `0.0` to `1.0`.
   "showSun": true,
   "showMoon": true,
   "showStars": true,
+  "showEndFlash": false,
   "blend": {
     "type": "decorations"
   }
@@ -332,6 +333,7 @@ UV values are clamped from `0.0` to `1.0`.
 | `showSun` | boolean | no | `false` |
 | `showMoon` | boolean | no | `false` |
 | `showStars` | boolean | no | `false` |
+| `showEndFlash` | boolean | no | `false` |
 | `blend` | blend object | no | `decorations` |
 
 Decoration rotation is controlled through `properties.rotation`.

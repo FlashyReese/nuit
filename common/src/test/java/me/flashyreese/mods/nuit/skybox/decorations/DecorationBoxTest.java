@@ -23,6 +23,7 @@ public class DecorationBoxTest {
                 false,
                 false,
                 false,
+                false,
                 Blend.decorations()
         );
 
@@ -41,6 +42,7 @@ public class DecorationBoxTest {
                 true,
                 true,
                 false,
+                false,
                 Blend.decorations()
         );
 
@@ -56,6 +58,7 @@ public class DecorationBoxTest {
                 Identifier.withDefaultNamespace("textures/environment/celestial/moon/full_moon.png"),
                 false,
                 true,
+                false,
                 false,
                 Blend.decorations()
         );

@@ -18,6 +18,7 @@ import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.EndFlashState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.MoonPhase;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvider {
+    private static final float MIN_END_FLASH_INTENSITY = 0.00001F;
     private static final Identifier DEFAULT_SUN = Identifier.withDefaultNamespace("textures/environment/celestial/sun.png");
     private static final Identifier DEFAULT_MOON = Identifier.withDefaultNamespace("textures/environment/celestial/moon/full_moon.png");
     private static final Identifier[] DEFAULT_MOON_PHASES = new Identifier[]{
@@ -51,6 +53,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
             Codec.BOOL.optionalFieldOf("showSun", false).forGetter(DecorationBox::isSunEnabled),
             Codec.BOOL.optionalFieldOf("showMoon", false).forGetter(DecorationBox::isMoonEnabled),
             Codec.BOOL.optionalFieldOf("showStars", false).forGetter(DecorationBox::isStarsEnabled),
+            Codec.BOOL.optionalFieldOf("showEndFlash", false).forGetter(DecorationBox::isEndFlashEnabled),
             Blend.CODEC.optionalFieldOf("blend", Blend.decorations()).forGetter(DecorationBox::getBlend)
     ).apply(instance, DecorationBox::new));
     private final Identifier sunTexture;
@@ -58,9 +61,10 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
     private final boolean sunEnabled;
     private final boolean moonEnabled;
     private final boolean starsEnabled;
+    private final boolean endFlashEnabled;
     private final Blend blend;
 
-    public DecorationBox(Properties properties, Conditions conditions, Identifier sun, Identifier moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, Blend blend) {
+    public DecorationBox(Properties properties, Conditions conditions, Identifier sun, Identifier moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, boolean endFlashEnabled, Blend blend) {
         this.properties = properties;
         this.conditions = conditions;
         this.sunTexture = sun;
@@ -68,6 +72,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         this.sunEnabled = sunEnabled;
         this.moonEnabled = moonEnabled;
         this.starsEnabled = starsEnabled;
+        this.endFlashEnabled = endFlashEnabled;
         this.blend = blend;
     }
 
@@ -106,6 +111,10 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
 
         } finally {
             OverrideUtils.disableBlendingOverride();
+        }
+
+        if (this.endFlashEnabled) {
+            this.renderEndFlash(context, level);
         }
     }
 
@@ -151,6 +160,18 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         }
     }
 
+    private void renderEndFlash(SkyboxRenderContext context, ClientLevel level) {
+        EndFlashState endFlashState = level.endFlashState();
+        if (endFlashState == null) {
+            return;
+        }
+
+        float intensity = endFlashState.getIntensity(context.tickDelta()) * this.alpha;
+        if (intensity > MIN_END_FLASH_INTENSITY) {
+            context.renderEndFlash(intensity, endFlashState.getXAngle(), endFlashState.getYAngle());
+        }
+    }
+
     public Identifier getSunTexture() {
         return this.sunTexture;
     }
@@ -169,6 +190,10 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
 
     public boolean isStarsEnabled() {
         return this.starsEnabled;
+    }
+
+    public boolean isEndFlashEnabled() {
+        return this.endFlashEnabled;
     }
 
     public Blend getBlend() {
