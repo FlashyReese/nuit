@@ -53,6 +53,11 @@ shadowJar {
     archiveClassifier = ''
 }
 
+configurations.runtimeElements.outgoing.artifacts.clear()
+artifacts {
+    runtimeElements shadowJar
+}
+
 jar {
     archiveClassifier = 'dev'
 }
