@@ -26,7 +26,7 @@ import net.neoforged.neoforge.registries.RegistryBuilder;
 @Mod(NuitClient.MOD_ID)
 public final class NuitNeoForge {
     public static final Registry<SkyboxType<? extends Skybox>> REGISTRY = new RegistryBuilder<>(SkyboxType.SKYBOX_TYPE_REGISTRY_KEY).create();
-    public final SkyboxDebugScreen screen = new SkyboxDebugScreen(Component.nullToEmpty("Skybox Debug Screen"));
+    private SkyboxDebugScreen screen;
 
     public NuitNeoForge(IEventBus bus) {
         bus.addListener(this::registerSkyTypeRegistry);
@@ -59,7 +59,7 @@ public final class NuitNeoForge {
 
     @SubscribeEvent
     public void registerHudRender(RenderGuiLayerEvent.Post event) {
-        screen.renderHud(event.getGuiGraphics());
+        this.getScreen().renderHud(event.getGuiGraphics());
     }
 
     @SubscribeEvent
@@ -75,5 +75,13 @@ public final class NuitNeoForge {
     @SubscribeEvent
     public void registerClientReloadListener(AddClientReloadListenersEvent event) {
         event.addListener(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_reader"), NuitClient.skyboxResourceListener());
+    }
+
+    private SkyboxDebugScreen getScreen() {
+        if (this.screen == null) {
+            this.screen = new SkyboxDebugScreen(Component.nullToEmpty("Skybox Debug Screen"));
+        }
+
+        return this.screen;
     }
 }

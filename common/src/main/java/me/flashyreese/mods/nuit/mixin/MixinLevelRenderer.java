@@ -35,7 +35,7 @@ public abstract class MixinLevelRenderer {
      * Replaces vanilla sky rendering with Nuit's skyboxes when custom skyboxes are active.
      */
     @Inject(
-            method = "method_62215",
+            method = {"method_62215", "lambda$addSkyPass$8"},
             require = 1,
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", shift = At.Shift.AFTER),
             cancellable = true

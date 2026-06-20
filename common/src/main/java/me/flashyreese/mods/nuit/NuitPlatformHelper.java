@@ -7,8 +7,7 @@ import net.minecraft.core.Registry;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -44,7 +43,7 @@ interface NuitPlatformHelper {
         throw new IllegalStateException("Failed to load service for " + NuitPlatformHelper.class.getName());
     }
 
-    private static NuitPlatformHelper loadFrom(URL serviceFile, ClassLoader classLoader) throws IOException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private static NuitPlatformHelper loadFrom(URL serviceFile, ClassLoader classLoader) throws IOException, ReflectiveOperationException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(serviceFile.openStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -54,16 +53,32 @@ interface NuitPlatformHelper {
                 }
 
                 Class<?> providerClass = Class.forName(providerName, true, classLoader);
-                if (!NuitPlatformHelper.class.isAssignableFrom(providerClass)) {
-                    throw new IllegalStateException(providerName + " is not a " + NuitPlatformHelper.class.getName());
-                }
+                Object provider = providerClass.getConstructor().newInstance();
+                Method getConfigDir = providerClass.getMethod("getConfigDir");
+                Method getSkyboxTypeRegistry = providerClass.getMethod("getSkyboxTypeRegistry");
 
-                Constructor<? extends NuitPlatformHelper> constructor = providerClass.asSubclass(NuitPlatformHelper.class).getDeclaredConstructor();
-                constructor.setAccessible(true);
-                return constructor.newInstance();
+                return new NuitPlatformHelper() {
+                    @Override
+                    public Path getConfigDir() {
+                        return invoke(provider, getConfigDir, Path.class);
+                    }
+
+                    @Override
+                    public Registry<SkyboxType<? extends Skybox>> getSkyboxTypeRegistry() {
+                        return invoke(provider, getSkyboxTypeRegistry, Registry.class);
+                    }
+                };
             }
         }
 
         return null;
+    }
+
+    private static <T> T invoke(Object provider, Method method, Class<T> returnType) {
+        try {
+            return returnType.cast(method.invoke(provider));
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to invoke " + method.getName() + " on " + provider.getClass().getName(), exception);
+        }
     }
 }
