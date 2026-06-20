@@ -62,11 +62,6 @@ public class Conditions {
         return this.skyboxes;
     }
 
-    @Deprecated(forRemoval = true)
-    public Condition<Identifier> getWorlds() {
-        return this.getSkyboxes();
-    }
-
     public Condition<Identifier> getDimensions() {
         return this.dimensions;
     }

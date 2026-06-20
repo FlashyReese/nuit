@@ -60,7 +60,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     @Override
     public void updateAlpha(ClientLevel level) {
-        long currentTime = level.getDayTime() % this.properties.fade().duration();
+        long currentTime = level.getDefaultClockTime() % this.properties.fade().duration();
         boolean condition = this.checkConditions();
         float fadeAlpha = 1f;
         if (this.properties.fade().keyFrames().isEmpty()) {
@@ -136,11 +136,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
         return this.conditions.getSkyboxes().entries().isEmpty() || this.conditions.getSkyboxes().excludes() ^ (
                 this.conditions.getSkyboxes().entries().contains(Utils.getVanillaSkyboxId(client.level.dimensionType().skybox())) ||
                         this.conditions.getSkyboxes().entries().contains(DefaultHandler.DEFAULT) && DefaultHandler.checkFallbackSkyboxes());
-    }
-
-    @Deprecated(forRemoval = true)
-    protected boolean checkWorlds() {
-        return this.checkSkyboxes();
     }
 
     /**

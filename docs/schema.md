@@ -160,7 +160,7 @@ Each condition object has this shape:
 |-------|------------|-------|
 | `biomes` | identifiers | Biome identifiers. Supports `nuit:default` fallback behavior. |
 | `skyboxes` | identifiers | Vanilla skybox identifiers. Common values: `minecraft:overworld`, `minecraft:end`, `minecraft:none`. |
-| `worlds` | identifiers | Deprecated compatibility alias. Prefer `skyboxes`. Legacy values are mapped where possible. |
+| `worlds` | identifiers | Legacy compatibility alias. Prefer `skyboxes` for new packs. Legacy values are mapped where possible. |
 | `dimensions` | identifiers | Dimension identifiers, e.g. `minecraft:overworld`. |
 | `effects` | identifiers | Mob effect identifiers. Empty means default blocked-effect checks apply. |
 | `weather` | weather strings | See [Weather Values](#weather-values). |

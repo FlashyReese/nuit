@@ -23,7 +23,7 @@ public abstract class MixinAtmosphericFogEnvironment {
     private <Value> Value nuit$redirectSkyAngle(EnvironmentAttributeProbe instance, EnvironmentAttribute<Value> attribute, float tickDelta, ClientLevel clientLevel, Camera camera, int distance, float partialTick) {
         final Value sunAngle = instance.getValue(attribute, tickDelta);
         if (SkyboxManager.getInstance().isEnabled() && SkyboxManager.getInstance().getActiveSkyboxes().stream().anyMatch(skybox -> skybox instanceof DecorationBox decorBox && decorBox.getProperties().rotation().skyboxRotation())) {
-            return (Value) (Object) (Mth.positiveModulo(clientLevel.getDayTime() / 24000F + 0.75F, 1) * 360.0F);
+            return (Value) (Object) (Mth.positiveModulo(clientLevel.getOverworldClockTime() / 24000F + 0.75F, 1) * 360.0F);
         } else {
             return sunAngle;
         }

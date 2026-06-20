@@ -123,7 +123,7 @@ public class Utils {
      */
     public static double calculateRotation(double rotationSpeed, boolean isSkyboxRotation, ClientLevel world) {
         if (rotationSpeed != 0F) {
-            long timeOfDay = world.getDayTime();
+            long timeOfDay = world.getDefaultClockTime();
             double rotationFraction = timeOfDay / (24000.0D / rotationSpeed);
             double skyAngle = Mth.positiveModulo(rotationFraction, 1);
             if (isSkyboxRotation) {
@@ -156,11 +156,6 @@ public class Utils {
             case OVERWORLD -> Identifier.withDefaultNamespace("overworld");
             case END -> Identifier.withDefaultNamespace("end");
         };
-    }
-
-    @Deprecated(forRemoval = true)
-    public static Identifier getVanillaWorldId(DimensionType.Skybox skybox) {
-        return getVanillaSkyboxId(skybox);
     }
 
     public static void addTexturedSkyboxFace(BufferBuilder builder, Matrix4f matrix4f, SkyboxFace face, UVRange positionRange, UVRange textureRange) {

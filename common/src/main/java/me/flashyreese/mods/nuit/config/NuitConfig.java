@@ -84,9 +84,9 @@ public class NuitConfig {
                 SkyboxManager.getInstance().setEnabled(NuitClient.config().generalSettings.enable);
                 LocalPlayer player = Objects.requireNonNull(client.player);
                 if (SkyboxManager.getInstance().isEnabled()) {
-                    player.displayClientMessage(Component.translatable("nuit.message.enabled"), false);
+                    player.sendSystemMessage(Component.translatable("nuit.message.enabled"));
                 } else {
-                    player.displayClientMessage(Component.translatable("nuit.message.disabled"), false);
+                    player.sendSystemMessage(Component.translatable("nuit.message.disabled"));
                 }
             }
 

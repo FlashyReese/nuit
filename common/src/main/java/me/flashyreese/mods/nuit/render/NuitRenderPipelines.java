@@ -1,6 +1,7 @@
 package me.flashyreese.mods.nuit.render;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -14,13 +15,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 public final class NuitRenderPipelines {
     private static final Identifier MONO_COLOR_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/mono_color_skybox");
     private static final Identifier TEXTURED_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/textured_skybox");
     private static final Identifier MULTI_TEXTURED_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/multi_textured_skybox");
 
-    // fixme: 1.21.11 BufferBuilder has no generic custom float attribute setter
+    // fixme: 26.1 BufferBuilder has no generic custom float attribute setter
     // Reuse LINE_WIDTH as the frame blend carrier until the 26.2 vertex format API
     public static final VertexFormat FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT = VertexFormat.builder()
             .add("Position", VertexFormatElement.POSITION)
@@ -83,7 +85,6 @@ public final class NuitRenderPipelines {
         builder.withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "pipeline/mono_color_skybox/" + pipelineSuffix(blendFunction)));
         builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER);
         builder.withFragmentShader(MONO_COLOR_SKYBOX_SHADER);
-        builder.withDepthWrite(false);
         applyBlend(builder, blendFunction);
         builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS);
         RenderPipeline pipeline = builder.build();
@@ -106,7 +107,6 @@ public final class NuitRenderPipelines {
             builder.withFragmentShader(TEXTURED_SKYBOX_SHADER);
             builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
         }
-        builder.withDepthWrite(false);
         builder.withCull(false);
         applyBlend(builder, blendFunction);
         builder.withSampler("Sampler0");
@@ -117,9 +117,9 @@ public final class NuitRenderPipelines {
 
     private static void applyBlend(RenderPipeline.Builder builder, @Nullable BlendFunction blendFunction) {
         if (blendFunction != null) {
-            builder.withBlend(blendFunction);
+            builder.withColorTargetState(new ColorTargetState(blendFunction));
         } else {
-            builder.withoutBlend();
+            builder.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL));
         }
     }
 

@@ -17,14 +17,14 @@ logoFile = "assets/nuit/nuit_logo.png"
 [[dependencies.nuit]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.11,)"
+versionRange = "[26.1.2,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.nuit]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.11,)"
+versionRange = "[26.1.2,)"
 ordering = "NONE"
 side = "BOTH"
 

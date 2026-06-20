@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "me.flashyreese.mods.nuit.mixin",
-  "compatibilityLevel": "JAVA_17",
+  "compatibilityLevel": "JAVA_25",
   "client": [
     "MixinAtmosphericFogEnvironment",
     "MixinFogRenderer",

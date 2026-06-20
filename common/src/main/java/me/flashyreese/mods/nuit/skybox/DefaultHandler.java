@@ -88,11 +88,6 @@ public class DefaultHandler {
         return !concatConditions.getSkyboxes().entries().contains(Utils.getVanillaSkyboxId(client.level.dimensionType().skybox()));
     }
 
-    @Deprecated(forRemoval = true)
-    public static boolean checkFallbackWorlds() {
-        return checkFallbackSkyboxes();
-    }
-
     /**
      * @return true if the current dimension is not listed as a condition in any loaded skybox.
      */
