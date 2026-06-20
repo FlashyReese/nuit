@@ -290,7 +290,7 @@ The texture is interpreted as a 3 by 2 face grid. See [square-textured.md](squar
 | `gridColumns` | integer >= 1 | `1` | Sprite sheet columns. |
 | `gridRows` | integer >= 1 | `1` | Sprite sheet rows. |
 | `duration` | long >= 1 | `24000` | Default frame duration in milliseconds. |
-| `interpolate` | boolean | `true` | Enables frame blending between current and next frame. |
+| `interpolate` | boolean | `false` | Enables frame blending between current and next frame. |
 | `frameDuration` | object of 1-based frame number to milliseconds | empty | Per-frame duration overrides. |
 
 Animation time follows game time plus tick delta. At vanilla 20 TPS, one tick is treated as 50 ms so animations stay tied to world speed.
