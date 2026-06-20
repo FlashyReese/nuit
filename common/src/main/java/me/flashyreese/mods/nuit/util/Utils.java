@@ -1,8 +1,7 @@
 package me.flashyreese.mods.nuit.util;
 
 import com.mojang.blaze3d.opengl.GlConst;
-import com.mojang.blaze3d.platform.DestFactor;
-import com.mojang.blaze3d.platform.SourceFactor;
+import com.mojang.blaze3d.platform.BlendFactor;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -15,7 +14,6 @@ import me.flashyreese.mods.nuit.components.UVRange;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -32,9 +30,10 @@ import java.util.stream.Collectors;
 public class Utils {
     private static final float SKYBOX_MIN = -100.0F;
     private static final float SKYBOX_MAX = 100.0F;
-    private static final Map<Integer, SourceFactor> SOURCE_FACTORS_BY_GL_ID = Arrays.stream(SourceFactor.values())
+    private static final Map<Integer, BlendFactor> SOURCE_FACTORS_BY_GL_ID = Arrays.stream(BlendFactor.values())
             .collect(Collectors.toUnmodifiableMap(GlConst::toGl, Function.identity()));
-    private static final Map<Integer, DestFactor> DEST_FACTORS_BY_GL_ID = Arrays.stream(DestFactor.values())
+    private static final Map<Integer, BlendFactor> DEST_FACTORS_BY_GL_ID = Arrays.stream(BlendFactor.values())
+            .filter(factor -> factor != BlendFactor.SRC_ALPHA_SATURATE)
             .collect(Collectors.toUnmodifiableMap(GlConst::toGl, Function.identity()));
     public static final UVRange[] TEXTURE_FACES = new UVRange[]{
             new UVRange(0, 0, 1.0F / 3.0F, 1.0F / 2.0F), // bottom
@@ -252,7 +251,7 @@ public class Utils {
      * @param currentTime The current time for which to find the closest keyframes.
      * @return A pair of timestamps representing the closest keyframes before and after the current time.
      */
-    public static <T> Optional<Tuple<Long, Long>> findClosestKeyframes(Map<Long, T> keyFrames, long currentTime) {
+    public static <T> Optional<KeyframePair> findClosestKeyframes(Map<Long, T> keyFrames, long currentTime) {
         if (keyFrames.isEmpty())
             return Optional.empty();
 
@@ -282,7 +281,7 @@ public class Utils {
             closestHigherKeyFrame = smallestValue;
         }
 
-        return Optional.of(new Tuple<>(closestLowerKeyFrame, closestHigherKeyFrame));
+        return Optional.of(new KeyframePair(closestLowerKeyFrame, closestHigherKeyFrame));
     }
 
     /**
@@ -293,13 +292,13 @@ public class Utils {
      * @param currentTime  The current time in game ticks.
      * @return The interpolated quaternion.
      */
-    public static Quaternionf interpolateQuatKeyframes(Map<Long, Quaternionf> keyFrames, Tuple<Long, Long> chosenFrames, long currentTime, long duration) {
+    public static Quaternionf interpolateQuatKeyframes(Map<Long, Quaternionf> keyFrames, KeyframePair chosenFrames, long currentTime, long duration) {
         if (keyFrames.size() == 1) {
             return keyFrames.values().iterator().next();
         }
 
-        long currentKey = chosenFrames.getA();
-        long nextKey = chosenFrames.getB();
+        long currentKey = chosenFrames.current();
+        long nextKey = chosenFrames.next();
 
         long cycleDuration;
         long timePassedInCycle;
@@ -390,16 +389,16 @@ public class Utils {
         return loadedService;
     }
 
-    public static SourceFactor toSourceFactor(int glId) {
-        SourceFactor factor = SOURCE_FACTORS_BY_GL_ID.get(glId);
+    public static BlendFactor toSourceFactor(int glId) {
+        BlendFactor factor = SOURCE_FACTORS_BY_GL_ID.get(glId);
         if (factor == null) {
             throw new IllegalArgumentException("Unknown SourceFactor with GL id of " + glId);
         }
         return factor;
     }
 
-    public static DestFactor toDestFactor(int glId) {
-        DestFactor factor = DEST_FACTORS_BY_GL_ID.get(glId);
+    public static BlendFactor toDestFactor(int glId) {
+        BlendFactor factor = DEST_FACTORS_BY_GL_ID.get(glId);
         if (factor == null) {
             throw new IllegalArgumentException("Unknown DestFactor with GL id of " + glId);
         }
@@ -412,5 +411,8 @@ public class Utils {
 
     public static boolean isDestFactor(int glId) {
         return DEST_FACTORS_BY_GL_ID.containsKey(glId);
+    }
+
+    public record KeyframePair(long current, long next) {
     }
 }

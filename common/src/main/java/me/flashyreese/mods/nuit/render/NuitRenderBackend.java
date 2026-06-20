@@ -1,5 +1,6 @@
 package me.flashyreese.mods.nuit.render;
 
+import com.mojang.blaze3d.IndexType;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -10,7 +11,6 @@ import com.mojang.blaze3d.systems.ScissorState;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.Identifier;
@@ -19,12 +19,12 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import java.util.OptionalDouble;
-import java.util.OptionalInt;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public final class NuitRenderBackend {
     public static GpuBufferSlice createDynamicTransforms() {
-        return createDynamicTransforms(RenderSystem.getModelViewMatrix(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
+        return createDynamicTransforms(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
     }
 
     public static GpuBufferSlice createDynamicTransforms(Matrix4f modelViewMatrix, Vector4f colorModulator) {
@@ -53,35 +53,53 @@ public final class NuitRenderBackend {
 
     public static void draw(RenderPipeline pipeline, MeshData meshData, GpuBufferSlice dynamicTransforms, Consumer<RenderPass> configureRenderPass) {
         try (meshData) {
-            GpuBuffer vertexBuffer = pipeline.getVertexFormat().uploadImmediateVertexBuffer(meshData.vertexBuffer());
-            GpuBuffer indexBuffer;
-            VertexFormat.IndexType indexType;
-            if (meshData.indexBuffer() == null) {
-                RenderSystem.AutoStorageIndexBuffer sequentialBuffer = RenderSystem.getSequentialBuffer(meshData.drawState().mode());
-                indexBuffer = sequentialBuffer.getBuffer(meshData.drawState().indexCount());
-                indexType = sequentialBuffer.type();
-            } else {
-                indexBuffer = pipeline.getVertexFormat().uploadImmediateIndexBuffer(meshData.indexBuffer());
-                indexType = meshData.drawState().indexType();
-            }
+            GpuBuffer vertexBuffer = RenderSystem.getDevice().createBuffer(
+                    () -> "Nuit vertex buffer for " + pipeline,
+                    GpuBuffer.USAGE_COPY_DST | GpuBuffer.USAGE_VERTEX,
+                    meshData.vertexBuffer()
+            );
+            GpuBuffer indexBuffer = null;
+            IndexType indexType;
+            boolean closeIndexBuffer = false;
 
-            drawIndexed(pipeline, vertexBuffer, indexBuffer, indexType, meshData.drawState().indexCount(), dynamicTransforms, "Nuit draw for " + pipeline, configureRenderPass);
+            try {
+                if (meshData.indexBuffer() == null) {
+                    RenderSystem.AutoStorageIndexBuffer sequentialBuffer = RenderSystem.getSequentialBuffer(meshData.drawState().primitiveTopology());
+                    indexBuffer = sequentialBuffer.getBuffer(meshData.drawState().indexCount());
+                    indexType = sequentialBuffer.type();
+                } else {
+                    indexBuffer = RenderSystem.getDevice().createBuffer(
+                            () -> "Nuit index buffer for " + pipeline,
+                            GpuBuffer.USAGE_COPY_DST | GpuBuffer.USAGE_INDEX,
+                            meshData.indexBuffer()
+                    );
+                    indexType = meshData.drawState().indexType();
+                    closeIndexBuffer = true;
+                }
+
+                drawIndexed(pipeline, vertexBuffer, indexBuffer, indexType, meshData.drawState().indexCount(), dynamicTransforms, "Nuit draw for " + pipeline, configureRenderPass);
+            } finally {
+                vertexBuffer.close();
+                if (closeIndexBuffer && indexBuffer != null) {
+                    indexBuffer.close();
+                }
+            }
         }
     }
 
-    public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, VertexFormat.IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label) {
+    public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label) {
         drawIndexed(pipeline, vertexBuffer, indexBuffer, indexType, indexCount, dynamicTransforms, label, pass -> {
         });
     }
 
-    public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, VertexFormat.IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
-        RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+    public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
+        RenderTarget renderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
         GpuTextureView colorTexture = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : renderTarget.getColorTextureView();
         GpuTextureView depthTexture = renderTarget.useDepth ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : renderTarget.getDepthTextureView()) : null;
 
-        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> label, colorTexture, OptionalInt.empty(), depthTexture, OptionalDouble.empty())) {
+        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> label, colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
             renderPass.setPipeline(pipeline);
-            renderPass.setVertexBuffer(0, vertexBuffer);
+            renderPass.setVertexBuffer(0, vertexBuffer.slice());
             renderPass.setIndexBuffer(indexBuffer, indexType);
 
             ScissorState scissorState = RenderSystem.getScissorStateForRenderTypeDraws();
@@ -92,7 +110,7 @@ public final class NuitRenderBackend {
             RenderSystem.bindDefaultUniforms(renderPass);
             renderPass.setUniform("DynamicTransforms", dynamicTransforms);
             configureRenderPass.accept(renderPass);
-            renderPass.drawIndexed(0, 0, indexCount, 1);
+            renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
         }
     }
 

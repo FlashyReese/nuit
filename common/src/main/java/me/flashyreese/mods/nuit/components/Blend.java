@@ -1,8 +1,7 @@
 package me.flashyreese.mods.nuit.components;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.platform.DestFactor;
-import com.mojang.blaze3d.platform.SourceFactor;
+import com.mojang.blaze3d.platform.BlendFactor;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.NuitClient;
@@ -24,42 +23,42 @@ public class Blend {
         this.type = type;
         switch (type) {
             case "add" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE);
+                this.blendFunction = new BlendFunction(BlendFactor.SRC_ALPHA, BlendFactor.ONE);
                 this.colorModifierFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
             }
 
             case "subtract" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.ONE_MINUS_DST_COLOR, DestFactor.ZERO);
+                this.blendFunction = new BlendFunction(BlendFactor.ONE_MINUS_DST_COLOR, BlendFactor.ZERO);
                 this.colorModifierFunc = (alpha) -> new Vector4f(alpha, alpha, alpha, 1.0F);
             }
 
             case "multiply" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.DST_COLOR, DestFactor.ONE_MINUS_SRC_ALPHA);
+                this.blendFunction = new BlendFunction(BlendFactor.DST_COLOR, BlendFactor.ONE_MINUS_SRC_ALPHA);
                 this.colorModifierFunc = (alpha) -> new Vector4f(alpha, alpha, alpha, alpha);
             }
 
             case "screen" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.ONE, DestFactor.ONE_MINUS_SRC_COLOR);
+                this.blendFunction = new BlendFunction(BlendFactor.ONE, BlendFactor.ONE_MINUS_SRC_COLOR);
                 this.colorModifierFunc = (alpha) -> new Vector4f(alpha, alpha, alpha, 1.0F);
             }
 
             case "replace" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.ZERO, DestFactor.ONE);
+                this.blendFunction = new BlendFunction(BlendFactor.ZERO, BlendFactor.ONE);
                 this.colorModifierFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
             }
 
             case "", "alpha", "normal" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA);
+                this.blendFunction = new BlendFunction(BlendFactor.SRC_ALPHA, BlendFactor.ONE_MINUS_SRC_ALPHA);
                 this.colorModifierFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
             }
 
             case "burn" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.ZERO, DestFactor.ONE_MINUS_SRC_COLOR);
+                this.blendFunction = new BlendFunction(BlendFactor.ZERO, BlendFactor.ONE_MINUS_SRC_COLOR);
                 this.colorModifierFunc = (alpha) -> new Vector4f(alpha, alpha, alpha, 1.0F);
             }
 
             case "dodge" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.DST_COLOR, DestFactor.ONE);
+                this.blendFunction = new BlendFunction(BlendFactor.DST_COLOR, BlendFactor.ONE);
                 this.colorModifierFunc = (alpha) -> new Vector4f(alpha, alpha, alpha, 1.0F);
             }
 
@@ -69,14 +68,14 @@ public class Blend {
             }
 
             case "decorations" -> {
-                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE, SourceFactor.ONE, DestFactor.ZERO);
+                this.blendFunction = new BlendFunction(BlendFactor.SRC_ALPHA, BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ZERO);
                 this.colorModifierFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
             }
 
             default -> {
                 NuitClient.getLogger().error("Blend mode is set to an invalid or unsupported value.");
 
-                this.blendFunction = new BlendFunction(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ZERO);
+                this.blendFunction = new BlendFunction(BlendFactor.SRC_ALPHA, BlendFactor.ONE_MINUS_SRC_ALPHA, BlendFactor.ONE, BlendFactor.ZERO);
                 this.colorModifierFunc = (alpha) -> new Vector4f(1.0F, 1.0F, 1.0F, alpha);
             }
         }

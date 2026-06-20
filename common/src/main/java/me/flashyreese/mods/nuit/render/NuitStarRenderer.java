@@ -1,5 +1,6 @@
 package me.flashyreese.mods.nuit.render;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
@@ -31,7 +32,7 @@ public final class NuitStarRenderer {
         ensureStarsBuilt();
 
         RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(blendFunction);
-        RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
         GpuBuffer indexBuffer = quadIndices.getBuffer(starIndexCount);
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
         NuitRenderBackend.drawIndexed(
@@ -62,7 +63,7 @@ public final class NuitStarRenderer {
 
         VertexFormat format = DefaultVertexFormat.POSITION_COLOR;
         try (ByteBufferBuilder byteBufferBuilder = ByteBufferBuilder.exactlySized(format.getVertexSize() * STAR_COUNT * 4)) {
-            BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, VertexFormat.Mode.QUADS, format);
+            BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, PrimitiveTopology.QUADS, format);
             RandomSource random = RandomSource.createThreadLocalInstance(STAR_SEED);
             int starColor = ARGB.white(1.0F);
 

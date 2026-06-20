@@ -1,12 +1,16 @@
 package me.flashyreese.mods.nuit.render;
 
+import com.mojang.blaze3d.GpuFormat;
+import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.pipeline.BindGroupLayout;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
 import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
 import net.minecraft.resources.Identifier;
@@ -15,25 +19,30 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 public final class NuitRenderPipelines {
     private static final Identifier MONO_COLOR_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/mono_color_skybox");
     private static final Identifier TEXTURED_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/textured_skybox");
     private static final Identifier MULTI_TEXTURED_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/multi_textured_skybox");
+    public static final String NEXT_UV_SEMANTIC_NAME = "NextUV";
+    public static final String FRAME_BLEND_SEMANTIC_NAME = "FrameBlend";
 
-    // fixme: 26.1 BufferBuilder has no generic custom float attribute setter
-    // Reuse LINE_WIDTH as the frame blend carrier until the 26.2 vertex format API
-    public static final VertexFormat FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT = VertexFormat.builder()
-            .add("Position", VertexFormatElement.POSITION)
-            .add("UV0", VertexFormatElement.UV0)
-            .add("UV1", VertexFormatElement.UV1)
-            .add("FrameBlend", VertexFormatElement.LINE_WIDTH)
+    public static final VertexFormat FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT = VertexFormat.builder(0)
+            .addAttribute(DefaultVertexFormat.POSITION_SEMANTIC_NAME, GpuFormat.RGB32_FLOAT)
+            .addAttribute(DefaultVertexFormat.UV0_SEMANTIC_NAME, GpuFormat.RG32_FLOAT)
+            .addAttribute(NEXT_UV_SEMANTIC_NAME, GpuFormat.RG32_FLOAT)
+            .addAttribute(FRAME_BLEND_SEMANTIC_NAME, GpuFormat.R32_FLOAT)
             .build();
 
-    private static final RenderPipeline.Snippet MATRICES_PROJECTION_SNIPPET = RenderPipeline.builder()
+    private static final BindGroupLayout MATRICES_PROJECTION_BIND_GROUP_LAYOUT = BindGroupLayout.builder()
             .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
             .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+            .build();
+    private static final BindGroupLayout SAMPLER0_BIND_GROUP_LAYOUT = BindGroupLayout.builder()
+            .withSampler("Sampler0")
+            .build();
+    private static final RenderPipeline.Snippet MATRICES_PROJECTION_SNIPPET = RenderPipeline.builder()
+            .withBindGroupLayout(MATRICES_PROJECTION_BIND_GROUP_LAYOUT)
             .buildSnippet();
 
     private static final Map<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINES = new HashMap<>();
@@ -86,7 +95,8 @@ public final class NuitRenderPipelines {
         builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER);
         builder.withFragmentShader(MONO_COLOR_SKYBOX_SHADER);
         applyBlend(builder, blendFunction);
-        builder.withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS);
+        builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR);
+        builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
         RenderPipeline pipeline = builder.build();
         IrisCompat.assignSkyBasicPipeline(pipeline);
         return pipeline;
@@ -101,15 +111,17 @@ public final class NuitRenderPipelines {
         if (frameBlended) {
             builder.withVertexShader(MULTI_TEXTURED_SKYBOX_SHADER);
             builder.withFragmentShader(MULTI_TEXTURED_SKYBOX_SHADER);
-            builder.withVertexFormat(FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT, VertexFormat.Mode.QUADS);
+            builder.withVertexBinding(0, FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT);
+            builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
         } else {
             builder.withVertexShader(TEXTURED_SKYBOX_SHADER);
             builder.withFragmentShader(TEXTURED_SKYBOX_SHADER);
-            builder.withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS);
+            builder.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX);
+            builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
         }
         builder.withCull(false);
         applyBlend(builder, blendFunction);
-        builder.withSampler("Sampler0");
+        builder.withBindGroupLayout(SAMPLER0_BIND_GROUP_LAYOUT);
         RenderPipeline pipeline = builder.build();
         IrisCompat.assignSkyTexturedPipeline(pipeline);
         return pipeline;
@@ -119,7 +131,7 @@ public final class NuitRenderPipelines {
         if (blendFunction != null) {
             builder.withColorTargetState(new ColorTargetState(blendFunction));
         } else {
-            builder.withColorTargetState(new ColorTargetState(Optional.empty(), ColorTargetState.WRITE_ALL));
+            builder.withColorTargetState(ColorTargetState.DEFAULT);
         }
     }
 
@@ -129,13 +141,27 @@ public final class NuitRenderPipelines {
         }
 
         return "blend_"
-                + factorName(blendFunction.sourceColor()) + "_"
-                + factorName(blendFunction.destColor()) + "_"
-                + factorName(blendFunction.sourceAlpha()) + "_"
-                + factorName(blendFunction.destAlpha());
+                + factorName(blendFunction.color().sourceFactor()) + "_"
+                + factorName(blendFunction.color().destFactor()) + "_"
+                + factorName(blendFunction.color().op()) + "_"
+                + factorName(blendFunction.alpha().sourceFactor()) + "_"
+                + factorName(blendFunction.alpha().destFactor()) + "_"
+                + factorName(blendFunction.alpha().op());
     }
 
     private static String factorName(Enum<?> factor) {
         return factor.name().toLowerCase(Locale.ROOT);
+    }
+
+    public static VertexFormat vertexFormat(RenderPipeline pipeline) {
+        return pipeline.getVertexFormatBinding(0);
+    }
+
+    public static ByteBufferBuilder byteBufferBuilder(RenderPipeline pipeline, int vertexCount) {
+        return new ByteBufferBuilder(vertexFormat(pipeline).getVertexSize() * vertexCount);
+    }
+
+    public static BufferBuilder bufferBuilder(ByteBufferBuilder byteBufferBuilder, RenderPipeline pipeline) {
+        return new BufferBuilder(byteBufferBuilder, pipeline.getPrimitiveTopology(), vertexFormat(pipeline));
     }
 }

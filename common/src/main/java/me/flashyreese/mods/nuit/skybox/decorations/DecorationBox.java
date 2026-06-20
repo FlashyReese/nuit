@@ -114,8 +114,8 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
 
     private void renderSun(GpuBufferSlice dynamicTransforms) {
         RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.blend.getBlendFunction());
-        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
-            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+        try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 4)) {
+            BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             builder.addVertex(-30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F);
             builder.addVertex(30.0F, 100.0F, -30.0F).setUv(1.0F, 0.0F);
             builder.addVertex(30.0F, 100.0F, 30.0F).setUv(1.0F, 1.0F);
@@ -143,8 +143,8 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         }
 
         RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.blend.getBlendFunction());
-        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 4)) {
-            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+        try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 4)) {
+            BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             builder.addVertex(-20.0F, -100.0F, 20.0F).setUv(endX, endY);
             builder.addVertex(20.0F, -100.0F, 20.0F).setUv(startX, endY);
             builder.addVertex(20.0F, -100.0F, -20.0F).setUv(startX, startY);

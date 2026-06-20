@@ -13,7 +13,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.biome.Biome;
@@ -68,25 +67,25 @@ public abstract class AbstractSkybox implements NuitSkybox {
         } else {
             if (this.properties.fade().duration() <= NuitClient.config().generalSettings.fadeCacheDuration) {
                 fadeAlpha = this.cachedKeyFrames.computeIfAbsent(currentTime, time -> {
-                    Tuple<Long, Long> keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), time).orElseThrow();
+                    Utils.KeyframePair keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), time).orElseThrow();
                     return Utils.calculateInterpolatedAlpha(
                             time,
                             this.properties.fade().duration(),
-                            keyFrames.getA(),
-                            keyFrames.getB(),
-                            this.properties.fade().keyFrames().get(keyFrames.getA()),
-                            this.properties.fade().keyFrames().get(keyFrames.getB())
+                            keyFrames.current(),
+                            keyFrames.next(),
+                            this.properties.fade().keyFrames().get(keyFrames.current()),
+                            this.properties.fade().keyFrames().get(keyFrames.next())
                     );
                 });
             } else {
-                Tuple<Long, Long> keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), currentTime).orElseThrow();
+                Utils.KeyframePair keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), currentTime).orElseThrow();
                 fadeAlpha = Utils.calculateInterpolatedAlpha(
                         currentTime,
                         this.properties.fade().duration(),
-                        keyFrames.getA(),
-                        keyFrames.getB(),
-                        this.properties.fade().keyFrames().get(keyFrames.getA()),
-                        this.properties.fade().keyFrames().get(keyFrames.getB())
+                        keyFrames.current(),
+                        keyFrames.next(),
+                        this.properties.fade().keyFrames().get(keyFrames.current()),
+                        this.properties.fade().keyFrames().get(keyFrames.next())
                 );
             }
 
@@ -145,7 +144,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
 
-        Camera camera = client.gameRenderer.getMainCamera();
+        Camera camera = client.gameRenderer.mainCamera();
         if (this.conditions.getEffects().entries().isEmpty()) {
             return !(camera.entity() instanceof LivingEntity livingEntity) || (!livingEntity.hasEffect(MobEffects.BLINDNESS) && !livingEntity.hasEffect(MobEffects.DARKNESS));
         } else {
@@ -164,7 +163,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Minecraft client = Minecraft.getInstance();
         Objects.requireNonNull(client.level);
 
-        Camera camera = client.gameRenderer.getMainCamera();
+        Camera camera = client.gameRenderer.mainCamera();
         FogType cameraSubmersionType = camera.getFluidInCamera();
 
         boolean visibleUnderwater = this.properties.visibleUnderwater() || cameraSubmersionType != FogType.WATER;

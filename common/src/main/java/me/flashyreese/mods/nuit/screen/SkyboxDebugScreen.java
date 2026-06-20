@@ -27,7 +27,7 @@ public class SkyboxDebugScreen extends Screen {
     }
 
     public void renderHud(GuiGraphicsExtractor graphicsExtractor) {
-        if (NuitClient.config().generalSettings.debugHud || Minecraft.getInstance().screen == this) {
+        if (NuitClient.config().generalSettings.debugHud || Minecraft.getInstance().gui.screen() == this) {
             int yPadding = 2;
             for (Map.Entry<Identifier, Skybox> skyboxEntry : SkyboxManager.getInstance().getSkyboxMap().entrySet()) {
                 Skybox activeSkybox = skyboxEntry.getValue();

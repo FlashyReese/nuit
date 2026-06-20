@@ -11,7 +11,6 @@ import me.flashyreese.mods.nuit.util.CodecUtils;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
-import net.minecraft.util.Tuple;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -47,10 +46,10 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
         final long currentTime = level.getDefaultClockTime() % this.duration;
         Quaternionf resultRot = new Quaternionf();
 
-        Optional<Tuple<Long, Long>> possibleMappingKeyframes = Utils.findClosestKeyframes(this.mapping, currentTime);
+        Optional<Utils.KeyframePair> possibleMappingKeyframes = Utils.findClosestKeyframes(this.mapping, currentTime);
         Quaternionf mappingRot = new Quaternionf();
 
-        Optional<Tuple<Long, Long>> possibleAxisKeyframes = Utils.findClosestKeyframes(this.axis, currentTime);
+        Optional<Utils.KeyframePair> possibleAxisKeyframes = Utils.findClosestKeyframes(this.axis, currentTime);
         Quaternionf axisRot = new Quaternionf();
 
         possibleAxisKeyframes.ifPresent(axisKeyframe -> {

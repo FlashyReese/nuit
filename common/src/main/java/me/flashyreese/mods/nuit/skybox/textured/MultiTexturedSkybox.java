@@ -1,9 +1,14 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
+import com.mojang.blaze3d.IndexType;
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.IrisCompat;
@@ -24,6 +29,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
+import org.joml.Vector3f;
+import org.lwjgl.system.MemoryUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +42,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(TexturedSkybox::getBlend),
             AnimatableTexture.CODEC.listOf().optionalFieldOf("animatableTextures", new ArrayList<>()).forGetter(MultiTexturedSkybox::getAnimations)
     ).apply(instance, MultiTexturedSkybox::new));
-    private static final int PACKED_UV_MAX = Short.MAX_VALUE;
     protected final List<AnimatableTexture> animatableTextures;
     private final float quadSize = 100F;
     private final UVRange quad = new UVRange(-this.quadSize, -this.quadSize, this.quadSize, this.quadSize);
@@ -94,8 +100,13 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     private void renderTextureFrame(RenderPipeline pipeline, GpuBufferSlice dynamicTransforms, AnimatableTexture animatableTexture, UVRange currentFrame, UVRange nextFrame, float frameBlend) {
-        try (ByteBufferBuilder byteBufferBuilder = new ByteBufferBuilder(pipeline.getVertexFormat().getVertexSize() * 24)) {
-            BufferBuilder builder = new BufferBuilder(byteBufferBuilder, pipeline.getVertexFormatMode(), pipeline.getVertexFormat());
+        if (nextFrame != null) {
+            this.renderFrameBlendedTextureFrame(pipeline, dynamicTransforms, animatableTexture, currentFrame, nextFrame, frameBlend);
+            return;
+        }
+
+        try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
+            BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             int quads = 0;
 
             for (int face = 0; face < 6; ++face) {
@@ -108,14 +119,33 @@ public class MultiTexturedSkybox extends TexturedSkybox {
 
                 UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
                 UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), currentFrame, intersect);
+                this.addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
+                quads++;
+            }
 
-                if (nextFrame != null) {
-                    UVRange intersectionOnNextFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), nextFrame, intersect);
-                    this.addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, frameBlend);
-                } else {
-                    this.addTexturedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame);
+            if (quads > 0) {
+                NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
+            }
+        }
+    }
+
+    private void renderFrameBlendedTextureFrame(RenderPipeline pipeline, GpuBufferSlice dynamicTransforms, AnimatableTexture animatableTexture, UVRange currentFrame, UVRange nextFrame, float frameBlend) {
+        try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
+            FrameBlendedMeshBuilder builder = new FrameBlendedMeshBuilder(byteBufferBuilder, pipeline);
+            int quads = 0;
+
+            for (int face = 0; face < 6; ++face) {
+                Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
+                UVRange faceUVRange = Utils.TEXTURE_FACES[face];
+                UVRange intersect = Utils.findUVIntersection(faceUVRange, animatableTexture.getUvRange()); // todo: cache this intersections so we don't waste gpu cycles
+                if (intersect == null) {
+                    continue;
                 }
 
+                UVRange intersectionOnCurrentTexture = Utils.mapUVRanges(faceUVRange, this.quad, intersect);
+                UVRange intersectionOnCurrentFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), currentFrame, intersect);
+                UVRange intersectionOnNextFrame = Utils.mapUVRanges(animatableTexture.getUvRange(), nextFrame, intersect);
+                this.addFrameBlendedVertices(builder, matrix4f, intersectionOnCurrentTexture, intersectionOnCurrentFrame, intersectionOnNextFrame, frameBlend);
                 quads++;
             }
 
@@ -139,22 +169,15 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         builder.addVertex(matrix4f, textureQuad.maxU(), -this.quadSize, textureQuad.minV()).setUv(currentFrame.maxU(), currentFrame.minV());
     }
 
-    private void addFrameBlendedVertices(BufferBuilder builder, Matrix4f matrix4f, UVRange textureQuad, UVRange currentFrame, UVRange nextFrame, float frameBlend) {
+    private void addFrameBlendedVertices(FrameBlendedMeshBuilder builder, Matrix4f matrix4f, UVRange textureQuad, UVRange currentFrame, UVRange nextFrame, float frameBlend) {
         addFrameBlendedVertex(builder, matrix4f, textureQuad.minU(), textureQuad.minV(), currentFrame.minU(), currentFrame.minV(), nextFrame.minU(), nextFrame.minV(), frameBlend);
         addFrameBlendedVertex(builder, matrix4f, textureQuad.minU(), textureQuad.maxV(), currentFrame.minU(), currentFrame.maxV(), nextFrame.minU(), nextFrame.maxV(), frameBlend);
         addFrameBlendedVertex(builder, matrix4f, textureQuad.maxU(), textureQuad.maxV(), currentFrame.maxU(), currentFrame.maxV(), nextFrame.maxU(), nextFrame.maxV(), frameBlend);
         addFrameBlendedVertex(builder, matrix4f, textureQuad.maxU(), textureQuad.minV(), currentFrame.maxU(), currentFrame.minV(), nextFrame.maxU(), nextFrame.minV(), frameBlend);
     }
 
-    private void addFrameBlendedVertex(BufferBuilder builder, Matrix4f matrix4f, float x, float z, float currentU, float currentV, float nextU, float nextV, float frameBlend) {
-        builder.addVertex(matrix4f, x, -this.quadSize, z)
-                .setUv(currentU, currentV)
-                .setUv1(packUv(nextU), packUv(nextV))
-                .setLineWidth(frameBlend);
-    }
-
-    private static int packUv(float uv) {
-        return Math.round(Mth.clamp(uv, 0.0F, 1.0F) * PACKED_UV_MAX);
+    private void addFrameBlendedVertex(FrameBlendedMeshBuilder builder, Matrix4f matrix4f, float x, float z, float currentU, float currentV, float nextU, float nextV, float frameBlend) {
+        builder.addVertex(matrix4f, x, -this.quadSize, z, currentU, currentV, nextU, nextV, frameBlend);
     }
 
     public List<AnimatableTexture> getAnimations() {
@@ -164,5 +187,50 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     @Override
     public List<Identifier> getTexturesToRegister() {
         return this.animatableTextures.stream().map(AnimatableTexture::getTexture).map(Texture::getTextureId).toList();
+    }
+
+    private static final class FrameBlendedMeshBuilder {
+        private final ByteBufferBuilder byteBufferBuilder;
+        private final VertexFormat vertexFormat;
+        private final int vertexSize;
+        private final int positionOffset;
+        private final int uv0Offset;
+        private final int nextUvOffset;
+        private final int frameBlendOffset;
+        private final Vector3f transformedPosition = new Vector3f();
+        private int vertexCount;
+
+        private FrameBlendedMeshBuilder(ByteBufferBuilder byteBufferBuilder, RenderPipeline pipeline) {
+            this.byteBufferBuilder = byteBufferBuilder;
+            this.vertexFormat = NuitRenderPipelines.vertexFormat(pipeline);
+            this.vertexSize = this.vertexFormat.getVertexSize();
+            this.positionOffset = this.vertexFormat.getElement(DefaultVertexFormat.POSITION_SEMANTIC_NAME).offset();
+            this.uv0Offset = this.vertexFormat.getElement(DefaultVertexFormat.UV0_SEMANTIC_NAME).offset();
+            this.nextUvOffset = this.vertexFormat.getElement(NuitRenderPipelines.NEXT_UV_SEMANTIC_NAME).offset();
+            this.frameBlendOffset = this.vertexFormat.getElement(NuitRenderPipelines.FRAME_BLEND_SEMANTIC_NAME).offset();
+        }
+
+        private void addVertex(Matrix4f matrix, float x, float y, float z, float currentU, float currentV, float nextU, float nextV, float frameBlend) {
+            long pointer = this.byteBufferBuilder.reserve(this.vertexSize);
+            matrix.transformPosition(x, y, z, this.transformedPosition);
+
+            MemoryUtil.memPutFloat(pointer + this.positionOffset, this.transformedPosition.x());
+            MemoryUtil.memPutFloat(pointer + this.positionOffset + 4L, this.transformedPosition.y());
+            MemoryUtil.memPutFloat(pointer + this.positionOffset + 8L, this.transformedPosition.z());
+            MemoryUtil.memPutFloat(pointer + this.uv0Offset, currentU);
+            MemoryUtil.memPutFloat(pointer + this.uv0Offset + 4L, currentV);
+            MemoryUtil.memPutFloat(pointer + this.nextUvOffset, nextU);
+            MemoryUtil.memPutFloat(pointer + this.nextUvOffset + 4L, nextV);
+            MemoryUtil.memPutFloat(pointer + this.frameBlendOffset, frameBlend);
+            this.vertexCount++;
+        }
+
+        private MeshData buildOrThrow() {
+            int indexCount = PrimitiveTopology.QUADS.indexCount(this.vertexCount);
+            return new MeshData(
+                    this.byteBufferBuilder.build(),
+                    new MeshData.DrawState(this.vertexFormat, this.vertexCount, indexCount, PrimitiveTopology.QUADS, IndexType.least(indexCount))
+            );
+        }
     }
 }
