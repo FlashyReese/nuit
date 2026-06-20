@@ -6,7 +6,6 @@
   "client": [
     "MixinAtmosphericFogEnvironment",
     "MixinFogRenderer",
-    "MixinGlCommandEncoder",
     "MixinLevelRenderer",
     "SkyRendererAccessor"
   ],

@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
@@ -14,8 +13,8 @@ import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
+import me.flashyreese.mods.nuit.render.NuitStarRenderer;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import me.flashyreese.mods.nuit.util.OverrideUtils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.EndFlashState;
@@ -83,34 +82,29 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         float tickDelta = context.tickDelta();
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
 
-        OverrideUtils.enableBlendingOverride(this.blend.getBlendFunction());
-        try {
-            Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.skyModelViewStack()), level);
-            Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
+        Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.skyModelViewStack()), level);
+        Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
 
-            // poseStack.mulPose(Axis.YP.rotation(-90F));
-            // poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
-            // Iris Compat
-            // poseStack.mulPose(Axis.ZP.rotationDegrees(IrisCompat.getSunPathRotation()));
-            // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
+        // poseStack.mulPose(Axis.YP.rotation(-90F));
+        // poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
+        // Iris Compat
+        // poseStack.mulPose(Axis.ZP.rotationDegrees(IrisCompat.getSunPathRotation()));
+        // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
-            if (this.sunEnabled) {
-                this.renderSun(dynamicTransforms);
+        if (this.sunEnabled) {
+            this.renderSun(dynamicTransforms);
+        }
+
+        if (this.moonEnabled) {
+            this.renderMoon(camera.attributeProbe().getValue(EnvironmentAttributes.MOON_PHASE, tickDelta), dynamicTransforms);
+        }
+
+        if (this.starsEnabled) {
+            float starBrightness = camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta);
+            if (starBrightness > 0.0F) {
+                NuitStarRenderer.render(decorationMatrix, new Vector4f(colorModifier).mul(starBrightness), this.blend.getBlendFunction());
             }
-
-            if (this.moonEnabled) {
-                this.renderMoon(camera.attributeProbe().getValue(EnvironmentAttributes.MOON_PHASE, tickDelta), dynamicTransforms);
-            }
-
-            if (this.starsEnabled) {
-                PoseStack poseStack = new PoseStack();
-                this.properties.rotation().apply(poseStack, level);
-                context.renderStars(camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta), poseStack);
-            }
-
-        } finally {
-            OverrideUtils.disableBlendingOverride();
         }
 
         if (this.endFlashEnabled) {

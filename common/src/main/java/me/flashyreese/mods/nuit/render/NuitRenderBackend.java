@@ -32,7 +32,7 @@ public final class NuitRenderBackend {
     }
 
     public static void draw(RenderPipeline pipeline, MeshData meshData, GpuBufferSlice dynamicTransforms) {
-        draw(pipeline, meshData, dynamicTransforms, pass -> {
+        draw(pipeline, meshData, dynamicTransforms, _ -> {
         });
     }
 
@@ -65,25 +65,34 @@ public final class NuitRenderBackend {
                 indexType = meshData.drawState().indexType();
             }
 
-            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
-            GpuTextureView colorTexture = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : renderTarget.getColorTextureView();
-            GpuTextureView depthTexture = renderTarget.useDepth ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : renderTarget.getDepthTextureView()) : null;
+            drawIndexed(pipeline, vertexBuffer, indexBuffer, indexType, meshData.drawState().indexCount(), dynamicTransforms, "Nuit draw for " + pipeline, configureRenderPass);
+        }
+    }
 
-            try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> "Nuit draw for " + pipeline, colorTexture, OptionalInt.empty(), depthTexture, OptionalDouble.empty())) {
-                renderPass.setPipeline(pipeline);
-                renderPass.setVertexBuffer(0, vertexBuffer);
-                renderPass.setIndexBuffer(indexBuffer, indexType);
+    public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, VertexFormat.IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label) {
+        drawIndexed(pipeline, vertexBuffer, indexBuffer, indexType, indexCount, dynamicTransforms, label, pass -> {
+        });
+    }
 
-                ScissorState scissorState = RenderSystem.getScissorStateForRenderTypeDraws();
-                if (scissorState.enabled()) {
-                    renderPass.enableScissor(scissorState.x(), scissorState.y(), scissorState.width(), scissorState.height());
-                }
+    public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, VertexFormat.IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
+        RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+        GpuTextureView colorTexture = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : renderTarget.getColorTextureView();
+        GpuTextureView depthTexture = renderTarget.useDepth ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : renderTarget.getDepthTextureView()) : null;
 
-                RenderSystem.bindDefaultUniforms(renderPass);
-                renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-                configureRenderPass.accept(renderPass);
-                renderPass.drawIndexed(0, 0, meshData.drawState().indexCount(), 1);
+        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> label, colorTexture, OptionalInt.empty(), depthTexture, OptionalDouble.empty())) {
+            renderPass.setPipeline(pipeline);
+            renderPass.setVertexBuffer(0, vertexBuffer);
+            renderPass.setIndexBuffer(indexBuffer, indexType);
+
+            ScissorState scissorState = RenderSystem.getScissorStateForRenderTypeDraws();
+            if (scissorState.enabled()) {
+                renderPass.enableScissor(scissorState.x(), scissorState.y(), scissorState.width(), scissorState.height());
             }
+
+            RenderSystem.bindDefaultUniforms(renderPass);
+            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+            configureRenderPass.accept(renderPass);
+            renderPass.drawIndexed(0, 0, indexCount, 1);
         }
     }
 

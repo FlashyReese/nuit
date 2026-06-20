@@ -16,6 +16,7 @@ import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
 import me.flashyreese.mods.nuit.components.Metadata;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitStarRenderer;
 import me.flashyreese.mods.nuit.skybox.DefaultHandler;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -159,6 +160,7 @@ public class SkyboxManager implements NuitApi {
         this.skyboxMap.clear();
         this.activeSkyboxes.clear();
         this.currentSkybox = null;
+        NuitStarRenderer.close();
     }
 
     @Internal
