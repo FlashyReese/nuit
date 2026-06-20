@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit.mixin;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -11,6 +12,7 @@ import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
+import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Matrix4fc;
@@ -20,12 +22,15 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 900)
 public abstract class MixinLevelRenderer {
     @Unique
     private static float nuit$tickDelta;
+    @Unique
+    private static boolean nuit$skipNeoForgeVanillaSky;
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void nuit$captureTickDelta(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, CameraRenderState cameraRenderState, Matrix4fc projectionMatrix, GpuBufferSlice fogParameters, Vector4f shaderFogColor, boolean renderSky, ChunkSectionsToRender chunkSectionsToRender, CallbackInfo ci) {
@@ -43,22 +48,98 @@ public abstract class MixinLevelRenderer {
             cancellable = true
     )
     private static void nuit$renderCustomSkyboxesFabric(GpuBufferSlice fogParameters, SkyRenderState skyRenderState, SkyRenderer skyRenderer, CallbackInfo ci) {
-        nuit$renderCustomSkyboxes(fogParameters, skyRenderer, ci);
+        if (nuit$renderCustomSkyboxes(fogParameters, skyRenderer)) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At("HEAD")
+    )
+    private void nuit$resetNeoForgeSkyReplacement(SkyRenderState skyRenderState, Matrix4fc projectionMatrix, GpuBufferSlice fogParameters, SkyRenderer skyRenderer, CallbackInfo ci) {
+        nuit$skipNeoForgeVanillaSky = false;
     }
 
     @Group(name = "nuit$renderCustomSkyboxes", min = 1, max = 1)
     @Inject(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             require = 0,
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", shift = At.Shift.AFTER),
-            cancellable = true
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", shift = At.Shift.AFTER)
     )
     private static void nuit$renderCustomSkyboxesNeoForge(SkyRenderState skyRenderState, Matrix4fc projectionMatrix, GpuBufferSlice fogParameters, SkyRenderer skyRenderer, CallbackInfo ci) {
-        nuit$renderCustomSkyboxes(fogParameters, skyRenderer, ci);
+        nuit$skipNeoForgeVanillaSky = nuit$renderCustomSkyboxes(fogParameters, skyRenderer);
+    }
+
+    @Redirect(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderEndSky()V")
+    )
+    private void nuit$skipNeoForgeEndSky(SkyRenderer skyRenderer) {
+        if (!nuit$skipNeoForgeVanillaSky) {
+            skyRenderer.renderEndSky();
+        }
+    }
+
+    @Redirect(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderEndFlash(Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V")
+    )
+    private void nuit$skipNeoForgeEndFlash(SkyRenderer skyRenderer, PoseStack poseStack, float intensity, float xAngle, float yAngle) {
+        if (!nuit$skipNeoForgeVanillaSky) {
+            skyRenderer.renderEndFlash(poseStack, intensity, xAngle, yAngle);
+        }
+    }
+
+    @Redirect(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSkyDisc(I)V")
+    )
+    private void nuit$skipNeoForgeSkyDisc(SkyRenderer skyRenderer, int color) {
+        if (!nuit$skipNeoForgeVanillaSky) {
+            skyRenderer.renderSkyDisc(color);
+        }
+    }
+
+    @Redirect(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSunriseAndSunset(Lcom/mojang/blaze3d/vertex/PoseStack;FI)V")
+    )
+    private void nuit$skipNeoForgeSunriseAndSunset(SkyRenderer skyRenderer, PoseStack poseStack, float sunAngle, int color) {
+        if (!nuit$skipNeoForgeVanillaSky) {
+            skyRenderer.renderSunriseAndSunset(poseStack, sunAngle, color);
+        }
+    }
+
+    @Redirect(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSunMoonAndStars(Lcom/mojang/blaze3d/vertex/PoseStack;FFFLnet/minecraft/world/level/MoonPhase;FF)V")
+    )
+    private void nuit$skipNeoForgeSunMoonAndStars(SkyRenderer skyRenderer, PoseStack poseStack, float sunAngle, float moonAngle, float starAngle, MoonPhase moonPhase, float rainBrightness, float starBrightness) {
+        if (!nuit$skipNeoForgeVanillaSky) {
+            skyRenderer.renderSunMoonAndStars(poseStack, sunAngle, moonAngle, starAngle, moonPhase, rainBrightness, starBrightness);
+        }
+    }
+
+    @Redirect(
+            method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
+            require = 0,
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderDarkDisc()V")
+    )
+    private void nuit$skipNeoForgeDarkDisc(SkyRenderer skyRenderer) {
+        if (!nuit$skipNeoForgeVanillaSky) {
+            skyRenderer.renderDarkDisc();
+        }
     }
 
     @Unique
-    private static void nuit$renderCustomSkyboxes(GpuBufferSlice fogParameters, SkyRenderer skyRenderer, CallbackInfo ci) {
+    private static boolean nuit$renderCustomSkyboxes(GpuBufferSlice fogParameters, SkyRenderer skyRenderer) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
             Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
@@ -72,7 +153,8 @@ public abstract class MixinLevelRenderer {
                     Minecraft.getInstance().gameRenderer.getMainCamera(),
                     fogParameters
             );
-            ci.cancel();
+            return true;
         }
+        return false;
     }
 }
