@@ -23,6 +23,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public final class NuitRenderBackend {
+    public static final String SAMPLER0_NAME = "Sampler0";
+
     public static GpuBufferSlice createDynamicTransforms() {
         return createDynamicTransforms(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
     }

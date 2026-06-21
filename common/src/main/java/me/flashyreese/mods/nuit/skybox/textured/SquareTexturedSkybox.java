@@ -52,7 +52,7 @@ public class SquareTexturedSkybox extends TexturedSkybox {
                 builder.addVertex(matrix4f, 100.0F, -100.0F, 100.0F).setUv(tex.maxU(), tex.maxV());
                 builder.addVertex(matrix4f, 100.0F, -100.0F, -100.0F).setUv(tex.maxU(), tex.minV());
             }
-            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", this.texture.getTextureId());
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, this.texture.getTextureId());
         }
     }
 

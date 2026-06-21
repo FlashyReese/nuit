@@ -45,7 +45,7 @@ public class EndSkybox extends AbstractSkybox {
             }
 
             GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms();
-            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", context.endSkyTexture());
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, context.endSkyTexture());
         }
 
         this.renderEndFlash(context);

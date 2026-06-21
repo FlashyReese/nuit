@@ -2,17 +2,16 @@ package me.flashyreese.mods.nuit.render;
 
 import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.pipeline.BindGroupLayout;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
+import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,15 +33,8 @@ public final class NuitRenderPipelines {
             .addAttribute(FRAME_BLEND_SEMANTIC_NAME, GpuFormat.R32_FLOAT)
             .build();
 
-    private static final BindGroupLayout MATRICES_PROJECTION_BIND_GROUP_LAYOUT = BindGroupLayout.builder()
-            .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
-            .withUniform("Projection", UniformType.UNIFORM_BUFFER)
-            .build();
-    private static final BindGroupLayout SAMPLER0_BIND_GROUP_LAYOUT = BindGroupLayout.builder()
-            .withSampler("Sampler0")
-            .build();
     private static final RenderPipeline.Snippet MATRICES_PROJECTION_SNIPPET = RenderPipeline.builder()
-            .withBindGroupLayout(MATRICES_PROJECTION_BIND_GROUP_LAYOUT)
+            .withBindGroupLayout(BindGroupLayouts.MATRICES_PROJECTION)
             .buildSnippet();
 
     private static final Map<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINES = new HashMap<>();
@@ -121,7 +113,7 @@ public final class NuitRenderPipelines {
         }
         builder.withCull(false);
         applyBlend(builder, blendFunction);
-        builder.withBindGroupLayout(SAMPLER0_BIND_GROUP_LAYOUT);
+        builder.withBindGroupLayout(BindGroupLayouts.SAMPLER0);
         RenderPipeline pipeline = builder.build();
         IrisCompat.assignSkyTexturedPipeline(pipeline);
         return pipeline;
@@ -140,13 +132,18 @@ public final class NuitRenderPipelines {
             return "no_blend";
         }
 
-        return "blend_"
-                + factorName(blendFunction.color().sourceFactor()) + "_"
-                + factorName(blendFunction.color().destFactor()) + "_"
-                + factorName(blendFunction.color().op()) + "_"
-                + factorName(blendFunction.alpha().sourceFactor()) + "_"
-                + factorName(blendFunction.alpha().destFactor()) + "_"
-                + factorName(blendFunction.alpha().op());
+        String colorBlend = factorName(blendFunction.color().sourceFactor())
+                + "_to_"
+                + factorName(blendFunction.color().destFactor());
+        String alphaBlend = factorName(blendFunction.alpha().sourceFactor())
+                + "_to_"
+                + factorName(blendFunction.alpha().destFactor());
+
+        if (colorBlend.equals(alphaBlend)) {
+            return "blend_" + colorBlend;
+        }
+
+        return "blend_color_" + colorBlend + "_alpha_" + alphaBlend;
     }
 
     private static String factorName(Enum<?> factor) {

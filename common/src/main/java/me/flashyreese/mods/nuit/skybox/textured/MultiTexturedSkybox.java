@@ -124,7 +124,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             }
 
             if (quads > 0) {
-                NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
+                NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, animatableTexture.getTexture().getTextureId());
             }
         }
     }
@@ -150,7 +150,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             }
 
             if (quads > 0) {
-                NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", animatableTexture.getTexture().getTextureId());
+                NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, animatableTexture.getTexture().getTextureId());
             }
         }
     }

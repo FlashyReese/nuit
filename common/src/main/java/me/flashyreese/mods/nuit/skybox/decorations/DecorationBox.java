@@ -121,7 +121,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
             builder.addVertex(30.0F, 100.0F, 30.0F).setUv(1.0F, 1.0F);
             builder.addVertex(-30.0F, 100.0F, 30.0F).setUv(0.0F, 1.0F);
 
-            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", this.sunTexture);
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, this.sunTexture);
         }
     }
 
@@ -150,7 +150,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
             builder.addVertex(20.0F, -100.0F, -20.0F).setUv(startX, startY);
             builder.addVertex(-20.0F, -100.0F, -20.0F).setUv(endX, startY);
 
-            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, "Sampler0", texture);
+            NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, texture);
         }
     }
 
