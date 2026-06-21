@@ -80,11 +80,6 @@ public class AnimatableTexture {
             return;
         }
 
-        if (this.animationDuration <= 0L) {
-            this.setCurrentFrame(0, 0.0F);
-            return;
-        }
-
         // Durations use vanilla 20 TPS tick units on purpose. Do not use the dynamic tick-rate
         // manager here unless sky animations should ignore game-speed changes.
         double animationTime = ((double) gameTime + tickDelta) * 50.0D;
@@ -116,6 +111,14 @@ public class AnimatableTexture {
 
     public boolean hasMultipleFrames() {
         return this.frameCount > 1;
+    }
+
+    public boolean hasInterpolatedFrame() {
+        return this.interpolate
+                && this.currentFrame != null
+                && this.frameCount > 1
+                && this.nextFrame != null
+                && this.frameBlend > 0.0F;
     }
 
     private void setCurrentFrame(int frameIndex, float frameBlend) {

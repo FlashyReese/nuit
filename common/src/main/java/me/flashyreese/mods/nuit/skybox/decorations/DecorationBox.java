@@ -1,6 +1,7 @@
 package me.flashyreese.mods.nuit.skybox.decorations;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
@@ -78,13 +79,24 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
     @Override
     public void render(SkyboxRenderContext context) {
         context.applyFog();
+        if (this.alpha <= 0.0F) {
+            return;
+        }
+
         Camera camera = context.camera();
         float tickDelta = context.tickDelta();
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
+        BlendFunction blendFunction = this.blend.getBlendFunction();
+        RenderPipeline texturedPipeline = null;
 
-        Matrix4f decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.skyModelViewStack()), level);
-        Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
+        Matrix4f decorationMatrix = null;
+        Vector4f colorModifier = null;
+        GpuBufferSlice dynamicTransforms = null;
+        if (this.sunEnabled || this.moonEnabled || this.starsEnabled) {
+            decorationMatrix = this.properties.rotation().apply(new Matrix4f(context.skyModelViewStack()), level);
+            colorModifier = this.blend.getColorModifier(this.alpha);
+            dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
+        }
 
         // poseStack.mulPose(Axis.YP.rotation(-90F));
         // poseStack.mulPose(Axis.YP.rotation(level.getTimeOfDay(tickDelta) * 360.0F));
@@ -93,17 +105,25 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         // poseStack.mulPose(Axis.XP.rotationDegrees(level.getSunAngle(tickDelta) * 360.0F * this.properties.rotation().speed()));
 
         if (this.sunEnabled) {
-            this.renderSun(dynamicTransforms);
+            if (texturedPipeline == null) {
+                texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
+            }
+
+            this.renderSun(texturedPipeline, dynamicTransforms);
         }
 
         if (this.moonEnabled) {
-            this.renderMoon(camera.attributeProbe().getValue(EnvironmentAttributes.MOON_PHASE, tickDelta), dynamicTransforms);
+            if (texturedPipeline == null) {
+                texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
+            }
+
+            this.renderMoon(texturedPipeline, camera.attributeProbe().getValue(EnvironmentAttributes.MOON_PHASE, tickDelta), dynamicTransforms);
         }
 
         if (this.starsEnabled) {
             float starBrightness = camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta);
             if (starBrightness > 0.0F) {
-                NuitStarRenderer.render(decorationMatrix, new Vector4f(colorModifier).mul(starBrightness), this.blend.getBlendFunction());
+                NuitStarRenderer.render(decorationMatrix, new Vector4f(colorModifier).mul(starBrightness), blendFunction);
             }
         }
 
@@ -112,8 +132,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         }
     }
 
-    private void renderSun(GpuBufferSlice dynamicTransforms) {
-        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.blend.getBlendFunction());
+    private void renderSun(RenderPipeline pipeline, GpuBufferSlice dynamicTransforms) {
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 4)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             builder.addVertex(-30.0F, 100.0F, -30.0F).setUv(0.0F, 0.0F);
@@ -125,7 +144,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         }
     }
 
-    private void renderMoon(MoonPhase moonPhase, GpuBufferSlice dynamicTransforms) {
+    private void renderMoon(RenderPipeline pipeline, MoonPhase moonPhase, GpuBufferSlice dynamicTransforms) {
         boolean useDefaultMoonPhases = this.moonTexture.equals(DEFAULT_MOON);
         Identifier texture = useDefaultMoonPhases ? DEFAULT_MOON_PHASES[moonPhase.index()] : this.moonTexture;
         float startX = 0.0F;
@@ -142,7 +161,6 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
             endY = (yCoord + 1) / 2.0F;
         }
 
-        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.blend.getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 4)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             builder.addVertex(-20.0F, -100.0F, 20.0F).setUv(endX, endY);

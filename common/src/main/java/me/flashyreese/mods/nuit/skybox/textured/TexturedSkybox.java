@@ -43,6 +43,10 @@ public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTex
      */
     @Override
     public final void render(SkyboxRenderContext context) {
+        if (this.alpha <= 0.0F) {
+            return;
+        }
+
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
         modelViewStack.pushMatrix();
