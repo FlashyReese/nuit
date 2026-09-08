@@ -74,10 +74,13 @@ public interface Skybox {
     default int getLayer() { return 0; }
     void tick(ClientLevel level);
     boolean isActive();
+    default void reset() { }
 }
 ```
 
-Lower layers render first.
+Lower layers render first. Override `reset()` to stop transient effects and clear activation state when a skybox is
+removed, resources reload, Nuit is disabled, or the client disconnects or changes levels. The instance may be ticked
+again after reset, including permanent skyboxes, so it must remain reusable.
 
 ### `RenderableSkybox`
 
@@ -102,7 +105,14 @@ public interface NuitSkybox extends RenderableSkybox {
 }
 ```
 
-`AbstractSkybox` already implements the standard Nuit alpha and condition behavior.
+`AbstractSkybox` implements the standard Nuit alpha and condition behavior, plus optional attached sound playback.
+Access settings through `getProperties().sound()`, which returns `Optional<SoundSettings>`. Audio settings belong to the
+shared `Properties` record and its codec, so skybox types do not need separate sound fields or constructor parameters.
+See the [sound schema](schema.md#sound) for the `properties.sound` resource format.
+
+Custom subclasses overriding `tick(ClientLevel)` or `reset()` must call the corresponding superclass method to update
+and clean up attached sounds. `AbstractSkybox.reset()` also clears alpha and condition transition state, allowing a
+fresh activation when the instance is ticked again.
 
 ### `SkyboxTextureProvider`
 

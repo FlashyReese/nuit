@@ -7,8 +7,11 @@ import me.flashyreese.mods.nuit.util.CodecUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 public record Properties(int layer, ClockSource clock, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
-                         boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation) {
+                         boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation,
+                         Optional<SoundSettings> sound) {
     public static final Codec<Properties> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.optionalFieldOf("layer", 0).forGetter(Properties::layer),
             ClockSource.CODEC.optionalFieldOf("clock", ClockSource.defaultClock()).forGetter(Properties::clock),
@@ -18,8 +21,14 @@ public record Properties(int layer, ClockSource clock, Fade fade, int transition
             Fog.CODEC.optionalFieldOf("fog", Fog.of()).forGetter(Properties::fog),
             Codec.BOOL.optionalFieldOf("sunSkyTint", true).forGetter(Properties::renderSunSkyTint),
             Codec.BOOL.optionalFieldOf("visibleUnderwater", true).forGetter(Properties::visibleUnderwater),
-            Rotation.CODEC.optionalFieldOf("rotation", Rotation.of()).forGetter(Properties::rotation)
+            Rotation.CODEC.optionalFieldOf("rotation", Rotation.of()).forGetter(Properties::rotation),
+            SoundSettings.CODEC.optionalFieldOf("sound").forGetter(Properties::sound)
     ).apply(instance, Properties::new));
+
+    public Properties(int layer, ClockSource clock, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
+                      boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation) {
+        this(layer, clock, fade, transitionInDuration, transitionOutDuration, fog, renderSunSkyTint, visibleUnderwater, rotation, Optional.empty());
+    }
 
     public Properties(int layer, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
                       boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation) {

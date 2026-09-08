@@ -25,13 +25,13 @@ Each JSON file defines one skybox layer.
 
 ## Shared Fields
 
-All skybox types share these metadata and optional objects.
+All built-in skybox types share these metadata and optional objects.
 
 | Field | Type | Required | Default | Notes |
 |-------|------|----------|---------|-------|
 | `schemaVersion` | integer | yes | none | Current value is `1`. |
 | `type` | identifier/string | yes | none | Built-in types may omit the `nuit:` namespace. |
-| `properties` | object | no | default properties | Render order, fade, fog, rotation, transitions. |
+| `properties` | object | no | default properties | Render order, fade, fog, rotation, transitions, and optional sound. |
 | `conditions` | object | no | no restrictions | Biome, dimension, skybox, weather, effect, and coordinate checks. |
 
 ## Built-In Types
@@ -93,6 +93,9 @@ Nuit skybox shaders are normal client resources. Resource packs can override the
     "axis": {
       "0": [0.0, 1.0, 0.0]
     }
+  },
+  "sound": {
+    "file": "example:sounds/sky/chime.ogg"
   }
 }
 ```
@@ -108,6 +111,7 @@ Nuit skybox shaders are normal client resources. Resource packs can override the
 | `sunSkyTint` | boolean | `true` | If `false`, disables vanilla sunrise/sunset tint contribution for this skybox while rendering. |
 | `visibleUnderwater` | boolean | `true` | If `false`, the skybox is hidden underwater. |
 | `rotation` | object | no static mapping/axis rotation, `duration: 24000`, `speed: 1.0` | Skybox rotation. |
+| `sound` | object | no sound | Ogg audio with optional fading, looping, and delay. |
 
 ### `clock`
 
@@ -179,6 +183,70 @@ If several such sun decorations are active, they must use the same `clock` and `
 keeps the dimension's normal sunrise and fog direction and logs a warning.
 
 Moon-only and stars-only decorations do not affect sunrise colors or fog direction.
+
+### `sound`
+
+Add `sound` inside `properties` to play a sound alongside your skybox. All built-in skybox types support it:
+
+```json
+{
+  "file": "example:sounds/sky/chime.ogg",
+  "clipToFade": true,
+  "loop": false,
+  "delay": 0
+}
+```
+
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `file` | identifier | required | Sound file to play, including the `sounds/` folder and `.ogg` extension. |
+| `clipToFade` | boolean | `true` | Fade the sound in and out using the skybox's fade settings. Set to `false` to ignore volume fades. |
+| `loop` | boolean | `false` | Repeat the sound while the fade settings and conditions allow it to play. |
+| `delay` | integer >= 0 | `0` | How many ticks later the sound plays. See below for how this works with fade keyframes. |
+
+For this example, put your sound at `assets/example/sounds/sky/chime.ogg` in your resource pack. You do not need
+to add it to `sounds.json`.
+
+Use an `.ogg` file saved as **Ogg Vorbis**, like Minecraft's own sounds. If your sound is an MP3, WAV, FLAC, or Opus
+file, convert it to Ogg Vorbis first. Changing the filename to end in `.ogg` is not enough.
+
+#### Playback and fades
+
+Sound follows the skybox's `conditions`, `properties.fade`, and `properties.clock`. For example, you can use biome
+conditions for forest ambience, weather conditions for rain sounds, or height conditions for cave sounds.
+
+With `clipToFade: true`, fade keyframe values also control sound volume: `0.0` is silent and `1.0` is full volume.
+The sound starts silently at the keyframe where a fade-in begins and stops when the fade-out reaches zero.
+`transitionInDuration` and `transitionOutDuration` also fade the volume when conditions change, such as when the
+player enters or leaves an allowed biome. New sounds only start while the conditions are met.
+
+With `clipToFade: false`, the sound starts at the same time but plays at normal volume. If `loop` is `false`, it
+finishes the whole file even if the skybox fades away or the player leaves an allowed biome. If `loop` is `true`,
+it repeats at normal volume until the fade-out ends, then stops without fading the sound itself.
+
+With `loop: false`, the sound plays once each time its fade or conditions become active. Finishing the file early
+does not start it again. With `loop: true`, the sound repeats until it should stop. Each skybox plays only one copy
+of its sound at a time, so a sound still finishing does not overlap with another copy.
+
+If the player joins or enters an allowed biome partway through a fade, the sound starts from the beginning of the
+file. Players can adjust skybox sound volume with **Ambient/Environment** and **Master Volume** in **Music & Sounds**.
+
+#### Delay and clocks
+
+With fade keyframes, `delay` moves all sound fades later by that many ticks using the selected `clock`. For example,
+`delay: 20` moves a sound that would play from ticks 0 through 100 to ticks 20 through 120. The skybox still appears
+at its original time. Delayed sound fades that pass the end of `fade.duration` continue into the next cycle.
+
+Without fade keyframes, `delay` makes the sound wait after the conditions are met. For example, with `delay: 40`
+and a biome condition, the sound starts two seconds after entering that biome at normal tick speed. Leaving before
+the wait ends cancels the sound. Entering again starts the wait over, even if the skybox was still fading out.
+
+A fixed or paused `clock` holds the sound's fade at its current volume. It does not pause the sound file, skip ahead
+in it, or change how fast it plays.
+
+Disabling Nuit, removing the skybox, reloading resources with F3+T, leaving the world, or changing dimensions stops
+all skybox sounds, including sounds with `clipToFade: false`. They can play again when their fade and conditions
+allow it.
 
 ## `conditions`
 
