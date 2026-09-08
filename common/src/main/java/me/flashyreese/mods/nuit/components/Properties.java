@@ -7,8 +7,10 @@ import me.flashyreese.mods.nuit.util.CodecUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
+
 public record Properties(int layer, ClockSource clock, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
-                         boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation, Blend blend) {
+                         boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation, Blend blend, Optional<SoundSettings> sound) {
     public static final Codec<Properties> CODEC = createCodec(Properties.of());
     public static final Codec<Properties> DECORATIONS_CODEC = createCodec(Properties.decorations());
 
@@ -23,8 +25,14 @@ public record Properties(int layer, ClockSource clock, Fade fade, int transition
                 Codec.BOOL.optionalFieldOf("sunSkyTint", defaults.renderSunSkyTint()).forGetter(Properties::renderSunSkyTint),
                 Codec.BOOL.optionalFieldOf("visibleUnderwater", defaults.visibleUnderwater()).forGetter(Properties::visibleUnderwater),
                 Rotation.CODEC.optionalFieldOf("rotation", defaults.rotation()).forGetter(Properties::rotation),
-                Blend.CODEC.optionalFieldOf("blend", defaults.blend()).forGetter(Properties::blend)
+                Blend.CODEC.optionalFieldOf("blend", defaults.blend()).forGetter(Properties::blend),
+                SoundSettings.CODEC.optionalFieldOf("sound").forGetter(Properties::sound)
         ).apply(instance, Properties::new));
+    }
+
+    public Properties(int layer, ClockSource clock, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
+                      boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation, Blend blend) {
+        this(layer, clock, fade, transitionInDuration, transitionOutDuration, fog, renderSunSkyTint, visibleUnderwater, rotation, blend, Optional.empty());
     }
 
     public Properties(int layer, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,

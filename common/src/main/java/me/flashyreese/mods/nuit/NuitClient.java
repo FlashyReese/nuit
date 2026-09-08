@@ -2,6 +2,7 @@ package me.flashyreese.mods.nuit;
 
 import me.flashyreese.mods.nuit.config.NuitConfig;
 import me.flashyreese.mods.nuit.resource.SkyboxResourceListener;
+import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,6 +14,13 @@ public class NuitClient {
 
     public static void init() {
         SkyboxManager.getInstance().setEnabled(config().generalSettings.enable);
+    }
+
+    public static void tick(Minecraft client) {
+        SkyboxManager.getInstance().updateLevel(client.level);
+        if (client.player != null) {
+            config().getKeyBinding().tick(client);
+        }
     }
 
     public static Logger getLogger() {
