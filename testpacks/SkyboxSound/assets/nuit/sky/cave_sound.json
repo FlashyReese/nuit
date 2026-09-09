@@ -1,0 +1,31 @@
+  {
+    "schemaVersion": 1,
+    "type": "overworld",
+    "properties": {
+      "clock": "game_time",
+      "fade": {
+        "duration": 200,
+        "keyFrames": {
+          "0": 0.0,
+          "20": 1.0,
+          "80": 1.0,
+          "100": 0.0
+        }
+      },
+      "transitionInDuration": 1,
+      "transitionOutDuration": 20,
+      "sound": {
+        "file": "minecraft:sounds/ambient/cave/cave1.ogg",
+        "clipToFade": true,
+        "loop": true,
+        "delay": 20
+      }
+    },
+    "conditions": {
+      "dimensions": {
+        "entries": [
+          "minecraft:overworld"
+        ]
+      }
+    }
+  }
