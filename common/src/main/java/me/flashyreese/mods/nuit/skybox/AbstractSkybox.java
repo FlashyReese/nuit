@@ -14,6 +14,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Tuple;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.biome.Biome;
@@ -174,16 +175,14 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         boolean visibleUnderwater = this.properties.visibleUnderwater() || cameraSubmersionType != FogType.WATER;
 
-        /*boolean thickFog = client.level.effects().isFoggyAt(
-                Mth.floor(camera.getPosition().x()),
-                Mth.floor(camera.getPosition().y())
-        ) || client.gui.getBossOverlay().shouldCreateWorldFog();
-
-        boolean showInDenseFog = !thickFog || this.properties.fog().isShowInDenseFog();*/
+        float environmentalFogEnd = camera.attributeProbe().getValue(EnvironmentAttributes.FOG_END_DISTANCE, 1.0F);
+        boolean denseFog = environmentalFogEnd < EnvironmentAttributes.FOG_END_DISTANCE.defaultValue() ||
+                client.gui.getBossOverlay().shouldCreateWorldFog();
+        boolean showInDenseFog = !denseFog || this.properties.fog().isShowInDenseFog();
 
         boolean notInBlockedFog = cameraSubmersionType != FogType.POWDER_SNOW && cameraSubmersionType != FogType.LAVA;
 
-        return visibleUnderwater/* && showInDenseFog*/ && notInBlockedFog;
+        return visibleUnderwater && showInDenseFog && notInBlockedFog;
     }
 
     /**

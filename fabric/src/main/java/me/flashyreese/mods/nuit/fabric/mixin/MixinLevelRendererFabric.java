@@ -1,5 +1,6 @@
 package me.flashyreese.mods.nuit.fabric.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
 import me.flashyreese.mods.nuit.render.NuitSkyboxRenderHooks;
@@ -12,7 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 900)
@@ -33,15 +34,20 @@ public abstract class MixinLevelRendererFabric {
         nuit$tickDelta = camera.getPartialTickTime();
     }
 
-    @Redirect(
+    @ModifyVariable(method = "renderLevel", at = @At("HEAD"), argsOnly = true, ordinal = 1)
+    private boolean nuit$allowCustomSkyPass(boolean renderSky) {
+        return NuitSkyboxRenderHooks.allowCustomSkyPass(renderSky);
+    }
+
+    @ModifyExpressionValue(
             method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/Camera;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             at = @At(
                     value = "FIELD",
-                    target = "Lnet/minecraft/world/level/dimension/DimensionType$Skybox;NONE:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;"
+                    target = "Lnet/minecraft/client/renderer/state/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;"
             )
     )
-    private DimensionType.Skybox nuit$allowSkyPassForNoneSkybox() {
-        return NuitSkyboxRenderHooks.noneSkyboxSentinel();
+    private DimensionType.Skybox nuit$allowSkyPassForNoneSkybox(DimensionType.Skybox original) {
+        return NuitSkyboxRenderHooks.skyboxForPass(original);
     }
 
     @Inject(

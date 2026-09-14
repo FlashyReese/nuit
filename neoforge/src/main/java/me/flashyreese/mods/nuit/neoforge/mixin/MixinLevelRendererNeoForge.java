@@ -1,5 +1,7 @@
 package me.flashyreese.mods.nuit.neoforge.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -16,7 +18,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 900)
@@ -27,31 +29,39 @@ public abstract class MixinLevelRendererNeoForge {
     @Unique
     private boolean nuit$skipVanillaSky;
 
+    @Dynamic("NeoForge calls this sky pass overload directly")
     @Inject(
-            method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/Camera;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
+            method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/Camera;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Matrix4f;)V",
+            remap = false,
             at = @At("HEAD")
     )
     private void nuit$captureTickDelta(
             FrameGraphBuilder frameGraphBuilder,
             Camera camera,
             GpuBufferSlice fogParameters,
+            Matrix4f projectionMatrix,
             CallbackInfo ci
     ) {
         nuit$tickDelta = camera.getPartialTickTime();
     }
 
+    @ModifyVariable(method = "renderLevel", at = @At("HEAD"), argsOnly = true, ordinal = 1)
+    private boolean nuit$allowCustomSkyPass(boolean renderSky) {
+        return NuitSkyboxRenderHooks.allowCustomSkyPass(renderSky);
+    }
+
     @Dynamic("NeoForge delegates the vanilla sky pass to this overload")
-    @Redirect(
+    @ModifyExpressionValue(
             method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/Camera;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Matrix4f;)V",
             remap = false,
             at = @At(
                     value = "FIELD",
-                    target = "Lnet/minecraft/world/level/dimension/DimensionType$Skybox;NONE:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;",
+                    target = "Lnet/minecraft/client/renderer/state/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;",
                     remap = true
             )
     )
-    private DimensionType.Skybox nuit$allowSkyPassForNoneSkybox() {
-        return NuitSkyboxRenderHooks.noneSkyboxSentinel();
+    private DimensionType.Skybox nuit$allowSkyPassForNoneSkybox(DimensionType.Skybox original) {
+        return NuitSkyboxRenderHooks.skyboxForPass(original);
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
@@ -96,7 +106,7 @@ public abstract class MixinLevelRendererNeoForge {
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$8(Lnet/minecraft/client/renderer/state/SkyRenderState;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             remap = false,
             at = @At(
@@ -105,14 +115,12 @@ public abstract class MixinLevelRendererNeoForge {
                     remap = true
             )
     )
-    private void nuit$skipEndSky(SkyRenderer skyRenderer) {
-        if (!this.nuit$skipVanillaSky) {
-            skyRenderer.renderEndSky();
-        }
+    private boolean nuit$renderEndSky(SkyRenderer skyRenderer) {
+        return !this.nuit$skipVanillaSky;
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$8(Lnet/minecraft/client/renderer/state/SkyRenderState;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             remap = false,
             at = @At(
@@ -121,20 +129,18 @@ public abstract class MixinLevelRendererNeoForge {
                     remap = true
             )
     )
-    private void nuit$skipEndFlash(
+    private boolean nuit$renderEndFlash(
             SkyRenderer skyRenderer,
             PoseStack poseStack,
             float intensity,
             float xAngle,
             float yAngle
     ) {
-        if (!this.nuit$skipVanillaSky) {
-            skyRenderer.renderEndFlash(poseStack, intensity, xAngle, yAngle);
-        }
+        return !this.nuit$skipVanillaSky;
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$8(Lnet/minecraft/client/renderer/state/SkyRenderState;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             remap = false,
             at = @At(
@@ -143,14 +149,12 @@ public abstract class MixinLevelRendererNeoForge {
                     remap = true
             )
     )
-    private void nuit$skipSkyDisc(SkyRenderer skyRenderer, int color) {
-        if (!this.nuit$skipVanillaSky) {
-            skyRenderer.renderSkyDisc(color);
-        }
+    private boolean nuit$renderSkyDisc(SkyRenderer skyRenderer, int color) {
+        return !this.nuit$skipVanillaSky;
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$8(Lnet/minecraft/client/renderer/state/SkyRenderState;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             remap = false,
             at = @At(
@@ -159,19 +163,17 @@ public abstract class MixinLevelRendererNeoForge {
                     remap = true
             )
     )
-    private void nuit$skipSunriseAndSunset(
+    private boolean nuit$renderSunriseAndSunset(
             SkyRenderer skyRenderer,
             PoseStack poseStack,
             float sunAngle,
             int color
     ) {
-        if (!this.nuit$skipVanillaSky) {
-            skyRenderer.renderSunriseAndSunset(poseStack, sunAngle, color);
-        }
+        return !this.nuit$skipVanillaSky;
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$8(Lnet/minecraft/client/renderer/state/SkyRenderState;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             remap = false,
             at = @At(
@@ -180,7 +182,7 @@ public abstract class MixinLevelRendererNeoForge {
                     remap = true
             )
     )
-    private void nuit$skipSunMoonAndStars(
+    private boolean nuit$renderSunMoonAndStars(
             SkyRenderer skyRenderer,
             PoseStack poseStack,
             float sunAngle,
@@ -190,21 +192,11 @@ public abstract class MixinLevelRendererNeoForge {
             float rainBrightness,
             float starBrightness
     ) {
-        if (!this.nuit$skipVanillaSky) {
-            skyRenderer.renderSunMoonAndStars(
-                    poseStack,
-                    sunAngle,
-                    moonAngle,
-                    starAngle,
-                    moonPhase,
-                    rainBrightness,
-                    starBrightness
-            );
-        }
+        return !this.nuit$skipVanillaSky;
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$8(Lnet/minecraft/client/renderer/state/SkyRenderState;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/SkyRenderer;)V",
             remap = false,
             at = @At(
@@ -213,9 +205,7 @@ public abstract class MixinLevelRendererNeoForge {
                     remap = true
             )
     )
-    private void nuit$skipDarkDisc(SkyRenderer skyRenderer) {
-        if (!this.nuit$skipVanillaSky) {
-            skyRenderer.renderDarkDisc();
-        }
+    private boolean nuit$renderDarkDisc(SkyRenderer skyRenderer) {
+        return !this.nuit$skipVanillaSky;
     }
 }

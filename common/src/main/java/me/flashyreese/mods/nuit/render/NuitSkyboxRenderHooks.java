@@ -13,13 +13,17 @@ public final class NuitSkyboxRenderHooks {
     private NuitSkyboxRenderHooks() {
     }
 
-    public static DimensionType.Skybox noneSkyboxSentinel() {
+    public static boolean allowCustomSkyPass(boolean renderSky) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
-            // The value is used only as the right side of skybox == NONE.
-            return null;
+        return renderSky || skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes();
+    }
+
+    public static DimensionType.Skybox skyboxForPass(DimensionType.Skybox original) {
+        SkyboxManager skyboxManager = SkyboxManager.getInstance();
+        if (original == DimensionType.Skybox.NONE && skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
+            return DimensionType.Skybox.OVERWORLD;
         }
-        return DimensionType.Skybox.NONE;
+        return original;
     }
 
     public static boolean renderCustomSkyboxes(
