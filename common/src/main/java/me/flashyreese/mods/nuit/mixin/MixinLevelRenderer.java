@@ -14,8 +14,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinLevelRenderer {
     /**
      * Replaces vanilla sky rendering with Nuit's skyboxes when custom skyboxes are active.
+     * Runs after fog setup so NeoForge's dimension renderer can handle the sky first.
      */
-    @Inject(method = "renderSky", at = @At("HEAD"), cancellable = true)
+    @Inject(
+            method = "renderSky",
+            at = @At(value = "INVOKE", target = "Ljava/lang/Runnable;run()V", ordinal = 0, shift = At.Shift.AFTER),
+            cancellable = true
+    )
     private void nuit$renderCustomSkyboxes(
             Matrix4f modelViewMatrix,
             Matrix4f projectionMatrix,

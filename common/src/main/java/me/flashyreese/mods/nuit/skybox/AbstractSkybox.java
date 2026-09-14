@@ -160,15 +160,6 @@ public abstract class AbstractSkybox implements NuitSkybox {
 
         Camera camera = client.gameRenderer.getMainCamera();
         if (this.conditions.getEffects().entries().isEmpty()) {
-            boolean thickFog = client.level.effects().isFoggyAt(Mth.floor(camera.getPosition().x()), Mth.floor(camera.getPosition().y())) || client.gui.getBossOverlay().shouldCreateWorldFog();
-            if (thickFog) {
-                return this.properties.fog().isShowInDenseFog();
-            }
-
-            FogType cameraSubmersionType = camera.getFluidInCamera();
-            if (cameraSubmersionType == FogType.POWDER_SNOW || cameraSubmersionType == FogType.LAVA)
-                return false;
-
             return !(camera.getEntity() instanceof LivingEntity livingEntity) || (!livingEntity.hasEffect(MobEffects.BLINDNESS) && !livingEntity.hasEffect(MobEffects.DARKNESS));
 
         } else {
@@ -193,7 +184,19 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Objects.requireNonNull(client.level);
 
         Camera camera = client.gameRenderer.getMainCamera();
-        return this.properties.visibleUnderwater() || camera.getFluidInCamera() != FogType.WATER;
+        FogType cameraSubmersionType = camera.getFluidInCamera();
+
+        boolean visibleUnderwater = this.properties.visibleUnderwater() || cameraSubmersionType != FogType.WATER;
+
+        boolean denseFog = client.level.effects().isFoggyAt(
+                Mth.floor(camera.getPosition().x()),
+                Mth.floor(camera.getPosition().y())
+        ) || client.gui.getBossOverlay().shouldCreateWorldFog();
+        boolean showInDenseFog = !denseFog || this.properties.fog().isShowInDenseFog();
+
+        boolean notInBlockedFog = cameraSubmersionType != FogType.POWDER_SNOW && cameraSubmersionType != FogType.LAVA;
+
+        return visibleUnderwater && showInDenseFog && notInBlockedFog;
     }
 
     /**
