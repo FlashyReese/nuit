@@ -19,7 +19,7 @@ public record Properties(int layer, ClockSource clock, Fade fade, int transition
             Codec.BOOL.optionalFieldOf("sunSkyTint", true).forGetter(Properties::renderSunSkyTint),
             Codec.BOOL.optionalFieldOf("visibleUnderwater", true).forGetter(Properties::visibleUnderwater),
             Rotation.CODEC.optionalFieldOf("rotation", Rotation.of()).forGetter(Properties::rotation),
-            Blend.CODEC.optionalFieldOf("blend", Blend.decorations()).forGetter(Properties::blend)
+            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(Properties::blend)
     ).apply(instance, Properties::new));
 
     public Properties(int layer, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,

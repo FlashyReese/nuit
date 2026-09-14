@@ -11,9 +11,7 @@ import org.joml.Vector4f;
 import java.util.function.Function;
 
 public class Blend {
-    public static Codec<Blend> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.STRING.optionalFieldOf("type", "").forGetter(Blend::getType)
-    ).apply(instance, Blend::new));
+    public static Codec<Blend> CODEC = Codec.STRING.orElse("").xmap(Blend::new, Blend::getType);
 
     private final String type;
     private final BlendFunction blendFunction;
