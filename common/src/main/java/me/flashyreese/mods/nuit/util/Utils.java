@@ -1,9 +1,9 @@
 package me.flashyreese.mods.nuit.util;
 
-import com.mojang.blaze3d.opengl.GlConst;
-import com.mojang.blaze3d.platform.BlendFactor;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.renderpearl.api.pipeline.BlendFactor;
+import com.mojang.renderpearl.backend.opengl.GlConst;
 import com.mojang.math.Axis;
 import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
@@ -231,18 +231,18 @@ public class Utils {
      */
     public static void rotateSkyBoxByFace(PoseStack poseStack, int face) {
         if (face == 1) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
+            poseStack.rotateDegrees(Axis.XP, 90.0F);
         } else if (face == 2) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+            poseStack.rotateDegrees(Axis.XP, -90.0F);
+            poseStack.rotateDegrees(Axis.YP, 180.0F);
         } else if (face == 3) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+            poseStack.rotateDegrees(Axis.XP, 180.0F);
         } else if (face == 4) {
-            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
+            poseStack.rotateDegrees(Axis.ZP, 90.0F);
+            poseStack.rotateDegrees(Axis.YP, -90.0F);
         } else if (face == 5) {
-            poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+            poseStack.rotateDegrees(Axis.ZP, -90.0F);
+            poseStack.rotateDegrees(Axis.YP, 90.0F);
         }
     }
 

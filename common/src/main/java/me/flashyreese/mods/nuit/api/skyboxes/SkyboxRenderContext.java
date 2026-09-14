@@ -1,12 +1,14 @@
 package me.flashyreese.mods.nuit.api.skyboxes;
 
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4fStack;
+import org.joml.Vector3fc;
 
 /**
  * Frame-local state and stable helper methods for skybox rendering.
@@ -53,6 +55,13 @@ public final class SkyboxRenderContext {
      * Draws the vanilla sky disc.
      */
     public void renderSkyDisc(int color) {
+        this.renderSkyDisc(ARGB.vector3fFromRGB24(color));
+    }
+
+    /**
+     * Draws the vanilla sky disc using a linear RGB color.
+     */
+    public void renderSkyDisc(Vector3fc color) {
         this.skyboxRenderAccess.renderSkyDisc(color);
     }
 

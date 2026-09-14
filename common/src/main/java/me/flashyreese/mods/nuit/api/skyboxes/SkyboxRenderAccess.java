@@ -3,10 +3,11 @@ package me.flashyreese.mods.nuit.api.skyboxes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.ApiStatus;
+import org.joml.Vector3fc;
 
 @ApiStatus.Internal
 public interface SkyboxRenderAccess {
-    void renderSkyDisc(int color);
+    void renderSkyDisc(Vector3fc color);
 
     void renderDarkDisc();
 

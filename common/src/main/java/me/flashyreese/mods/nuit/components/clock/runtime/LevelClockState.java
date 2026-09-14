@@ -22,7 +22,7 @@ public class LevelClockState {
     protected final Set<MissingTimeSource> warnedMissingTimeSources = new HashSet<>();
 
     public ResolvedTimeSource resolvedClock(ClientLevel level, Holder<WorldClock> clock) {
-        return new ResolvedTimeSource(true, level.clockManager().getTotalTicks(clock), clock);
+        return new ResolvedTimeSource(true, level.clockManager().getInstance(clock).totalTicks(), clock);
     }
 
     public void warnMissing(ClientLevel level, Identifier id) {

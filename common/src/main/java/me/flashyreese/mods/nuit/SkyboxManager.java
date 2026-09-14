@@ -3,8 +3,8 @@ package me.flashyreese.mods.nuit;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import me.flashyreese.mods.nuit.api.NuitApi;
@@ -18,6 +18,7 @@ import me.flashyreese.mods.nuit.components.clock.ClockSource;
 import me.flashyreese.mods.nuit.components.Metadata;
 import me.flashyreese.mods.nuit.components.Rotation;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitStarRenderer;
 import me.flashyreese.mods.nuit.skybox.DefaultHandler;
 import me.flashyreese.mods.nuit.skybox.decorations.DecorationBox;
@@ -31,6 +32,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.joml.Matrix4fStack;
+import org.joml.Vector3fc;
 
 import java.util.*;
 
@@ -187,23 +189,35 @@ public class SkyboxManager implements NuitApi {
         SkyRendererAccessor skyRendererAccessor = (SkyRendererAccessor) skyRenderer;
         return new SkyboxRenderAccess() {
             @Override
-            public void renderSkyDisc(int color) {
-                skyRenderer.renderSkyDisc(color);
+            public void renderSkyDisc(Vector3fc color) {
+                NuitRenderBackend.withRenderPass(
+                        "Nuit vanilla sky disc",
+                        renderPass -> skyRendererAccessor.invokeRenderSkyDisc(renderPass, color)
+                );
             }
 
             @Override
             public void renderDarkDisc() {
-                skyRenderer.renderDarkDisc();
+                NuitRenderBackend.withRenderPass(
+                        "Nuit vanilla dark sky disc",
+                        skyRendererAccessor::invokeRenderDarkDisc
+                );
             }
 
             @Override
             public void renderStars(float brightness, PoseStack poseStack) {
-                skyRendererAccessor.invokeRenderStars(brightness, poseStack);
+                NuitRenderBackend.withRenderPass(
+                        "Nuit vanilla stars",
+                        renderPass -> skyRendererAccessor.invokeRenderStars(renderPass, brightness, poseStack)
+                );
             }
 
             @Override
             public void renderEndFlash(float intensity, float xAngle, float yAngle) {
-                skyRenderer.renderEndFlash(new PoseStack(), intensity, xAngle, yAngle);
+                NuitRenderBackend.withRenderPass(
+                        "Nuit vanilla End flash",
+                        renderPass -> skyRendererAccessor.invokeRenderEndFlash(renderPass, new PoseStack(), intensity, xAngle, yAngle)
+                );
             }
 
             @Override

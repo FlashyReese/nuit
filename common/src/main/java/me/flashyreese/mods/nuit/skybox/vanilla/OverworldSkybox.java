@@ -1,10 +1,9 @@
 package me.flashyreese.mods.nuit.skybox.vanilla;
 
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -23,7 +22,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
+import org.joml.Vector3fc;
 import org.joml.Vector4f;
+import org.joml.Vector4fc;
 
 import java.util.Optional;
 
@@ -45,11 +46,11 @@ public class OverworldSkybox extends AbstractSkybox {
         float tickDelta = context.tickDelta();
         ClientLevel level = (ClientLevel) camera.entity().level();
         float sunAngleDegrees = camera.attributeProbe().getValue(EnvironmentAttributes.SUN_ANGLE, tickDelta);
-        int sunriseOrSunsetColor = camera.attributeProbe().getValue(
+        Vector4fc sunriseOrSunsetColor = camera.attributeProbe().getValue(
                 EnvironmentAttributes.SUNRISE_SUNSET_COLOR,
                 tickDelta
         );
-        int skyColor = camera.attributeProbe().getValue(EnvironmentAttributes.SKY_COLOR, tickDelta);
+        Vector3fc skyColor = camera.attributeProbe().getValue(EnvironmentAttributes.SKY_COLOR, tickDelta);
 
         Optional<SkyboxManager.CelestialController> celestialController = SkyboxManager.getInstance()
                 .getCelestialController();
@@ -59,9 +60,13 @@ public class OverworldSkybox extends AbstractSkybox {
         }
 
         context.renderSkyDisc(skyColor);
-        if (ARGB.alphaFloat(sunriseOrSunsetColor) > 0.0F) {
+        if (sunriseOrSunsetColor.w() > 0.0F) {
             float sunAngle = sunAngleDegrees * Mth.DEG_TO_RAD;
-            this.renderSunriseAndSunset(context.skyModelViewStack(), sunAngle, sunriseOrSunsetColor);
+            this.renderSunriseAndSunset(
+                    context.skyModelViewStack(),
+                    sunAngle,
+                    ARGB.colorFromVector4f(sunriseOrSunsetColor)
+            );
         }
 
         double eyeHeight = camera.entity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);

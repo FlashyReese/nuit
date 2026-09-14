@@ -8,6 +8,13 @@ architectury {
 }
 
 configurations {
+    // LWJGL 3.4.3 is a multi-release JAR with Java 27 implementations. Architectury Transformer 5.2.91
+    // scans those inactive entries with an older ASM version, so keep LWJGL off its analysis classpath.
+    // LWJGL remains on the game's compile and runtime classpaths through Minecraft's dependencies.
+    architecturyTransformerClasspath {
+        exclude group: 'org.lwjgl'
+    }
+
     common {
         canBeResolved = true
         canBeConsumed = false

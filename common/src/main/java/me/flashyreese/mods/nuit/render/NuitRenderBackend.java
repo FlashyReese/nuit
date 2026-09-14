@@ -1,16 +1,16 @@
 package me.flashyreese.mods.nuit.render;
 
-import com.mojang.blaze3d.IndexType;
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.ScissorState;
-import com.mojang.blaze3d.textures.GpuSampler;
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.pipeline.IndexType;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.Identifier;
@@ -95,24 +95,29 @@ public final class NuitRenderBackend {
     }
 
     public static void drawIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
-        RenderTarget renderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
-        GpuTextureView colorTexture = RenderSystem.outputColorTextureOverride != null ? RenderSystem.outputColorTextureOverride : renderTarget.getColorTextureView();
-        GpuTextureView depthTexture = renderTarget.useDepth ? (RenderSystem.outputDepthTextureOverride != null ? RenderSystem.outputDepthTextureOverride : renderTarget.getDepthTextureView()) : null;
-
-        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> label, colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
-            renderPass.setPipeline(pipeline);
+        withRenderPass(label, renderPass -> {
+            renderPass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
             renderPass.setVertexBuffer(0, vertexBuffer.slice());
             renderPass.setIndexBuffer(indexBuffer, indexType);
+            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+            configureRenderPass.accept(renderPass);
+            renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+        });
+    }
 
+    public static void withRenderPass(String label, Consumer<RenderPass> draw) {
+        RenderTarget renderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
+        GpuTextureView colorTexture = renderTarget.getColorTextureView();
+        GpuTextureView depthTexture = renderTarget.hasDepth() ? renderTarget.getDepthTextureView() : null;
+
+        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(() -> label, colorTexture, Optional.empty(), depthTexture, OptionalDouble.empty())) {
             ScissorState scissorState = RenderSystem.getScissorStateForRenderTypeDraws();
             if (scissorState.enabled()) {
                 renderPass.enableScissor(scissorState.x(), scissorState.y(), scissorState.width(), scissorState.height());
             }
 
             RenderSystem.bindDefaultUniforms(renderPass);
-            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-            configureRenderPass.accept(renderPass);
-            renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+            draw.accept(renderPass);
         }
     }
 
@@ -123,7 +128,7 @@ public final class NuitRenderBackend {
 
     private record TextureBinding(String samplerName, GpuTextureView textureView, GpuSampler sampler) {
         private void bind(RenderPass renderPass) {
-            renderPass.bindTexture(this.samplerName, this.textureView, this.sampler);
+            renderPass.setUniform(this.samplerName, this.textureView, this.sampler);
         }
     }
 }
