@@ -1,16 +1,18 @@
 plugins {
-    id 'dev.architectury.loom-no-remap' version '1.17.483' apply false
-    id 'architectury-plugin' version '3.5-SNAPSHOT'
-    id 'com.gradleup.shadow' version '9.3.0' apply false
+    id 'dev.architectury.loom-no-remap' version '1.17.491' apply false
+    id 'architectury-plugin' version '3.5.169'
+    id 'com.gradleup.shadow' version '9.6.0' apply false
 }
 
 architectury {
     minecraft = project.minecraft_version
 }
 
+def projectVersion = createVersionString()
+
 allprojects {
     group = rootProject.maven_group
-    version = createVersionString()
+    version = projectVersion
 }
 
 subprojects {
@@ -45,12 +47,37 @@ subprojects {
         // If you remove this line, sources will not be generated.
         withSourcesJar()
 
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+
         sourceCompatibility = JavaVersion.VERSION_25
         targetCompatibility = JavaVersion.VERSION_25
     }
 
     tasks.withType(JavaCompile).configureEach {
         it.options.release = 25
+    }
+
+    def java25Launcher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    def isPlatformProject = project.name != 'common'
+
+    // IntelliJ creates ad-hoc JavaExec tasks when a main class is run through Gradle and can assign the project SDK
+    // after normal task configuration. Reassert Java 25 just before execution as well as setting the task convention.
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher = java25Launcher
+
+        // IntelliJ's generated main-class task does not inherit Loom's runClient task dependencies. Without this,
+        // Architectury can reuse transformer metadata from the previously checked-out Minecraft branch.
+        if (isPlatformProject && name == 'dev.architectury.transformer.TransformerRuntime.main()') {
+            dependsOn 'configureClientLaunch'
+        }
+
+        doFirst {
+            executable = java25Launcher.get().executablePath.asFile.absolutePath
+        }
     }
 
     // Configure Maven publishing.

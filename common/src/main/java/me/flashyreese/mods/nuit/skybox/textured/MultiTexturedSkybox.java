@@ -28,7 +28,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryUtil;
 
@@ -52,7 +51,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack modelViewStack, GpuBufferSlice dynamicTransforms) {
+    public void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, GpuBufferSlice dynamicTransforms) {
         context.applyFog();
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) {
@@ -89,7 +88,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
 
                     this.renderIrisCompatibleInterpolatedTexture(
                             texturedPipeline,
-                            modelViewStack,
+                            modelViewMatrix,
                             animatableTexture,
                             currentFrame,
                             nextFrame,
@@ -127,19 +126,19 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         }
     }
 
-    private void renderIrisCompatibleInterpolatedTexture(RenderPipeline pipeline, Matrix4fStack modelViewStack, AnimatableTexture animatableTexture,
+    private void renderIrisCompatibleInterpolatedTexture(RenderPipeline pipeline, Matrix4f modelViewMatrix, AnimatableTexture animatableTexture,
                                                          UVRange currentFrame, UVRange nextFrame, float frameBlend) {
         // Iris replaces Nuit's shader with the shader-pack sky program, so use weighted two-pass blending there.
-        this.renderWeightedTextureFrame(pipeline, modelViewStack, animatableTexture, currentFrame, 1.0F - frameBlend);
-        this.renderWeightedTextureFrame(pipeline, modelViewStack, animatableTexture, nextFrame, frameBlend);
+        this.renderWeightedTextureFrame(pipeline, modelViewMatrix, animatableTexture, currentFrame, 1.0F - frameBlend);
+        this.renderWeightedTextureFrame(pipeline, modelViewMatrix, animatableTexture, nextFrame, frameBlend);
     }
 
-    private void renderWeightedTextureFrame(RenderPipeline pipeline, Matrix4fStack modelViewStack, AnimatableTexture animatableTexture, UVRange frame, float alphaWeight) {
+    private void renderWeightedTextureFrame(RenderPipeline pipeline, Matrix4f modelViewMatrix, AnimatableTexture animatableTexture, UVRange frame, float alphaWeight) {
         if (alphaWeight <= 0.0F) {
             return;
         }
 
-        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), this.getBlend().getColorModifier(this.alpha * alphaWeight));
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, this.getBlend().getColorModifier(this.alpha * alphaWeight));
         this.renderTextureFrame(pipeline, dynamicTransforms, animatableTexture, frame, null, 0.0F);
     }
 

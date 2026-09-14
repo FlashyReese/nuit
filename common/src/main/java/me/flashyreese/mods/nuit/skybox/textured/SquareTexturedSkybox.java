@@ -2,7 +2,6 @@ package me.flashyreese.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.serialization.Codec;
@@ -19,7 +18,6 @@ import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 
 import java.util.List;
 
@@ -39,7 +37,7 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyboxRenderContext context, Matrix4fStack modelViewStack, GpuBufferSlice dynamicTransforms) {
+    public void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, GpuBufferSlice dynamicTransforms) {
         context.applyFog();
         RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.getBlend().getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {

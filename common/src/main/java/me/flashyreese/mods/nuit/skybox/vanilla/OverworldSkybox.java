@@ -21,7 +21,9 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
+import org.joml.Vector4f;
 
 import java.util.Optional;
 
@@ -69,33 +71,30 @@ public class OverworldSkybox extends AbstractSkybox {
     }
 
     private void renderSunriseAndSunset(Matrix4fStack matrix4fStack, float sunAngle, int sunriseOrSunsetColor) {
-        matrix4fStack.pushMatrix();
-        try {
-            matrix4fStack.rotate(Axis.XP.rotationDegrees(90.0F));
-            float zRotation = Mth.sin(sunAngle) < 0.0F ? 180.0F : 0.0F;
-            matrix4fStack.rotate(Axis.ZP.rotationDegrees(zRotation));
-            matrix4fStack.rotate(Axis.ZP.rotationDegrees(90.0F));
+        Matrix4f matrix = new Matrix4f(matrix4fStack);
+        matrix.rotate(Axis.XP.rotationDegrees(90.0F));
+        float zRotation = Mth.sin(sunAngle) < 0.0F ? 180.0F : 0.0F;
+        matrix.rotate(Axis.ZP.rotationDegrees(zRotation));
+        matrix.rotate(Axis.ZP.rotationDegrees(90.0F));
 
-            RenderPipeline pipeline = RenderPipelines.SUNRISE_SUNSET;
-            try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 17)) {
-                BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
+        RenderPipeline pipeline = RenderPipelines.SUNRISE_SUNSET;
+        try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 18)) {
+            BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
 
-                float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
-                bufferBuilder.addVertex(matrix4fStack, 0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
+            float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
+            bufferBuilder.addVertex(0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
 
-                int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
-                for (int i = 0; i <= 16; i++) {
-                    float angleRadians = (float) i * Mth.TWO_PI / 16.0F;
-                    float x = Mth.sin(angleRadians);
-                    float y = Mth.cos(angleRadians);
-                    float z = -y * 40.0F * alpha;
-                    bufferBuilder.addVertex(matrix4fStack, x * 120.0F, y * 120.0F, z).setColor(transparentColor);
-                }
-                GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms();
-                NuitRenderBackend.draw(pipeline, bufferBuilder.buildOrThrow(), dynamicTransforms);
+            int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
+            for (int i = 0; i <= 16; i++) {
+                float angleRadians = (float) i * Mth.TWO_PI / 16.0F;
+                float x = Mth.sin(angleRadians);
+                float y = Mth.cos(angleRadians);
+                float z = -y * 40.0F * alpha;
+                bufferBuilder.addVertex(x * 120.0F, y * 120.0F, z).setColor(transparentColor);
             }
-        } finally {
-            matrix4fStack.popMatrix();
+            Vector4f whiteColorModifier = new Vector4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(matrix, whiteColorModifier);
+            NuitRenderBackend.draw(pipeline, bufferBuilder.buildOrThrow(), dynamicTransforms);
         }
     }
 }

@@ -21,3 +21,21 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+// Versioned dev JARs from another checked-out branch can remain in this shared build directory. Architectury's
+// runtime transformer may then load the obsolete JAR and apply the wrong Minecraft-version mixins.
+def currentDevJarName = tasks.named('jar', Jar).flatMap { it.archiveFileName }
+def commonArchivePrefix = base.archivesName.get()
+def staleDevJars = layout.buildDirectory.dir('devlibs').map { directory ->
+    directory.asFileTree.matching {
+        include "${commonArchivePrefix}-*-dev.jar"
+        exclude currentDevJarName.get()
+    }
+}
+def cleanStaleDevJars = tasks.register('cleanStaleDevJars', Delete) {
+    delete staleDevJars
+}
+
+tasks.named('jar') {
+    dependsOn cleanStaleDevJars
+}

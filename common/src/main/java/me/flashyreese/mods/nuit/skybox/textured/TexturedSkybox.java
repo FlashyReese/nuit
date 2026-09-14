@@ -1,7 +1,6 @@
 package me.flashyreese.mods.nuit.skybox.textured;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
 import me.flashyreese.mods.nuit.components.Blend;
@@ -14,7 +13,6 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 
 import java.util.Objects;
@@ -54,31 +52,24 @@ public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTex
                 EnvironmentAttributes.SUN_ANGLE,
                 context.tickDelta()
         );
-        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
-        modelViewStack.pushMatrix();
-        try {
-            Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
-            modelViewStack.set(context.skyModelViewStack());
-            this.rotation.apply(
-                    modelViewStack,
-                    level,
-                    this.properties.clock(),
-                    context.tickDelta(),
-                    celestialAngle
-            );
-            GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(modelViewStack), colorModifier);
-            this.renderSkybox(context, modelViewStack, dynamicTransforms);
-        } finally {
-            modelViewStack.popMatrix();
-        }
+        Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
+        Matrix4f modelViewMatrix = this.rotation.apply(
+                new Matrix4f(context.skyModelViewStack()),
+                level,
+                this.properties.clock(),
+                context.tickDelta(),
+                celestialAngle
+        );
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
+        this.renderSkybox(context, modelViewMatrix, dynamicTransforms);
     }
 
     /**
      * Override this method instead of render if you are extending this skybox.
      *
      * @param context the current skybox render context
-     * @param modelViewStack the mutable model-view stack after this skybox's rotation has been applied
-     * @param dynamicTransforms dynamic transform uniforms created from {@code modelViewStack}
+     * @param modelViewMatrix the model-view matrix after this skybox's rotation has been applied
+     * @param dynamicTransforms dynamic transform uniforms created from {@code modelViewMatrix}
      */
-    public abstract void renderSkybox(SkyboxRenderContext context, Matrix4fStack modelViewStack, GpuBufferSlice dynamicTransforms);
+    public abstract void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, GpuBufferSlice dynamicTransforms);
 }

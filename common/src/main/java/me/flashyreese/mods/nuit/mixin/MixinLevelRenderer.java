@@ -1,5 +1,7 @@
 package me.flashyreese.mods.nuit.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -23,7 +25,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 900)
@@ -41,22 +43,28 @@ public abstract class MixinLevelRenderer {
         nuit$tickDelta = deltaTracker.getGameTimeDeltaPartialTick(false);
     }
 
-    @Redirect(
-            method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
-            require = 0,
-            at = @At(value = "FIELD", target = "Lnet/minecraft/world/level/dimension/DimensionType$Skybox;NONE:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
-    )
-    private DimensionType.Skybox nuit$allowFabricSkyPassForNoneSkybox() {
-        return nuit$skyboxNoneSentinel();
+    @ModifyVariable(method = "render", at = @At("HEAD"), argsOnly = true, ordinal = 1)
+    private boolean nuit$allowCustomSkyPass(boolean renderSky) {
+        SkyboxManager skyboxManager = SkyboxManager.getInstance();
+        return renderSky || skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes();
     }
 
-    @Redirect(
+    @ModifyExpressionValue(
+            method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
+            require = 0,
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/level/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
+    )
+    private DimensionType.Skybox nuit$allowFabricSkyPassForNoneSkybox(DimensionType.Skybox original) {
+        return nuit$skyboxForPass(original);
+    }
+
+    @ModifyExpressionValue(
             method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Matrix4fc;)V",
             require = 0,
-            at = @At(value = "FIELD", target = "Lnet/minecraft/world/level/dimension/DimensionType$Skybox;NONE:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/level/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
     )
-    private DimensionType.Skybox nuit$allowNeoForgeSkyPassForNoneSkybox() {
-        return nuit$skyboxNoneSentinel();
+    private DimensionType.Skybox nuit$allowNeoForgeSkyPassForNoneSkybox(DimensionType.Skybox original) {
+        return nuit$skyboxForPass(original);
     }
 
     /**
@@ -94,70 +102,58 @@ public abstract class MixinLevelRenderer {
         nuit$skipNeoForgeVanillaSky = nuit$renderCustomSkyboxes(fogParameters, this.skyRenderer);
     }
 
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderEndSky()V")
     )
-    private void nuit$skipNeoForgeEndSky(SkyRenderer skyRenderer) {
-        if (!nuit$skipNeoForgeVanillaSky) {
-            skyRenderer.renderEndSky();
-        }
+    private boolean nuit$renderNeoForgeEndSky(SkyRenderer skyRenderer) {
+        return !nuit$skipNeoForgeVanillaSky;
     }
 
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderEndFlash(Lcom/mojang/blaze3d/vertex/PoseStack;FFF)V")
     )
-    private void nuit$skipNeoForgeEndFlash(SkyRenderer skyRenderer, PoseStack poseStack, float intensity, float xAngle, float yAngle) {
-        if (!nuit$skipNeoForgeVanillaSky) {
-            skyRenderer.renderEndFlash(poseStack, intensity, xAngle, yAngle);
-        }
+    private boolean nuit$renderNeoForgeEndFlash(SkyRenderer skyRenderer, PoseStack poseStack, float intensity, float xAngle, float yAngle) {
+        return !nuit$skipNeoForgeVanillaSky;
     }
 
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSkyDisc(I)V")
     )
-    private void nuit$skipNeoForgeSkyDisc(SkyRenderer skyRenderer, int color) {
-        if (!nuit$skipNeoForgeVanillaSky) {
-            skyRenderer.renderSkyDisc(color);
-        }
+    private boolean nuit$renderNeoForgeSkyDisc(SkyRenderer skyRenderer, int color) {
+        return !nuit$skipNeoForgeVanillaSky;
     }
 
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSunriseAndSunset(Lcom/mojang/blaze3d/vertex/PoseStack;FI)V")
     )
-    private void nuit$skipNeoForgeSunriseAndSunset(SkyRenderer skyRenderer, PoseStack poseStack, float sunAngle, int color) {
-        if (!nuit$skipNeoForgeVanillaSky) {
-            skyRenderer.renderSunriseAndSunset(poseStack, sunAngle, color);
-        }
+    private boolean nuit$renderNeoForgeSunriseAndSunset(SkyRenderer skyRenderer, PoseStack poseStack, float sunAngle, int color) {
+        return !nuit$skipNeoForgeVanillaSky;
     }
 
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSunMoonAndStars(Lcom/mojang/blaze3d/vertex/PoseStack;FFFLnet/minecraft/world/level/MoonPhase;FF)V")
     )
-    private void nuit$skipNeoForgeSunMoonAndStars(SkyRenderer skyRenderer, PoseStack poseStack, float sunAngle, float moonAngle, float starAngle, MoonPhase moonPhase, float rainBrightness, float starBrightness) {
-        if (!nuit$skipNeoForgeVanillaSky) {
-            skyRenderer.renderSunMoonAndStars(poseStack, sunAngle, moonAngle, starAngle, moonPhase, rainBrightness, starBrightness);
-        }
+    private boolean nuit$renderNeoForgeSunMoonAndStars(SkyRenderer skyRenderer, PoseStack poseStack, float sunAngle, float moonAngle, float starAngle, MoonPhase moonPhase, float rainBrightness, float starBrightness) {
+        return !nuit$skipNeoForgeVanillaSky;
     }
 
-    @Redirect(
+    @WrapWithCondition(
             method = "lambda$addSkyPass$0(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lorg/joml/Matrix4fc;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V",
             require = 0,
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderDarkDisc()V")
     )
-    private void nuit$skipNeoForgeDarkDisc(SkyRenderer skyRenderer) {
-        if (!nuit$skipNeoForgeVanillaSky) {
-            skyRenderer.renderDarkDisc();
-        }
+    private boolean nuit$renderNeoForgeDarkDisc(SkyRenderer skyRenderer) {
+        return !nuit$skipNeoForgeVanillaSky;
     }
 
     @Unique
@@ -181,12 +177,11 @@ public abstract class MixinLevelRenderer {
     }
 
     @Unique
-    private static DimensionType.Skybox nuit$skyboxNoneSentinel() {
+    private static DimensionType.Skybox nuit$skyboxForPass(DimensionType.Skybox original) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
-            // This value is only used as the right side of skybox == NONE.
-            return null;
+        if (original == DimensionType.Skybox.NONE && skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
+            return DimensionType.Skybox.OVERWORLD;
         }
-        return DimensionType.Skybox.NONE;
+        return original;
     }
 }

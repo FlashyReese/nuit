@@ -18,7 +18,7 @@ Logo by [UsernameGeri](https://github.com/UsernameGeri).
 
 Nuit is currently in beta. The format and API are stable enough for resource-pack development, but some behavior may still evolve before a final 1.0.0 release.
 
-Current development target: Minecraft 1.21.11.
+Current development target: Minecraft 26.2.
 
 Supported loaders:
 

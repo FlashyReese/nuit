@@ -13,11 +13,11 @@ import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
 import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
+import java.util.function.Function;
 
 public final class NuitRenderPipelines {
     private static final Identifier MONO_COLOR_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/mono_color_skybox");
@@ -37,9 +37,12 @@ public final class NuitRenderPipelines {
             .withBindGroupLayout(BindGroupLayouts.MATRICES_PROJECTION)
             .buildSnippet();
 
-    private static final Map<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINES = new HashMap<>();
-    private static final Map<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINES = new HashMap<>();
-    private static final Map<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINES = new HashMap<>();
+    private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINE =
+            Util.memoize(NuitRenderPipelines::buildMonoColorSkyboxPipeline);
+    private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINE =
+            Util.memoize(blend -> buildTexturedSkyboxPipeline(blend, false));
+    private static final Function<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINE =
+            Util.memoize(blend -> buildTexturedSkyboxPipeline(blend, true));
 
     private static RenderPipeline monoColorSkyboxNoBlendPipeline;
     private static RenderPipeline texturedSkyboxNoBlendPipeline;
@@ -54,7 +57,7 @@ public final class NuitRenderPipelines {
             return monoColorSkyboxNoBlendPipeline;
         }
 
-        return MONO_COLOR_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, NuitRenderPipelines::buildMonoColorSkyboxPipeline);
+        return MONO_COLOR_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
     }
 
     public static RenderPipeline texturedSkybox(@Nullable BlendFunction blendFunction) {
@@ -66,7 +69,7 @@ public final class NuitRenderPipelines {
             return texturedSkyboxNoBlendPipeline;
         }
 
-        return TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, blend -> buildTexturedSkyboxPipeline(blend, false));
+        return TEXTURED_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
     }
 
     public static RenderPipeline frameBlendedTexturedSkybox(@Nullable BlendFunction blendFunction) {
@@ -78,7 +81,7 @@ public final class NuitRenderPipelines {
             return frameBlendedTexturedSkyboxNoBlendPipeline;
         }
 
-        return FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINES.computeIfAbsent(blendFunction, blend -> buildTexturedSkyboxPipeline(blend, true));
+        return FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
     }
 
     private static RenderPipeline buildMonoColorSkyboxPipeline(@Nullable BlendFunction blendFunction) {
