@@ -14,6 +14,9 @@
         "8000": 1.0,
         "10000": 0
       }
+    },
+    "blend": {
+      "type": "add"
     }
   },
   "conditions": {
@@ -24,8 +27,5 @@
     "red": 1.0,
     "blue": 0.0,
     "green": 0.0
-  },
-  "blend": {
-    "type": "add"
   }
 }
