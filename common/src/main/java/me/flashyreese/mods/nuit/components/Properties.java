@@ -28,7 +28,7 @@ public record Properties(int layer, ClockSource clock, Fade fade, int transition
     }
 
     public static Properties of() {
-        return new Properties(0, ClockSource.defaultClock(), Fade.of(), 20, 20, Fog.of(), true, true, Rotation.of(), Blend.decorations());
+        return new Properties(0, ClockSource.defaultClock(), Fade.of(), 20, 20, Fog.of(), true, true, Rotation.of(), Blend.normal());
     }
 
     public static Properties decorations() {
