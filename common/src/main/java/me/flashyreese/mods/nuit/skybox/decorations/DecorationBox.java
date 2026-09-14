@@ -62,14 +62,11 @@ public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
 
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         try {
-            RenderSystem.enableBlend();
-
-            this.blend.apply(this.alpha);
+            NuitRenderBackend.beginSkybox(this.blend, this.alpha, GameRenderer::getPositionTexShader);
             try (NuitRenderBackend.TransformScope transform = NuitRenderBackend.pushTransform(poseStack)) {
                 this.properties.rotation().apply(transform.poseStack(), level, this.properties.clock(), tickDelta);
 
                 Matrix4f matrix4f2 = transform.poseStack().last().pose();
-                RenderSystem.setShader(GameRenderer::getPositionTexShader);
 
                 if (this.sunEnabled) {
                     this.renderSun(matrix4f2);
@@ -91,7 +88,7 @@ public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
                 }
             }
         } finally {
-            NuitRenderBackend.endBlend();
+            NuitRenderBackend.endSkybox();
         }
     }
 
