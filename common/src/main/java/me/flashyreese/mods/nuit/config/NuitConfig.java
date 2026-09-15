@@ -74,8 +74,8 @@ public class NuitConfig {
     public static class KeyBindingImpl {
         private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "nuit"));
 
-        public final KeyMapping toggleNuit = new KeyMapping("key.nuit.toggle", InputConstants.Type.KEYBOARD, -1, CATEGORY);
-        public final KeyMapping toggleSkyboxDebugHud = new KeyMapping("key.nuit.toggle.debug_hud", InputConstants.Type.KEYBOARD, -1, CATEGORY);
+        public final KeyMapping toggleNuit = new KeyMapping("key.nuit.toggle", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY);
+        public final KeyMapping toggleSkyboxDebugHud = new KeyMapping("key.nuit.toggle.debug_hud", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), CATEGORY);
 
         public void tick(Minecraft client) {
             while (this.toggleNuit.consumeClick()) {

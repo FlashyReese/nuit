@@ -59,7 +59,7 @@ public class OverworldSkybox extends AbstractSkybox {
             sunAngleDegrees = (float) controller.getSkyAngleDegrees(level, tickDelta);
         }
 
-        context.renderSkyDisc(skyColor);
+        context.renderSkyDisc(new Vector4f(skyColor, this.alpha));
         if (sunriseOrSunsetColor.w() > 0.0F) {
             float sunAngle = sunAngleDegrees * Mth.DEG_TO_RAD;
             this.renderSunriseAndSunset(
@@ -87,7 +87,8 @@ public class OverworldSkybox extends AbstractSkybox {
             BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
 
             float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
-            bufferBuilder.addVertex(0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
+            int color = ARGB.color(alpha, sunriseOrSunsetColor);
+            bufferBuilder.addVertex(0.0F, 100.0F, 0.0F).setColor(color);
 
             int transparentColor = ARGB.transparent(sunriseOrSunsetColor);
             for (int i = 0; i <= 16; i++) {

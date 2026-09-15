@@ -3,6 +3,7 @@ package me.flashyreese.mods.nuit;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.serialization.JsonOps;
@@ -19,6 +20,7 @@ import me.flashyreese.mods.nuit.components.Metadata;
 import me.flashyreese.mods.nuit.components.Rotation;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
+import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.render.NuitStarRenderer;
 import me.flashyreese.mods.nuit.skybox.DefaultHandler;
 import me.flashyreese.mods.nuit.skybox.decorations.DecorationBox;
@@ -33,6 +35,8 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3fc;
+import org.joml.Vector4f;
+import org.joml.Vector4fc;
 
 import java.util.*;
 
@@ -188,6 +192,23 @@ public class SkyboxManager implements NuitApi {
     private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer) {
         SkyRendererAccessor skyRendererAccessor = (SkyRendererAccessor) skyRenderer;
         return new SkyboxRenderAccess() {
+            @Override
+            public void renderSkyDisc(Vector4fc color) {
+                GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
+                        RenderSystem.getModelViewMatrixCopy(),
+                        new Vector4f(color)
+                );
+                NuitRenderBackend.withRenderPass(
+                        "Nuit translucent sky disc",
+                        renderPass -> {
+                            renderPass.setPipeline(RenderSystem.getCompiledPipeline(NuitRenderPipelines.translucentSkyDisc()));
+                            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
+                            renderPass.setVertexBuffer(0, skyRendererAccessor.getTopSkyBuffer().slice());
+                            renderPass.draw(10, 1, 0, 0);
+                        }
+                );
+            }
+
             @Override
             public void renderSkyDisc(Vector3fc color) {
                 NuitRenderBackend.withRenderPass(

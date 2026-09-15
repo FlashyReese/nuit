@@ -9,6 +9,7 @@ import net.minecraft.util.ARGB;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3fc;
+import org.joml.Vector4fc;
 
 /**
  * Frame-local state and stable helper methods for skybox rendering.
@@ -62,6 +63,13 @@ public final class SkyboxRenderContext {
      * Draws the vanilla sky disc using a linear RGB color.
      */
     public void renderSkyDisc(Vector3fc color) {
+        this.skyboxRenderAccess.renderSkyDisc(color);
+    }
+
+    /**
+     * Draws the vanilla sky disc using a linear RGBA color.
+     */
+    public void renderSkyDisc(Vector4fc color) {
         this.skyboxRenderAccess.renderSkyDisc(color);
     }
 

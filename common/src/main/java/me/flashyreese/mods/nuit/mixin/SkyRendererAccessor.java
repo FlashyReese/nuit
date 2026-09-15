@@ -1,6 +1,7 @@
 package me.flashyreese.mods.nuit.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.resources.Identifier;
@@ -11,6 +12,9 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(SkyRenderer.class)
 public interface SkyRendererAccessor {
+    @Accessor("topSkyBuffer")
+    GpuBuffer getTopSkyBuffer();
+
     @Accessor("SUN_SPRITE")
     static Identifier getSun() {
         throw new UnsupportedOperationException();
