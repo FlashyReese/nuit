@@ -5,6 +5,8 @@ import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
 import me.flashyreese.mods.nuit.components.RGB;
 import me.flashyreese.mods.nuit.util.Utils;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.fog.environment.AtmosphericFogEnvironment;
@@ -18,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AtmosphericFogEnvironment.class)
 public abstract class MixinAtmosphericFogEnvironment {
-    @Redirect(
+    @WrapOperation(
             method = "getBaseColor",
             at = @At(
                     value = "INVOKE",
@@ -31,17 +33,17 @@ public abstract class MixinAtmosphericFogEnvironment {
             EnvironmentAttributeProbe instance,
             EnvironmentAttribute<Value> attribute,
             float tickDelta,
-            ClientLevel clientLevel,
-            Camera camera,
-            int distance,
-            float partialTick
+            Operation<Value> original
     ) {
-        final Value sunAngle = instance.getValue(attribute, tickDelta);
+        final Value sunAngle = original.call(instance, attribute, tickDelta);
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled()) {
             SkyboxManager.CelestialController controller = skyboxManager.getCelestialController().orElse(null);
             if (controller != null) {
-                return (Value) (Object) (float) controller.getSkyAngleDegrees(clientLevel, tickDelta);
+                ClientLevel clientLevel = net.minecraft.client.Minecraft.getInstance().level;
+                if (clientLevel != null) {
+                    return (Value) (Object) (float) controller.getSkyAngleDegrees(clientLevel, tickDelta);
+                }
             }
         }
         return sunAngle;

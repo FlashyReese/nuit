@@ -6,6 +6,14 @@ loom {
     accessWidenerPath = file("src/main/resources/nuit.accesswidener")
 }
 
+// LWJGL 3.4.3 includes inactive Java 27 classes in its multi-release JAR. Architectury Transformer 5.2.91
+// scans those entries while producing the NeoForge common JAR unless LWJGL is removed from its analysis classpath.
+configurations {
+    architecturyTransformerClasspath {
+        exclude group: 'org.lwjgl'
+    }
+}
+
 dependencies {
     // We depend on Fabric Loader here to use the Fabric @Environment annotations,
     // which get remapped to the correct annotations on each platform.
