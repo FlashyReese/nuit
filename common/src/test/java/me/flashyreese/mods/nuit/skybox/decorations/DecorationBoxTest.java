@@ -23,8 +23,7 @@ public class DecorationBoxTest {
                 false,
                 false,
                 false,
-                false,
-                Blend.decorations()
+                false
         );
 
         assertTrue(decorationBox.getTexturesToRegister().isEmpty());
@@ -42,8 +41,7 @@ public class DecorationBoxTest {
                 true,
                 true,
                 false,
-                false,
-                Blend.decorations()
+                false
         );
 
         assertEquals(List.of(sun, moon), List.copyOf(decorationBox.getTexturesToRegister()));
@@ -59,8 +57,7 @@ public class DecorationBoxTest {
                 false,
                 true,
                 false,
-                false,
-                Blend.decorations()
+                false
         );
 
         Collection<Identifier> textures = decorationBox.getTexturesToRegister();
