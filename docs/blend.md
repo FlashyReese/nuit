@@ -2,11 +2,13 @@
 
 Nuit core supports fixed named blend modes.
 
-A blend object only contains `type`:
+Set the mode as a string in `properties.blend`:
 
 ```json
 {
-  "type": "normal"
+  "properties": {
+    "blend": "normal"
+  }
 }
 ```
 
@@ -25,4 +27,5 @@ A blend object only contains `type`:
 | `disable` | Disables blending for the skybox pipeline. |
 | `decorations` | Default blend mode used by sun, moon, and star decorations. |
 
-If `type` is omitted or empty, Nuit uses `normal`.
+Omitting `blend` uses `decorations` for decoration skyboxes and `normal` for other types. An empty string selects
+`normal` explicitly. This setting controls monocolor, textured skyboxes, and sun/moon/star decorations.
