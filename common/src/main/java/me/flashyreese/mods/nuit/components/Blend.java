@@ -3,7 +3,6 @@ package me.flashyreese.mods.nuit.components;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.platform.BlendFactor;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.NuitClient;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
@@ -11,7 +10,7 @@ import org.joml.Vector4f;
 import java.util.function.Function;
 
 public class Blend {
-    public static Codec<Blend> CODEC = Codec.STRING.orElse("").xmap(Blend::new, Blend::getType);
+    public static Codec<Blend> CODEC = Codec.STRING.xmap(Blend::new, Blend::getType);
 
     private final String type;
     private final BlendFunction blendFunction;

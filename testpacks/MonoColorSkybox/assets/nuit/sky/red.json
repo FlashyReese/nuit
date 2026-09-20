@@ -15,9 +15,7 @@
         "10000": 0
       }
     },
-    "blend": {
-      "type": "add"
-    }
+    "blend": "add"
   },
   "conditions": {
   },

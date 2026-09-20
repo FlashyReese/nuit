@@ -9,7 +9,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
-import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
@@ -46,7 +45,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
     };
 
     public static Codec<DecorationBox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Properties.CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
+            Properties.DECORATIONS_CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(DecorationBox::getConditions),
             Identifier.CODEC.optionalFieldOf("sun", DEFAULT_SUN).forGetter(DecorationBox::getSunTexture),
             Identifier.CODEC.optionalFieldOf("moon", DEFAULT_MOON).forGetter(DecorationBox::getMoonTexture),

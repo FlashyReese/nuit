@@ -9,18 +9,23 @@ import org.jetbrains.annotations.NotNull;
 
 public record Properties(int layer, ClockSource clock, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
                          boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation, Blend blend) {
-    public static final Codec<Properties> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.INT.optionalFieldOf("layer", 0).forGetter(Properties::layer),
-            ClockSource.CODEC.optionalFieldOf("clock", ClockSource.defaultClock()).forGetter(Properties::clock),
-            Fade.CODEC.optionalFieldOf("fade", Fade.of()).forGetter(Properties::fade),
-            CodecUtils.getClampedInteger(1, Integer.MAX_VALUE).optionalFieldOf("transitionInDuration", 20).forGetter(Properties::transitionInDuration),
-            CodecUtils.getClampedInteger(1, Integer.MAX_VALUE).optionalFieldOf("transitionOutDuration", 20).forGetter(Properties::transitionOutDuration),
-            Fog.CODEC.optionalFieldOf("fog", Fog.of()).forGetter(Properties::fog),
-            Codec.BOOL.optionalFieldOf("sunSkyTint", true).forGetter(Properties::renderSunSkyTint),
-            Codec.BOOL.optionalFieldOf("visibleUnderwater", true).forGetter(Properties::visibleUnderwater),
-            Rotation.CODEC.optionalFieldOf("rotation", Rotation.of()).forGetter(Properties::rotation),
-            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(Properties::blend)
-    ).apply(instance, Properties::new));
+    public static final Codec<Properties> CODEC = createCodec(Properties.of());
+    public static final Codec<Properties> DECORATIONS_CODEC = createCodec(Properties.decorations());
+
+    private static Codec<Properties> createCodec(Properties defaults) {
+        return RecordCodecBuilder.create(instance -> instance.group(
+                Codec.INT.optionalFieldOf("layer", defaults.layer()).forGetter(Properties::layer),
+                ClockSource.CODEC.optionalFieldOf("clock", defaults.clock()).forGetter(Properties::clock),
+                Fade.CODEC.optionalFieldOf("fade", defaults.fade()).forGetter(Properties::fade),
+                CodecUtils.getClampedInteger(1, Integer.MAX_VALUE).optionalFieldOf("transitionInDuration", defaults.transitionInDuration()).forGetter(Properties::transitionInDuration),
+                CodecUtils.getClampedInteger(1, Integer.MAX_VALUE).optionalFieldOf("transitionOutDuration", defaults.transitionOutDuration()).forGetter(Properties::transitionOutDuration),
+                Fog.CODEC.optionalFieldOf("fog", defaults.fog()).forGetter(Properties::fog),
+                Codec.BOOL.optionalFieldOf("sunSkyTint", defaults.renderSunSkyTint()).forGetter(Properties::renderSunSkyTint),
+                Codec.BOOL.optionalFieldOf("visibleUnderwater", defaults.visibleUnderwater()).forGetter(Properties::visibleUnderwater),
+                Rotation.CODEC.optionalFieldOf("rotation", defaults.rotation()).forGetter(Properties::rotation),
+                Blend.CODEC.optionalFieldOf("blend", defaults.blend()).forGetter(Properties::blend)
+        ).apply(instance, Properties::new));
+    }
 
     public Properties(int layer, Fade fade, int transitionInDuration, int transitionOutDuration, Fog fog,
                       boolean renderSunSkyTint, boolean visibleUnderwater, Rotation rotation, Blend blend) {
