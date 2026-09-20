@@ -108,6 +108,10 @@ public interface NuitSkybox extends RenderableSkybox {
 `AbstractSkybox` implements the standard Nuit alpha and condition behavior, plus optional attached sound playback.
 Access settings through `getProperties().sound()`, which returns `Optional<SoundSettings>`. Audio settings belong to the
 shared `Properties` record and its codec, so skybox types do not need separate sound fields or constructor parameters.
+`SoundSettings.volumeMode()` returns a `SoundVolumeMode` enum, defaulting to `FADE_AND_CONDITION`.
+`SoundVolumeMode.calculate(fadeAlpha, conditionAlpha)` computes the volume; `usesFadeAlpha()` and
+`usesConditionAlpha()` identify which sources control playback. Attached audio follows those sources independently
+of visual activation. The enum codec rejects unknown mode names.
 See the [sound schema](schema.md#sound) for the `properties.sound` resource format.
 
 Custom subclasses overriding `tick(ClientLevel)` or `reset()` must call the corresponding superclass method to update
