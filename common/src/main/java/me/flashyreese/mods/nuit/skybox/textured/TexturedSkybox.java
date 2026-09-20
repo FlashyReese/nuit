@@ -19,20 +19,14 @@ import java.util.Objects;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTextureProvider {
     private final Rotation rotation;
-    private final Blend blend;
 
-    protected TexturedSkybox(Properties properties, Conditions conditions, Blend blend) {
+    protected TexturedSkybox(Properties properties, Conditions conditions) {
         super(properties, conditions);
-        this.blend = blend;
         this.rotation = properties.rotation();
     }
 
     public Rotation getRotation() {
         return this.rotation;
-    }
-
-    public Blend getBlend() {
-        return this.blend;
     }
 
     /**
@@ -52,7 +46,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTex
                 EnvironmentAttributes.SUN_ANGLE,
                 context.tickDelta()
         );
-        Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
+        Vector4f colorModifier = this.properties.blend().getColorModifier(this.alpha);
         Matrix4f modelViewMatrix = this.rotation.apply(
                 new Matrix4f(context.skyModelViewStack()),
                 level,
