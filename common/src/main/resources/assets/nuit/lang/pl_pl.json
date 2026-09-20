@@ -1,0 +1,8 @@
+{
+  "category.nuit": "Nuit",
+  "key.nuit.toggle": "Przełącz Nuit",
+  "nuit.message.enabled": "Włączono Nuit!",
+  "nuit.message.disabled": "Wyłączono Nuit!",
+  "key.nuit.toggle.debug_hud": "Pokaż nakładkę debugowania",
+  "key.nuit.toggle.debug_screen": "Pokaż ekran debugowania"
+}
