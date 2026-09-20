@@ -6,6 +6,7 @@ import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.SoundSettings;
+import me.flashyreese.mods.nuit.components.SoundVolumeMode;
 import me.flashyreese.mods.nuit.components.Weather;
 import me.flashyreese.mods.nuit.sound.MinecraftSoundBackend;
 import me.flashyreese.mods.nuit.sound.SoundPlayback;
@@ -45,8 +46,9 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected float conditionAlpha = 0f;
     protected boolean conditionsMet;
     protected float soundVolume;
-    protected boolean soundFadeActive;
+    protected boolean soundEnabled;
     private SoundPlayback soundPlayback;
+    private boolean soundFadeInStart;
     private long soundFadeTime;
     private long lastSoundFadeTime = -1;
 
@@ -74,14 +76,16 @@ public abstract class AbstractSkybox implements NuitSkybox {
             this.soundPlayback = this.createSoundPlayback(soundSettings);
         }
 
-        // Let a playing sound fade out when conditions fail, but do not start a new sound.
-        boolean playSound = this.soundFadeActive && (this.conditionsMet || this.soundPlayback.isActive());
-        int delay = this.properties.fade().keyFrames().isEmpty() ? soundSettings.delay() : 0;
+        // When using condition alpha, let an existing sound fade out but do not start a new one.
+        boolean playSound = this.soundEnabled && (!soundSettings.volumeMode().usesConditionAlpha() ||
+                this.conditionsMet || this.soundPlayback.isActive());
+        boolean usesFadeKeyframes = soundSettings.volumeMode().usesFadeAlpha() &&
+                !this.properties.fade().keyFrames().isEmpty();
+        int delay = usesFadeKeyframes ? 0 : soundSettings.delay();
 
         // A zero-volume keyframe can end one fade and start the next. Restart once when reaching it.
-        if (playSound && this.soundFadeTime != this.lastSoundFadeTime && this.soundVolume == 0.0F &&
-                this.isFadeInStart(this.soundFadeTime)) {
-            this.soundPlayback.tick(false, 0.0F, 0);
+        if (playSound && this.soundFadeInStart && this.soundFadeTime != this.lastSoundFadeTime) {
+            this.soundPlayback.stop();
         }
         this.lastSoundFadeTime = this.soundFadeTime;
         this.soundPlayback.tick(playSound, this.soundVolume, delay);
@@ -101,7 +105,8 @@ public abstract class AbstractSkybox implements NuitSkybox {
         this.conditionAlpha = 0.0F;
         this.conditionsMet = false;
         this.soundVolume = 0.0F;
-        this.soundFadeActive = false;
+        this.soundEnabled = false;
+        this.soundFadeInStart = false;
         this.lastSoundFadeTime = -1;
     }
 
@@ -121,13 +126,19 @@ public abstract class AbstractSkybox implements NuitSkybox {
         );
         this.alpha = this.getFadeAlpha(currentTime) * this.conditionAlpha;
         this.soundVolume = 0.0F;
-        this.soundFadeActive = false;
+        this.soundEnabled = false;
+        this.soundFadeInStart = false;
         if (this.properties.sound().isPresent()) {
-            int delay = this.properties.sound().orElseThrow().delay();
+            SoundSettings soundSettings = this.properties.sound().orElseThrow();
+            SoundVolumeMode volumeMode = soundSettings.volumeMode();
+            int delay = soundSettings.delay();
             long duration = this.properties.fade().duration();
             this.soundFadeTime = Math.floorMod(currentTime - delay % duration, duration);
-            this.soundVolume = this.getFadeAlpha(this.soundFadeTime) * this.conditionAlpha;
-            this.soundFadeActive = this.soundVolume > 0.0F || (this.conditionsMet && this.isFadeInStart(this.soundFadeTime));
+            float fadeAlpha = volumeMode.usesFadeAlpha() ? this.getFadeAlpha(this.soundFadeTime) : 1.0F;
+            this.soundVolume = volumeMode.calculate(fadeAlpha, this.conditionAlpha);
+            this.soundFadeInStart = volumeMode.usesFadeAlpha() && this.isFadeInStart(this.soundFadeTime);
+            this.soundEnabled = this.soundVolume > 0.0F ||
+                    (this.soundFadeInStart && (!volumeMode.usesConditionAlpha() || this.conditionsMet));
         }
     }
 

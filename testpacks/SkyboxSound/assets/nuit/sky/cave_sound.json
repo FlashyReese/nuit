@@ -16,7 +16,7 @@
       "transitionOutDuration": 20,
       "sound": {
         "file": "minecraft:sounds/ambient/cave/cave1.ogg",
-        "clipToFade": true,
+        "volumeMode": "fade_and_condition",
         "loop": true,
         "delay": 20
       }
