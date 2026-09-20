@@ -23,20 +23,17 @@ public final class SoundPlayback {
     }
 
     /**
-     * Playback is enabled by the skybox's fade and conditions. The caller applies the delay to fade
-     * keyframes; without keyframes, startDelayTicks delays playback after it becomes enabled.
-     * A fade-in may start at zero volume. An unclipped, non-looping sound may finish after playback
-     * is disabled.
+     * The caller selects the alpha sources that enable playback and determine volume. When following
+     * fade keyframes, it applies the delay to those keyframes; otherwise, startDelayTicks delays
+     * playback after it becomes enabled. A fade-in may start at zero volume.
      */
-    public void tick(boolean enabled, float fadeVolume, int startDelayTicks) {
-        float volume = this.settings.clipToFade() ? clampVolume(fadeVolume) : 1.0F;
+    public void tick(boolean enabled, float targetVolume, int startDelayTicks) {
+        float volume = clampVolume(targetVolume);
         this.backend.setVolume(volume);
 
         if (!enabled) {
             this.clearActivation();
-            if (this.settings.loop() || this.settings.clipToFade()) {
-                this.backend.stop();
-            }
+            this.backend.stop();
             return;
         }
 
@@ -54,7 +51,6 @@ public final class SoundPlayback {
         }
 
         if (this.backend.isActive()) {
-            // An unclipped sound may still be playing. Let it finish before starting another instance.
             this.triggered = true;
             return;
         }
@@ -72,7 +68,7 @@ public final class SoundPlayback {
     }
 
     /**
-     * Stops the sound, including unclipped playback, and cancels any pending delay.
+     * Stops the sound and cancels any pending delay.
      */
     public void stop() {
         this.backend.stop();
@@ -98,8 +94,8 @@ public final class SoundPlayback {
         this.retryRemaining = 0;
     }
 
-    private static float clampVolume(float fadeVolume) {
-        return Float.isFinite(fadeVolume) ? Math.clamp(fadeVolume, 0.0F, 1.0F) : 0.0F;
+    private static float clampVolume(float volume) {
+        return Float.isFinite(volume) ? Math.clamp(volume, 0.0F, 1.0F) : 0.0F;
     }
 
     /**
