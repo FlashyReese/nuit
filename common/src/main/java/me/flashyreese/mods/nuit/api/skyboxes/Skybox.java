@@ -22,4 +22,11 @@ public interface Skybox {
      * @return whether this skybox should currently participate in rendering or skybox-dependent effects.
      */
     boolean isActive();
+
+    /**
+     * Stops transient effects when removed, reloaded, disabled, or changing levels.
+     * The instance may be ticked again afterwards, including permanent skyboxes.
+     */
+    default void reset() {
+    }
 }

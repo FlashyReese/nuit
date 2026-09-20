@@ -5,7 +5,11 @@ import me.flashyreese.mods.nuit.NuitClient;
 import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
+import me.flashyreese.mods.nuit.components.SoundSettings;
+import me.flashyreese.mods.nuit.components.SoundVolumeMode;
 import me.flashyreese.mods.nuit.components.Weather;
+import me.flashyreese.mods.nuit.sound.MinecraftSoundBackend;
+import me.flashyreese.mods.nuit.sound.SoundPlayback;
 import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -40,6 +44,13 @@ public abstract class AbstractSkybox implements NuitSkybox {
     protected Properties properties = Properties.of();
     protected Conditions conditions = Conditions.of();
     protected float conditionAlpha = 0f;
+    protected boolean conditionsMet;
+    protected float soundVolume;
+    protected boolean soundEnabled;
+    private SoundPlayback soundPlayback;
+    private boolean soundFadeInStart;
+    private long soundFadeTime;
+    private long lastSoundFadeTime = -1;
 
     protected AbstractSkybox() {
     }
@@ -52,6 +63,51 @@ public abstract class AbstractSkybox implements NuitSkybox {
     @Override
     public void tick(ClientLevel level) {
         this.updateAlpha(level);
+        if (this.properties.sound().isEmpty()) {
+            if (this.soundPlayback != null) {
+                this.soundPlayback.reset();
+                this.soundPlayback = null;
+            }
+            return;
+        }
+
+        SoundSettings soundSettings = this.properties.sound().orElseThrow();
+        if (this.soundPlayback == null) {
+            this.soundPlayback = this.createSoundPlayback(soundSettings);
+        }
+
+        // When using condition alpha, let an existing sound fade out but do not start a new one.
+        boolean playSound = this.soundEnabled && (!soundSettings.volumeMode().usesConditionAlpha() ||
+                this.conditionsMet || this.soundPlayback.isActive());
+        boolean usesFadeKeyframes = soundSettings.volumeMode().usesFadeAlpha() &&
+                !this.properties.fade().keyFrames().isEmpty();
+        int delay = usesFadeKeyframes ? 0 : soundSettings.delay();
+
+        // A zero-volume keyframe can end one fade and start the next. Restart once when reaching it.
+        if (playSound && this.soundFadeInStart && this.soundFadeTime != this.lastSoundFadeTime) {
+            this.soundPlayback.stop();
+        }
+        this.lastSoundFadeTime = this.soundFadeTime;
+        this.soundPlayback.tick(playSound, this.soundVolume, delay);
+    }
+
+    protected SoundPlayback createSoundPlayback(SoundSettings settings) {
+        return new SoundPlayback(settings, new MinecraftSoundBackend());
+    }
+
+    @Override
+    public void reset() {
+        if (this.soundPlayback != null) {
+            this.soundPlayback.reset();
+            this.soundPlayback = null;
+        }
+        this.alpha = 0.0F;
+        this.conditionAlpha = 0.0F;
+        this.conditionsMet = false;
+        this.soundVolume = 0.0F;
+        this.soundEnabled = false;
+        this.soundFadeInStart = false;
+        this.lastSoundFadeTime = -1;
     }
 
     /**
@@ -59,40 +115,71 @@ public abstract class AbstractSkybox implements NuitSkybox {
      */
     @Override
     public void updateAlpha(ClientLevel level) {
-        long currentTime = this.properties.clock().getCycleTicks(level, this.properties.fade().duration());
-        boolean condition = this.checkConditions();
-        float fadeAlpha = 1f;
-        if (this.properties.fade().keyFrames().isEmpty()) {
-            this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(), condition);
-        } else {
-            if (this.properties.fade().duration() <= NuitClient.config().generalSettings.fadeCacheDuration) {
-                fadeAlpha = this.cachedKeyFrames.computeIfAbsent(currentTime, time -> {
-                    Utils.KeyframePair keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), time).orElseThrow();
-                    return Utils.calculateInterpolatedAlpha(
-                            time,
-                            this.properties.fade().duration(),
-                            keyFrames.current(),
-                            keyFrames.next(),
-                            this.properties.fade().keyFrames().get(keyFrames.current()),
-                            this.properties.fade().keyFrames().get(keyFrames.next())
-                    );
-                });
-            } else {
-                Utils.KeyframePair keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), currentTime).orElseThrow();
-                fadeAlpha = Utils.calculateInterpolatedAlpha(
-                        currentTime,
-                        this.properties.fade().duration(),
-                        keyFrames.current(),
-                        keyFrames.next(),
-                        this.properties.fade().keyFrames().get(keyFrames.current()),
-                        this.properties.fade().keyFrames().get(keyFrames.next())
-                );
-            }
-
-            this.conditionAlpha = Utils.calculateConditionAlphaValue(1f, 0f, this.conditionAlpha, condition ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(), condition);
+        long currentTime = this.getFadeTime(level);
+        this.conditionsMet = this.checkConditions();
+        this.conditionAlpha = Utils.calculateConditionAlphaValue(
+                1f,
+                0f,
+                this.conditionAlpha,
+                this.conditionsMet ? this.properties.transitionInDuration() : this.properties.transitionOutDuration(),
+                this.conditionsMet
+        );
+        this.alpha = this.getFadeAlpha(currentTime) * this.conditionAlpha;
+        this.soundVolume = 0.0F;
+        this.soundEnabled = false;
+        this.soundFadeInStart = false;
+        if (this.properties.sound().isPresent()) {
+            SoundSettings soundSettings = this.properties.sound().orElseThrow();
+            SoundVolumeMode volumeMode = soundSettings.volumeMode();
+            int delay = soundSettings.delay();
+            long duration = this.properties.fade().duration();
+            this.soundFadeTime = Math.floorMod(currentTime - delay % duration, duration);
+            float fadeAlpha = volumeMode.usesFadeAlpha() ? this.getFadeAlpha(this.soundFadeTime) : 1.0F;
+            this.soundVolume = volumeMode.calculate(fadeAlpha, this.conditionAlpha);
+            this.soundFadeInStart = volumeMode.usesFadeAlpha() && this.isFadeInStart(this.soundFadeTime);
+            this.soundEnabled = this.soundVolume > 0.0F ||
+                    (this.soundFadeInStart && (!volumeMode.usesConditionAlpha() || this.conditionsMet));
         }
+    }
 
-        this.alpha = fadeAlpha * this.conditionAlpha;
+    protected long getFadeTime(ClientLevel level) {
+        return this.properties.clock().getCycleTicks(level, this.properties.fade().duration());
+    }
+
+    protected float getFadeAlpha(long currentTime) {
+        if (this.properties.fade().keyFrames().isEmpty()) {
+            return 1.0F;
+        }
+        if (this.properties.fade().duration() <= NuitClient.config().generalSettings.fadeCacheDuration) {
+            return this.cachedKeyFrames.computeIfAbsent(currentTime, this::calculateFadeAlpha);
+        } else {
+            return this.calculateFadeAlpha(currentTime);
+        }
+    }
+
+    protected float calculateFadeAlpha(long currentTime) {
+        if (this.properties.fade().keyFrames().isEmpty()) {
+            return 1.0F;
+        }
+        Utils.KeyframePair keyFrames = Utils.findClosestKeyframes(this.properties.fade().keyFrames(), currentTime).orElseThrow();
+        return Utils.calculateInterpolatedAlpha(
+                currentTime,
+                this.properties.fade().duration(),
+                keyFrames.current(),
+                keyFrames.next(),
+                this.properties.fade().keyFrames().get(keyFrames.current()),
+                this.properties.fade().keyFrames().get(keyFrames.next())
+        );
+    }
+
+    private boolean isFadeInStart(long currentTime) {
+        Map<Long, Float> keyFrames = this.properties.fade().keyFrames();
+        Float fadeAlpha = keyFrames.get(currentTime);
+        if (fadeAlpha == null || fadeAlpha != 0.0F) {
+            return false;
+        }
+        Utils.KeyframePair keyframePair = Utils.findClosestKeyframes(keyFrames, currentTime).orElseThrow();
+        return keyFrames.get(keyframePair.next()) > 0.0F;
     }
 
     /**
