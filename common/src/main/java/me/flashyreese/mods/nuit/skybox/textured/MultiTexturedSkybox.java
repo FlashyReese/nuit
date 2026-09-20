@@ -32,7 +32,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     public static Codec<MultiTexturedSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions),
-            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(TexturedSkybox::getBlend),
             AnimatableTexture.CODEC.listOf().optionalFieldOf("animatableTextures", new ArrayList<>()).forGetter(MultiTexturedSkybox::getAnimations)
     ).apply(instance, MultiTexturedSkybox::new));
     private static final int PACKED_UV_MAX = Short.MAX_VALUE;
@@ -40,8 +39,8 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     private final float quadSize = 100F;
     private final UVRange quad = new UVRange(-this.quadSize, -this.quadSize, this.quadSize, this.quadSize);
 
-    public MultiTexturedSkybox(Properties properties, Conditions conditions, Blend blend, List<AnimatableTexture> animatableTextures) {
-        super(properties, conditions, blend);
+    public MultiTexturedSkybox(Properties properties, Conditions conditions, List<AnimatableTexture> animatableTextures) {
+        super(properties, conditions);
         this.animatableTextures = animatableTextures;
     }
 
@@ -53,7 +52,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             return;
         }
 
-        BlendFunction blendFunction = this.getBlend().getBlendFunction();
+        BlendFunction blendFunction = this.properties.blend().getBlendFunction();
         RenderPipeline texturedPipeline = null;
         RenderPipeline frameBlendedPipeline = null;
         boolean shaderPackStateQueried = false;
@@ -133,7 +132,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             return;
         }
 
-        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, this.getBlend().getColorModifier(this.alpha * alphaWeight));
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, this.properties.blend().getColorModifier(this.alpha * alphaWeight));
         this.renderTextureFrame(pipeline, dynamicTransforms, animatableTexture, frame, null, 0.0F);
     }
 
