@@ -9,7 +9,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
-import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
@@ -46,15 +45,14 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
     };
 
     public static Codec<DecorationBox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Properties.CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
+            Properties.DECORATIONS_CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(DecorationBox::getConditions),
             Identifier.CODEC.optionalFieldOf("sun", DEFAULT_SUN).forGetter(DecorationBox::getSunTexture),
             Identifier.CODEC.optionalFieldOf("moon", DEFAULT_MOON).forGetter(DecorationBox::getMoonTexture),
             Codec.BOOL.optionalFieldOf("showSun", false).forGetter(DecorationBox::isSunEnabled),
             Codec.BOOL.optionalFieldOf("showMoon", false).forGetter(DecorationBox::isMoonEnabled),
             Codec.BOOL.optionalFieldOf("showStars", false).forGetter(DecorationBox::isStarsEnabled),
-            Codec.BOOL.optionalFieldOf("showEndFlash", false).forGetter(DecorationBox::isEndFlashEnabled),
-            Blend.CODEC.optionalFieldOf("blend", Blend.decorations()).forGetter(DecorationBox::getBlend)
+            Codec.BOOL.optionalFieldOf("showEndFlash", false).forGetter(DecorationBox::isEndFlashEnabled)
     ).apply(instance, DecorationBox::new));
     private final Identifier sunTexture;
     private final Identifier moonTexture;
@@ -62,9 +60,8 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
     private final boolean moonEnabled;
     private final boolean starsEnabled;
     private final boolean endFlashEnabled;
-    private final Blend blend;
 
-    public DecorationBox(Properties properties, Conditions conditions, Identifier sun, Identifier moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, boolean endFlashEnabled, Blend blend) {
+    public DecorationBox(Properties properties, Conditions conditions, Identifier sun, Identifier moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, boolean endFlashEnabled) {
         this.properties = properties;
         this.conditions = conditions;
         this.sunTexture = sun;
@@ -73,7 +70,6 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         this.moonEnabled = moonEnabled;
         this.starsEnabled = starsEnabled;
         this.endFlashEnabled = endFlashEnabled;
-        this.blend = blend;
     }
 
     @Override
@@ -86,7 +82,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         Camera camera = context.camera();
         float tickDelta = context.tickDelta();
         ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
-        BlendFunction blendFunction = this.blend.getBlendFunction();
+        BlendFunction blendFunction = this.properties.blend().getBlendFunction();
         RenderPipeline texturedPipeline = null;
 
         Matrix4f decorationMatrix = null;
@@ -101,7 +97,7 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
                     tickDelta,
                     celestialAngle
             );
-            colorModifier = this.blend.getColorModifier(this.alpha);
+            colorModifier = this.properties.blend().getColorModifier(this.alpha);
             dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
         }
 
@@ -214,10 +210,6 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
 
     public boolean isEndFlashEnabled() {
         return this.endFlashEnabled;
-    }
-
-    public Blend getBlend() {
-        return this.blend;
     }
 
     @Override

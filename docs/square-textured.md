@@ -20,8 +20,8 @@ Example JSON:
   "schemaVersion": 1,
   "type": "square-textured",
   "texture": "example:textures/sky/skybox.png",
-  "blend": {
-    "type": "normal"
+  "properties": {
+    "blend": "normal"
   }
 }
 ```

@@ -21,16 +21,13 @@ public class MonoColorSkybox extends AbstractSkybox {
     public static Codec<MonoColorSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions),
-            RGBA.CODEC.optionalFieldOf("color", RGBA.of()).forGetter(MonoColorSkybox::getColor),
-            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(MonoColorSkybox::getBlend)
+            RGBA.CODEC.optionalFieldOf("color", RGBA.of()).forGetter(MonoColorSkybox::getColor)
     ).apply(instance, MonoColorSkybox::new));
     public RGBA color;
-    public Blend blend;
 
-    public MonoColorSkybox(Properties properties, Conditions conditions, RGBA color, Blend blend) {
+    public MonoColorSkybox(Properties properties, Conditions conditions, RGBA color) {
         super(properties, conditions);
         this.color = color;
-        this.blend = blend;
     }
 
     @Override
@@ -40,9 +37,9 @@ public class MonoColorSkybox extends AbstractSkybox {
             return;
         }
 
-        Vector4f colorModifier = this.blend.getColorModifier(this.alpha);
+        Vector4f colorModifier = this.properties.blend().getColorModifier(this.alpha);
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(context.skyModelViewStack()), colorModifier);
-        RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.blend.getBlendFunction());
+        RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.properties.blend().getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             for (int face = 0; face < 6; ++face) {
@@ -58,9 +55,5 @@ public class MonoColorSkybox extends AbstractSkybox {
 
     public RGBA getColor() {
         return this.color;
-    }
-
-    public Blend getBlend() {
-        return this.blend;
     }
 }
