@@ -2,11 +2,15 @@
 
 Nuit core supports fixed named blend modes.
 
-A named blend object only contains `type`:
+A blend object is configured as `properties.blend`:
 
 ```json
 {
-  "type": "normal"
+  "properties": {
+    "blend": {
+      "type": "normal"
+    }
+  }
 }
 ```
 

@@ -19,15 +19,18 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     public static Codec<SquareTexturedSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions),
-            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(TexturedSkybox::getBlend),
             Texture.CODEC.fieldOf("texture").forGetter(SquareTexturedSkybox::getTexture)
     ).apply(instance, SquareTexturedSkybox::new));
 
     protected Texture texture;
 
-    public SquareTexturedSkybox(Properties properties, Conditions conditions, Blend blend, Texture texture) {
-        super(properties, conditions, blend);
+    public SquareTexturedSkybox(Properties properties, Conditions conditions, Texture texture) {
+        super(properties, conditions);
         this.texture = texture;
+    }
+
+    public SquareTexturedSkybox(Properties properties, Conditions conditions, Blend blend, Texture texture) {
+        this(properties.withBlend(blend), conditions, texture);
     }
 
     @Override

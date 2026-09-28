@@ -78,7 +78,8 @@ public class SkyboxManagerTest {
                 Fog.of(),
                 true,
                 true,
-                rotation
+                rotation,
+                Blend.decorations()
         );
         return new DecorationBox(
                 properties,
@@ -87,8 +88,7 @@ public class SkyboxManagerTest {
                 MOON,
                 showSun,
                 showMoon,
-                false,
-                Blend.decorations()
+                false
         );
     }
 

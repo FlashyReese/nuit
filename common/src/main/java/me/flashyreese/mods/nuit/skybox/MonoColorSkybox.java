@@ -23,17 +23,18 @@ public class MonoColorSkybox extends AbstractSkybox {
     public static Codec<MonoColorSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions),
-            RGBA.CODEC.optionalFieldOf("color", RGBA.of()).forGetter(MonoColorSkybox::getColor),
-            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(MonoColorSkybox::getBlend)
+            RGBA.CODEC.optionalFieldOf("color", RGBA.of()).forGetter(MonoColorSkybox::getColor)
     ).apply(instance, MonoColorSkybox::new));
 
     public RGBA color;
-    public Blend blend;
 
-    public MonoColorSkybox(Properties properties, Conditions conditions, RGBA color, Blend blend) {
+    public MonoColorSkybox(Properties properties, Conditions conditions, RGBA color) {
         super(properties, conditions);
         this.color = color;
-        this.blend = blend;
+    }
+
+    public MonoColorSkybox(Properties properties, Conditions conditions, RGBA color, Blend blend) {
+        this(properties.withBlend(blend), conditions, color);
     }
 
     @Override
@@ -45,7 +46,7 @@ public class MonoColorSkybox extends AbstractSkybox {
         }
 
         try {
-            NuitRenderBackend.beginSkybox(this.blend, this.alpha, GameRenderer::getPositionColorShader);
+            NuitRenderBackend.beginSkybox(this.properties.blend(), this.alpha, GameRenderer::getPositionColorShader);
 
             BufferBuilder bufferBuilder = Tesselator.getInstance().begin(
                     VertexFormat.Mode.QUADS,
@@ -75,6 +76,6 @@ public class MonoColorSkybox extends AbstractSkybox {
     }
 
     public Blend getBlend() {
-        return this.blend;
+        return this.properties.blend();
     }
 }

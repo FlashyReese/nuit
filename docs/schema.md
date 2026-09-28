@@ -229,7 +229,11 @@ Range objects include the minimum and exclude the maximum:
 
 ```json
 {
-  "type": "normal"
+  "properties": {
+    "blend": {
+      "type": "normal"
+    }
+  }
 }
 ```
 
@@ -252,8 +256,10 @@ behavior notes.
     "blue": 0.4,
     "alpha": 1.0
   },
-  "blend": {
-    "type": "normal"
+  "properties": {
+    "blend": {
+      "type": "normal"
+    }
   }
 }
 ```
@@ -261,7 +267,7 @@ behavior notes.
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `color` | RGBA object | no | `{ red: 0, green: 0, blue: 0, alpha: 0 }` |
-| `blend` | blend object | no | `normal` |
+| `properties.blend` | blend object | no | `normal` |
 
 RGBA `red`, `green`, `blue`, and optional `alpha` are floats from `0.0` to `1.0`.
 
@@ -272,8 +278,10 @@ RGBA `red`, `green`, `blue`, and optional `alpha` are floats from `0.0` to `1.0`
   "schemaVersion": 1,
   "type": "square-textured",
   "texture": "example:textures/sky/skybox.png",
-  "blend": {
-    "type": "normal"
+  "properties": {
+    "blend": {
+      "type": "normal"
+    }
   }
 }
 ```
@@ -281,7 +289,7 @@ RGBA `red`, `green`, `blue`, and optional `alpha` are floats from `0.0` to `1.0`
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `texture` | identifier | yes | none |
-| `blend` | blend object | no | `normal` |
+| `properties.blend` | blend object | no | `normal` |
 
 The texture is interpreted as a 3 by 2 face grid. See [square-textured.md](square-textured.md).
 
@@ -291,8 +299,10 @@ The texture is interpreted as a 3 by 2 face grid. See [square-textured.md](squar
 {
   "schemaVersion": 1,
   "type": "multi-textured",
-  "blend": {
-    "type": "add"
+  "properties": {
+    "blend": {
+      "type": "add"
+    }
   },
   "animatableTextures": [
     {
@@ -319,7 +329,7 @@ The texture is interpreted as a 3 by 2 face grid. See [square-textured.md](squar
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `animatableTextures` | array of animatable texture objects | no | empty |
-| `blend` | blend object | no | `normal` |
+| `properties.blend` | blend object | no | `normal` |
 
 #### Animatable Texture
 
@@ -359,8 +369,10 @@ UV values are clamped from `0.0` to `1.0`.
   "showSun": true,
   "showMoon": true,
   "showStars": true,
-  "blend": {
-    "type": "decorations"
+  "properties": {
+    "blend": {
+      "type": "decorations"
+    }
   }
 }
 ```
@@ -372,7 +384,7 @@ UV values are clamped from `0.0` to `1.0`.
 | `showSun` | boolean | no | `false` |
 | `showMoon` | boolean | no | `false` |
 | `showStars` | boolean | no | `false` |
-| `blend` | blend object | no | `decorations` |
+| `properties.blend` | blend object | no | `decorations` |
 
 Decoration rotation is controlled through `properties.rotation`. When `properties` is omitted entirely, decorations
 follow vanilla celestial rotation (`skyboxRotation: false`). An explicit `properties` object without `rotation` uses

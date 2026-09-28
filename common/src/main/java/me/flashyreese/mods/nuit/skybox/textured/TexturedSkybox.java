@@ -19,12 +19,14 @@ import java.util.Objects;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements TextureRegistrar {
     public Rotation rotation;
-    public Blend blend;
+
+    protected TexturedSkybox(Properties properties, Conditions conditions) {
+        super(properties, conditions);
+        this.rotation = properties.rotation();
+    }
 
     protected TexturedSkybox(Properties properties, Conditions conditions, Blend blend) {
-        super(properties, conditions);
-        this.blend = blend;
-        this.rotation = properties.rotation();
+        this(properties.withBlend(blend), conditions);
     }
 
     /**
@@ -47,7 +49,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
 
         ClientLevel world = Objects.requireNonNull(Minecraft.getInstance().level);
         try {
-            NuitRenderBackend.beginSkybox(this.blend, this.alpha, GameRenderer::getPositionTexShader);
+            NuitRenderBackend.beginSkybox(this.properties.blend(), this.alpha, GameRenderer::getPositionTexShader);
             try (NuitRenderBackend.TransformScope transform = NuitRenderBackend.pushTransform(poseStack)) {
                 this.rotation.apply(transform.poseStack(), world, this.properties.clock(), tickDelta);
                 this.renderSkybox(
@@ -81,7 +83,7 @@ public abstract class TexturedSkybox extends AbstractSkybox implements TextureRe
                                       boolean thickFog, Runnable fogCallback);
 
     public Blend getBlend() {
-        return this.blend;
+        return this.properties.blend();
     }
 
     public Rotation getRotation() {

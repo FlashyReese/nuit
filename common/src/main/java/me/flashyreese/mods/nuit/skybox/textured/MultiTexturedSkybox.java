@@ -26,7 +26,6 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     public static Codec<MultiTexturedSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Properties.CODEC.optionalFieldOf("properties", Properties.of()).forGetter(AbstractSkybox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(AbstractSkybox::getConditions),
-            Blend.CODEC.optionalFieldOf("blend", Blend.normal()).forGetter(TexturedSkybox::getBlend),
             AnimatableTexture.CODEC.listOf().optionalFieldOf("animatableTextures", new ArrayList<>()).forGetter(MultiTexturedSkybox::getAnimations)
     ).apply(instance, MultiTexturedSkybox::new));
     protected final List<AnimatableTexture> animatableTextures;
@@ -34,9 +33,13 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     private final float quadSize = 100F;
     private final UVRange quad = new UVRange(-this.quadSize, -this.quadSize, this.quadSize, this.quadSize);
 
-    public MultiTexturedSkybox(Properties properties, Conditions conditions, Blend blend, List<AnimatableTexture> animatableTextures) {
-        super(properties, conditions, blend);
+    public MultiTexturedSkybox(Properties properties, Conditions conditions, List<AnimatableTexture> animatableTextures) {
+        super(properties, conditions);
         this.animatableTextures = animatableTextures;
+    }
+
+    public MultiTexturedSkybox(Properties properties, Conditions conditions, Blend blend, List<AnimatableTexture> animatableTextures) {
+        this(properties.withBlend(blend), conditions, animatableTextures);
     }
 
     @Override
@@ -98,7 +101,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                     frameBlend
             );
         } finally {
-            this.getBlend().apply(this.alpha);
+            this.properties.blend().apply(this.alpha);
         }
     }
 
@@ -111,7 +114,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         if (alphaWeight <= 0.0F) {
             return;
         }
-        this.getBlend().apply(this.alpha * alphaWeight);
+        this.properties.blend().apply(this.alpha * alphaWeight);
         this.renderTextureFrame(poseStack, animatableTexture, frame, null, 0.0F, false);
     }
 

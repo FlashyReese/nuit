@@ -25,14 +25,13 @@ import java.util.List;
 
 public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
     public static Codec<DecorationBox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Properties.CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
+            Properties.DECORATIONS_CODEC.optionalFieldOf("properties", Properties.decorations()).forGetter(DecorationBox::getProperties),
             Conditions.CODEC.optionalFieldOf("conditions", Conditions.of()).forGetter(DecorationBox::getConditions),
             ResourceLocation.CODEC.optionalFieldOf("sun", SkyRendererAccessor.getSun()).forGetter(DecorationBox::getSunTexture),
             ResourceLocation.CODEC.optionalFieldOf("moon", SkyRendererAccessor.getMoonPhases()).forGetter(DecorationBox::getMoonTexture),
             Codec.BOOL.optionalFieldOf("showSun", false).forGetter(DecorationBox::isSunEnabled),
             Codec.BOOL.optionalFieldOf("showMoon", false).forGetter(DecorationBox::isMoonEnabled),
-            Codec.BOOL.optionalFieldOf("showStars", false).forGetter(DecorationBox::isStarsEnabled),
-            Blend.CODEC.optionalFieldOf("blend", Blend.decorations()).forGetter(DecorationBox::getBlend)
+            Codec.BOOL.optionalFieldOf("showStars", false).forGetter(DecorationBox::isStarsEnabled)
     ).apply(instance, DecorationBox::new));
 
     private final ResourceLocation sunTexture;
@@ -40,9 +39,8 @@ public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
     private final boolean sunEnabled;
     private final boolean moonEnabled;
     private final boolean starsEnabled;
-    private final Blend blend;
 
-    public DecorationBox(Properties properties, Conditions conditions, ResourceLocation sun, ResourceLocation moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, Blend blend) {
+    public DecorationBox(Properties properties, Conditions conditions, ResourceLocation sun, ResourceLocation moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled) {
         this.properties = properties;
         this.conditions = conditions;
         this.sunTexture = sun;
@@ -50,7 +48,10 @@ public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
         this.sunEnabled = sunEnabled;
         this.moonEnabled = moonEnabled;
         this.starsEnabled = starsEnabled;
-        this.blend = blend;
+    }
+
+    public DecorationBox(Properties properties, Conditions conditions, ResourceLocation sun, ResourceLocation moon, boolean sunEnabled, boolean moonEnabled, boolean starsEnabled, Blend blend) {
+        this(properties.withBlend(blend), conditions, sun, moon, sunEnabled, moonEnabled, starsEnabled);
     }
 
     @Override
@@ -62,7 +63,7 @@ public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
 
         ClientLevel level = Objects.requireNonNull(Minecraft.getInstance().level);
         try {
-            NuitRenderBackend.beginSkybox(this.blend, this.alpha, GameRenderer::getPositionTexShader);
+            NuitRenderBackend.beginSkybox(this.properties.blend(), this.alpha, GameRenderer::getPositionTexShader);
             try (NuitRenderBackend.TransformScope transform = NuitRenderBackend.pushTransform(poseStack)) {
                 this.properties.rotation().apply(transform.poseStack(), level, this.properties.clock(), tickDelta);
 
@@ -175,7 +176,7 @@ public class DecorationBox extends AbstractSkybox implements TextureRegistrar {
     }
 
     public Blend getBlend() {
-        return this.blend;
+        return this.properties.blend();
     }
 
     @Override

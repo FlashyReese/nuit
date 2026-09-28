@@ -125,4 +125,14 @@ public class BlendTest {
     public void normalFactoryUsesCanonicalName() {
         assertEquals("normal", Blend.normal().getType());
     }
+
+    @Test
+    public void propertiesReadBlendFromPropertiesObject() {
+        Properties properties = Properties.CODEC.parse(
+                JsonOps.INSTANCE,
+                JsonParser.parseString("{\"blend\":{\"type\":\"add\"}}")
+        ).getOrThrow();
+
+        assertEquals("add", properties.blend().getType());
+    }
 }
