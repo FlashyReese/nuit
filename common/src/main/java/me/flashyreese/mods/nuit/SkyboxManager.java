@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
+import com.mojang.math.Axis;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import me.flashyreese.mods.nuit.api.NuitApi;
@@ -28,11 +30,14 @@ import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.texture.SimpleTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.ApiStatus.Internal;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3fc;
 import org.joml.Vector4f;
@@ -181,6 +186,18 @@ public class SkyboxManager implements NuitApi {
     @Internal
     public void renderSkyboxes(SkyRenderer skyRenderer, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
         SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), skyModelViewStack, tickDelta, camera, fogParameters);
+        if (IrisCompat.isShaderPackInUse()) {
+            this.renderActiveSkyboxes(context);
+            return;
+        }
+
+        try (NuitRenderBackend.SkyRenderFrame skyRenderFrame = NuitRenderBackend.beginSkyFrame()) {
+            this.renderActiveSkyboxes(context);
+            skyRenderFrame.submit();
+        }
+    }
+
+    private void renderActiveSkyboxes(SkyboxRenderContext context) {
         for (Skybox skybox : this.activeSkyboxes) {
             if (skybox instanceof RenderableSkybox renderableSkybox) {
                 this.currentSkybox = skybox;
@@ -198,46 +215,91 @@ public class SkyboxManager implements NuitApi {
                         RenderSystem.getModelViewMatrixCopy(),
                         new Vector4f(color)
                 );
-                NuitRenderBackend.withRenderPass(
-                        "Nuit translucent sky disc",
-                        renderPass -> {
-                            renderPass.setPipeline(RenderSystem.getCompiledPipeline(NuitRenderPipelines.translucentSkyDisc()));
-                            renderPass.setUniform("DynamicTransforms", dynamicTransforms);
-                            renderPass.setVertexBuffer(0, skyRendererAccessor.getTopSkyBuffer().slice());
-                            renderPass.draw(10, 1, 0, 0);
-                        }
+                NuitRenderBackend.drawWithoutScissor(
+                        NuitRenderPipelines.translucentSkyDisc(),
+                        skyRendererAccessor.getTopSkyBuffer(),
+                        10,
+                        dynamicTransforms,
+                        "Nuit translucent sky disc"
                 );
             }
 
             @Override
             public void renderSkyDisc(Vector3fc color) {
-                NuitRenderBackend.withRenderPass(
-                        "Nuit vanilla sky disc",
-                        renderPass -> skyRendererAccessor.invokeRenderSkyDisc(renderPass, color)
+                GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
+                        RenderSystem.getModelViewMatrixCopy(),
+                        new Vector4f(color, 1.0F)
+                );
+                NuitRenderBackend.drawWithoutScissor(
+                        RenderPipelines.SKY,
+                        skyRendererAccessor.getTopSkyBuffer(),
+                        10,
+                        dynamicTransforms,
+                        "Nuit vanilla sky disc"
                 );
             }
 
             @Override
             public void renderDarkDisc() {
-                NuitRenderBackend.withRenderPass(
-                        "Nuit vanilla dark sky disc",
-                        skyRendererAccessor::invokeRenderDarkDisc
+                Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrixCopy().translate(0.0F, 12.0F, 0.0F);
+                GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
+                        modelViewMatrix,
+                        new Vector4f(0.0F, 0.0F, 0.0F, 1.0F)
+                );
+                NuitRenderBackend.drawWithoutScissor(
+                        RenderPipelines.SKY,
+                        skyRendererAccessor.getBottomSkyBuffer(),
+                        10,
+                        dynamicTransforms,
+                        "Nuit vanilla dark sky disc"
                 );
             }
 
             @Override
             public void renderStars(float brightness, PoseStack poseStack) {
-                NuitRenderBackend.withRenderPass(
-                        "Nuit vanilla stars",
-                        renderPass -> skyRendererAccessor.invokeRenderStars(renderPass, brightness, poseStack)
+                Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrixCopy().mul(poseStack.last().pose());
+                GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
+                        modelViewMatrix,
+                        new Vector4f(brightness, brightness, brightness, brightness)
+                );
+                NuitRenderBackend.drawSequentialIndexedWithoutScissor(
+                        RenderPipelines.STARS,
+                        skyRendererAccessor.getStarBuffer(),
+                        PrimitiveTopology.QUADS,
+                        skyRendererAccessor.getStarIndexCount(),
+                        dynamicTransforms,
+                        "Nuit vanilla stars"
                 );
             }
 
             @Override
             public void renderEndFlash(float intensity, float xAngle, float yAngle) {
-                NuitRenderBackend.withRenderPass(
+                PoseStack poseStack = new PoseStack();
+                poseStack.rotateDegrees(Axis.YP, 180.0F - yAngle);
+                poseStack.rotateDegrees(Axis.XP, -90.0F - xAngle);
+                Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrixCopy()
+                        .mul(poseStack.last().pose())
+                        .translate(0.0F, 100.0F, 0.0F)
+                        .scale(60.0F, 1.0F, 60.0F);
+                GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
+                        modelViewMatrix,
+                        new Vector4f(intensity, intensity, intensity, intensity)
+                );
+                TextureAtlas celestialsAtlas = skyRendererAccessor.getCelestialsAtlas();
+                var celestialsTexture = celestialsAtlas.getTextureView();
+                var celestialsSampler = celestialsAtlas.getSampler();
+                NuitRenderBackend.drawSequentialIndexedWithoutScissor(
+                        RenderPipelines.CELESTIAL,
+                        skyRendererAccessor.getEndFlashBuffer(),
+                        PrimitiveTopology.QUADS,
+                        6,
+                        dynamicTransforms,
                         "Nuit vanilla End flash",
-                        renderPass -> skyRendererAccessor.invokeRenderEndFlash(renderPass, new PoseStack(), intensity, xAngle, yAngle)
+                        renderPass -> renderPass.setUniform(
+                                NuitRenderBackend.SAMPLER0_NAME,
+                                celestialsTexture,
+                                celestialsSampler
+                        )
                 );
             }
 

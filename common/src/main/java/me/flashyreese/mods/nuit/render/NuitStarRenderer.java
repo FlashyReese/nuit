@@ -32,14 +32,11 @@ public final class NuitStarRenderer {
         ensureStarsBuilt();
 
         RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(blendFunction);
-        RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-        GpuBuffer indexBuffer = quadIndices.getBuffer(starIndexCount);
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
-        NuitRenderBackend.drawIndexed(
+        NuitRenderBackend.drawSequentialIndexed(
                 pipeline,
                 starBuffer,
-                indexBuffer,
-                quadIndices.type(),
+                PrimitiveTopology.QUADS,
                 starIndexCount,
                 dynamicTransforms,
                 "Nuit stars"
