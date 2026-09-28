@@ -15,7 +15,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.components.AnimatableTexture;
-import me.flashyreese.mods.nuit.components.Blend;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.Texture;
@@ -29,6 +28,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.util.ArrayList;
@@ -50,13 +50,14 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     }
 
     @Override
-    public void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, GpuBufferSlice dynamicTransforms) {
+    public void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, Vector4f colorModifier) {
         context.applyFog();
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) {
             return;
         }
 
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
         BlendFunction blendFunction = this.properties.blend().getBlendFunction();
         RenderPipeline texturedPipeline = null;
         RenderPipeline frameBlendedPipeline = null;
@@ -88,6 +89,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                     this.renderIrisCompatibleInterpolatedTexture(
                             texturedPipeline,
                             modelViewMatrix,
+                            colorModifier,
                             animatableTexture,
                             currentFrame,
                             nextFrame,
@@ -125,19 +127,21 @@ public class MultiTexturedSkybox extends TexturedSkybox {
         }
     }
 
-    private void renderIrisCompatibleInterpolatedTexture(RenderPipeline pipeline, Matrix4f modelViewMatrix, AnimatableTexture animatableTexture,
+    private void renderIrisCompatibleInterpolatedTexture(RenderPipeline pipeline, Matrix4f modelViewMatrix, Vector4f colorModifier, AnimatableTexture animatableTexture,
                                                          UVRange currentFrame, UVRange nextFrame, float frameBlend) {
         // Iris replaces Nuit's shader with the shader-pack sky program, so use weighted two-pass blending there.
-        this.renderWeightedTextureFrame(pipeline, modelViewMatrix, animatableTexture, currentFrame, 1.0F - frameBlend);
-        this.renderWeightedTextureFrame(pipeline, modelViewMatrix, animatableTexture, nextFrame, frameBlend);
+        this.renderWeightedTextureFrame(pipeline, modelViewMatrix, colorModifier, animatableTexture, currentFrame, 1.0F - frameBlend);
+        this.renderWeightedTextureFrame(pipeline, modelViewMatrix, colorModifier, animatableTexture, nextFrame, frameBlend);
     }
 
-    private void renderWeightedTextureFrame(RenderPipeline pipeline, Matrix4f modelViewMatrix, AnimatableTexture animatableTexture, UVRange frame, float alphaWeight) {
+    private void renderWeightedTextureFrame(RenderPipeline pipeline, Matrix4f modelViewMatrix, Vector4f colorModifier, AnimatableTexture animatableTexture, UVRange frame, float alphaWeight) {
         if (alphaWeight <= 0.0F) {
             return;
         }
 
-        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, this.properties.blend().getColorModifier(this.alpha * alphaWeight));
+        // Each blend mode applies the weight to different color components.
+        Vector4f weightedColorModifier = new Vector4f(colorModifier).mul(this.properties.blend().getColorModifier(alphaWeight));
+        GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, weightedColorModifier);
         this.renderTextureFrame(pipeline, dynamicTransforms, animatableTexture, frame, null, 0.0F);
     }
 
