@@ -1,16 +1,22 @@
 modLoader = "javafml"
 loaderVersion = "[3,)"
-#issueTrackerURL = ""
+issueTrackerURL = "https://github.com/FlashyReese/nuit/issues"
 license = "MIT"
 
 [[mods]]
 modId = "nuit"
 version = "${version}"
 displayName = "Nuit"
+displayURL = "https://flashyreese.me/"
 authors = "AMereBagatelle, FlashyReese"
 credits = "UsernameGeri, lowercasebtw"
 description = '''
 Adds custom skybox support to Minecraft
+
+Wiki: https://wiki.flashyreese.me/books/nuit
+Source: https://github.com/FlashyReese/nuit
+Discord: https://flashyreese.me/discord
+Ko-fi: https://ko-fi.com/flashyreese
 '''
 iconFile = "assets/nuit/nuit_logo.png"
 
