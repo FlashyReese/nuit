@@ -8,7 +8,7 @@ A custom skybox engine for Minecraft resource packs and mods.
 
 Nuit is the successor to FabricSkyBoxes. It provides a JSON-driven skybox format with keyframe fades, rotation, conditions, fog control, decorations, animated textures, and support for both Fabric and NeoForge.
 
-[Wiki and format documentation](https://wiki.nuit.flashyreese.me/) | [Legacy documentation](https://github.com/FlashyReese/nuit/tree/1.21.8/dev/docs) | [GitHub](https://github.com/FlashyReese/nuit)
+[Wiki and format documentation](https://wiki.flashyreese.me/books/nuit) | [Legacy documentation](https://github.com/FlashyReese/nuit/tree/1.21.8/dev/docs) | [GitHub](https://github.com/FlashyReese/nuit)
 
 Logo by [UsernameGeri](https://github.com/UsernameGeri).
 
@@ -63,7 +63,7 @@ Start here:
 - [Current schema reference](docs/schema.md)
 - [Blend modes](docs/blend.md)
 - [Square textured layout](docs/square-textured.md)
-- [Wiki and format documentation](https://wiki.nuit.flashyreese.me/)
+- [Wiki and format documentation](https://wiki.flashyreese.me/books/nuit)
 
 ## Compatibility
 
@@ -79,8 +79,10 @@ Use `NuitApi.registerSkyboxType(...)` as the documented skybox type registration
 
 ## Community and Support
 
+- [Website](https://flashyreese.me/)
 - [Issue tracker](https://github.com/FlashyReese/nuit/issues)
 - [Discord](https://flashyreese.me/discord)
+- [Support on Ko-fi](https://ko-fi.com/flashyreese)
 
 ## License
 
