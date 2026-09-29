@@ -13,7 +13,18 @@
     "lowercasebtw"
   ],
   "contact": {
-    "website": "https://amerebagatelle.github.io"
+    "homepage": "https://flashyreese.me/",
+    "sources": "https://github.com/FlashyReese/nuit",
+    "issues": "https://github.com/FlashyReese/nuit/issues"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.wiki": "https://wiki.flashyreese.me/books/nuit",
+        "modmenu.discord": "https://flashyreese.me/discord",
+        "modmenu.kofi": "https://ko-fi.com/flashyreese"
+      }
+    }
   },
   "license": "MIT",
   "icon": "assets/nuit/nuit_logo.png",
