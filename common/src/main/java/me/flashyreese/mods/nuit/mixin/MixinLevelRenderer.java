@@ -3,100 +3,96 @@ package me.flashyreese.mods.nuit.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.renderpearl.api.commands.RenderPass;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SkyRenderer;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 900)
 public abstract class MixinLevelRenderer {
 
-    @Unique
-    private static float nuit$tickDelta;
-
-    @Inject(method = "render", at = @At("HEAD"))
-    private void nuit$captureTickDelta(GraphicsResourceAllocator graphicsResourceAllocator, boolean renderBlockOutline, CameraRenderState cameraRenderState, GpuBufferSlice fogParameters, Vector4f shaderFogColor, boolean renderSky, boolean consistentDepthRequired, CallbackInfo ci) {
-        nuit$tickDelta = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(false);
-    }
-
-    @ModifyVariable(method = "render", at = @At("HEAD"), argsOnly = true, ordinal = 1)
-    private boolean nuit$allowCustomSkyPass(boolean renderSky) {
-        SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        return renderSky || skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes();
+    /**
+     * Keeps the sky visible under boss fog while custom skyboxes are active. Lava, powder snow and sky-blocking mob
+     * effects still hide the sky.
+     */
+    @ModifyExpressionValue(
+            method = "shouldRenderSky",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/fog/FogData;shouldCreateBossFog:Z", opcode = Opcodes.GETFIELD)
+    )
+    private boolean nuit$allowCustomSkyUnderBossFog(boolean shouldCreateBossFog) {
+        return shouldCreateBossFog && !nuit$hasCustomSkyboxes();
     }
 
     @ModifyExpressionValue(
-            method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;)V",
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/level/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
+            method = "shouldRenderSky",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/level/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;", opcode = Opcodes.GETFIELD)
     )
     private DimensionType.Skybox nuit$allowSkyPassForNoneSkybox(DimensionType.Skybox original) {
-        return nuit$skyboxForPass(original);
+        if (original == DimensionType.Skybox.NONE && nuit$hasCustomSkyboxes()) {
+            return DimensionType.Skybox.OVERWORLD;
+        }
+        return original;
     }
 
     /**
      * Replaces vanilla sky rendering with Nuit's skyboxes when custom skyboxes are active.
+     * <p>
+     * The sky pass draws into the sky target without a depth attachment (improved transparency); the main pass draws
+     * into the main target with one (classic transparency). In both cases the pass is already open and the fog uniforms
+     * are bound, so Nuit draws straight into it.
      */
     @WrapOperation(
-            method = "lambda$addSkyPass$0",
+            method = {"lambda$addSkyPass$0", "lambda$addMainPass$0"},
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/SkyRenderer;render(Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;Lnet/minecraft/client/renderer/state/level/SkyRenderState;)V"
-            )
+                    target = "Lnet/minecraft/client/renderer/SkyRenderer;render(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lcom/mojang/renderpearl/api/commands/RenderPass;Lorg/joml/Vector4f;Z)V"
+            ),
+            require = 2
     )
     private void nuit$replaceVanillaSky(
             SkyRenderer skyRenderer,
-            GpuBufferSlice fogParameters,
-            SkyRenderState skyRenderState,
+            SkyRenderState state,
+            RenderPass renderPass,
+            Vector4f fogColor,
+            boolean withDepthAttachment,
             Operation<Void> original
     ) {
-        if (!nuit$renderCustomSkyboxes(fogParameters, skyRenderer)) {
-            original.call(skyRenderer, fogParameters, skyRenderState);
+        if (!nuit$hasCustomSkyboxes()) {
+            original.call(skyRenderer, state, renderPass, fogColor, withDepthAttachment);
+            return;
         }
+
+        Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrixCopy());
+        skyModelViewMatrix.setTranslation(0.0F, 0.0F, 0.0F);
+        Matrix4fStack skyModelViewStack = new Matrix4fStack(32);
+        skyModelViewStack.set(skyModelViewMatrix);
+        Minecraft minecraft = Minecraft.getInstance();
+        SkyboxManager.getInstance().renderSkyboxes(
+                skyRenderer,
+                state,
+                renderPass,
+                fogColor,
+                withDepthAttachment,
+                skyModelViewStack,
+                minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false),
+                minecraft.gameRenderer.mainCamera()
+        );
     }
 
     @Unique
-    private static boolean nuit$renderCustomSkyboxes(GpuBufferSlice fogParameters, SkyRenderer skyRenderer) {
+    private static boolean nuit$hasCustomSkyboxes() {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
-            RenderSystem.setShaderFog(fogParameters);
-            Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrixCopy());
-            skyModelViewMatrix.setTranslation(0.0F, 0.0F, 0.0F);
-            Matrix4fStack skyModelViewStack = new Matrix4fStack(32);
-            skyModelViewStack.set(skyModelViewMatrix);
-            skyboxManager.renderSkyboxes(
-                    skyRenderer,
-                    skyModelViewStack,
-                    nuit$tickDelta,
-                    Minecraft.getInstance().gameRenderer.mainCamera(),
-                    fogParameters
-            );
-            return true;
-        }
-        return false;
-    }
-
-    @Unique
-    private static DimensionType.Skybox nuit$skyboxForPass(DimensionType.Skybox original) {
-        SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (original == DimensionType.Skybox.NONE && skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
-            return DimensionType.Skybox.OVERWORLD;
-        }
-        return original;
+        return skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes();
     }
 }

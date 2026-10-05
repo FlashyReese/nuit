@@ -20,14 +20,17 @@ public final class SkyboxRenderContext {
     private final float tickDelta;
     private final Camera camera;
     private final GpuBufferSlice fogParameters;
+    private final Vector4fc fogColor;
+    private float requestedSkyOccluderAlpha;
 
     @ApiStatus.Internal
-    public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
+    public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, Vector4fc fogColor) {
         this.skyboxRenderAccess = skyboxRenderAccess;
         this.skyModelViewStack = skyModelViewStack;
         this.tickDelta = tickDelta;
         this.camera = camera;
         this.fogParameters = fogParameters;
+        this.fogColor = fogColor;
     }
 
     /**
@@ -43,6 +46,13 @@ public final class SkyboxRenderContext {
 
     public Camera camera() {
         return this.camera;
+    }
+
+    /**
+     * @return the frame's fog color, which the sky target is cleared to and the sky occluder fades towards.
+     */
+    public Vector4fc fogColor() {
+        return this.fogColor;
     }
 
     /**
@@ -74,10 +84,33 @@ public final class SkyboxRenderContext {
     }
 
     /**
-     * Draws the vanilla below-horizon dark disc.
+     * Requests the vanilla sky occluder, which fades the sky below the horizon into the fog color. Its angles account
+     * for the camera being below the world's minimum height or underwater.
+     * <p>
+     * The occluder is drawn once, after every active skybox, like vanilla draws it after the sun, moon and stars. Nuit
+     * skyboxes request it through the {@code occludeBelowHorizon} property instead. Does nothing in dimensions without
+     * a sky occluder.
      */
+    public void renderSkyOccluder() {
+        this.requestedSkyOccluderAlpha = 1.0F;
+    }
+
+    @ApiStatus.Internal
+    public float requestedSkyOccluderAlpha() {
+        return this.requestedSkyOccluderAlpha;
+    }
+
+    @ApiStatus.Internal
+    public void renderRequestedSkyOccluder(float alpha) {
+        this.skyboxRenderAccess.renderSkyOccluder(alpha);
+    }
+
+    /**
+     * @deprecated vanilla replaced the below-horizon dark disc with the sky occluder; use {@link #renderSkyOccluder()}.
+     */
+    @Deprecated(forRemoval = true)
     public void renderDarkDisc() {
-        this.skyboxRenderAccess.renderDarkDisc();
+        this.renderSkyOccluder();
     }
 
     /**

@@ -75,13 +75,12 @@ Nuit skybox shaders are normal client resources. Resource packs can override the
   "transitionOutDuration": 20,
   "sunSkyTint": true,
   "visibleUnderwater": true,
+  "occludeBelowHorizon": false,
   "fog": {
     "modifyColors": false,
     "red": 0.0,
     "green": 0.0,
     "blue": 0.0,
-    "modifyDensity": false,
-    "density": 0.0,
     "showInDenseFog": true
   },
   "rotation": {
@@ -106,10 +105,22 @@ Nuit skybox shaders are normal client resources. Resource packs can override the
 | `fade` | object | empty keyframes, `duration: 24000` | Controls time-of-day alpha. Empty keyframes means always on, subject to conditions. |
 | `transitionInDuration` | integer >= 1 | `20` | Condition alpha fade-in duration in ticks. |
 | `transitionOutDuration` | integer >= 1 | `20` | Condition alpha fade-out duration in ticks. |
-| `fog` | object | no fog modification | Optional fog color/density behavior. |
+| `fog` | object | no fog modification | Optional fog color behavior. `modifyDensity` and `density` were removed in the Minecraft 26.4 port, because terrain fog no longer uses the fog color's alpha; they are ignored with a warning. |
 | `sunSkyTint` | boolean | `true` | If `false`, disables vanilla sunrise/sunset tint contribution for this skybox while rendering. |
 | `visibleUnderwater` | boolean | `true` | If `false`, the skybox is hidden underwater. |
+| `occludeBelowHorizon` | boolean | `false`; `true` for `overworld` | Fades the sky below the horizon into the fog color, like vanilla. See [Below-horizon occlusion](#below-horizon-occlusion). |
 | `rotation` | object | no static mapping/axis rotation, `duration: 24000`, `speed: 1.0` | Skybox rotation. |
+
+### Below-horizon occlusion
+
+Since Minecraft 26.4, vanilla fades the lower part of the sky into the fog color so that it blends into distant terrain. This replaces the old dark disc that was drawn only below the world's minimum height. `occludeBelowHorizon` applies the same effect to a skybox.
+
+- The occlusion is drawn once, after every active skybox, so it also covers sun, moon and star decorations sinking below the horizon.
+- Its strength follows the highest alpha among active skyboxes that set `occludeBelowHorizon`, so it fades in and out with their transitions.
+- The fade band depends on the camera, as in vanilla: from 1° to 8° below the horizon normally, 15° to 10° above it below the world's minimum height, and 40° to 20° above it underwater.
+- It only appears in dimensions with a vanilla sky occluder, such as the Overworld. It has no effect in the End or in dimensions without a sky, such as the Nether.
+
+Leave it `false` for skyboxes whose textures show something deliberate below the horizon, such as full panoramas, or it will be covered by fog color.
 
 ### `clock`
 
@@ -403,7 +414,7 @@ Decoration rotation is controlled through `properties.rotation`. When that objec
 
 ### `overworld` and `end`
 
-These use only shared fields:
+These use only shared fields. `overworld` defaults `properties.occludeBelowHorizon` to `true`, matching vanilla's sky:
 
 ```json
 {

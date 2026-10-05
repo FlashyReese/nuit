@@ -164,7 +164,7 @@ public abstract class AbstractSkybox implements NuitSkybox {
         Objects.requireNonNull(client.level);
 
         Camera camera = client.gameRenderer.mainCamera();
-        FogType cameraSubmersionType = camera.getFluidInCamera();
+        FogType cameraSubmersionType = camera.getFogType();
 
         boolean visibleUnderwater = this.properties.visibleUnderwater() || cameraSubmersionType != FogType.WATER;
 

@@ -410,18 +410,6 @@ public class Utils {
         return destination;
     }
 
-    public static float alphaBlendFogDensity(List<Skybox> skyboxList, float initialFogDensity) {
-        float destination = initialFogDensity;
-        for (Skybox skybox : skyboxList) {
-            if (skybox.isActive() && skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().fog().isModifyDensity()) {
-                float sourceAlphaInv = 1.0F - nuitSkybox.getAlpha();
-                destination = (nuitSkybox.getProperties().fog().getDensity() * nuitSkybox.getAlpha()) + (destination * sourceAlphaInv);
-            }
-        }
-
-        return destination;
-    }
-
     /**
      * Calculates the condition alpha
      *

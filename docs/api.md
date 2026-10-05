@@ -125,11 +125,13 @@ context.camera();
 context.applyFog();
 context.renderSkyDisc(rgbColor);
 context.renderSkyDisc(rgbaColor);
-context.renderDarkDisc();
+context.renderSkyOccluder();
 context.renderStars(brightness, poseStack);
 context.renderEndFlash(intensity, xAngle, yAngle);
 context.endSkyTexture();
 ```
+
+`renderSkyOccluder()` requests vanilla's below-horizon fade instead of drawing it immediately. Nuit draws it once after every active skybox, at full strength, and only in dimensions that have a vanilla sky occluder. Nuit's own skyboxes use the `occludeBelowHorizon` property instead. `renderDarkDisc()` is deprecated and does the same, since Minecraft 26.4 removed the dark disc.
 
 Do not depend on Nuit's internal `NuitRenderBackend` or `NuitRenderPipelines` as public API unless you are working inside Nuit itself. Those classes may change with Minecraft renderer changes.
 

@@ -1,15 +1,13 @@
 package me.flashyreese.mods.nuit.render;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.systems.ScissorState;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.renderpearl.api.pipeline.IndexType;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.renderpearl.api.textures.GpuSampler;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
@@ -23,13 +21,12 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.function.Consumer;
 
 public final class NuitRenderBackend {
     public static final String SAMPLER0_NAME = "Sampler0";
     private static SkyRenderFrame activeSkyFrame;
+    private static final List<GpuBuffer> PREVIOUS_FRAME_BUFFERS = new ArrayList<>();
 
     public static GpuBufferSlice createDynamicTransforms() {
         return createDynamicTransforms(RenderSystem.getModelViewMatrixCopy(), new Vector4f(1.0F, 1.0F, 1.0F, 1.0F));
@@ -39,12 +36,19 @@ public final class NuitRenderBackend {
         return RenderSystem.getDynamicUniforms().writeTransform(modelViewMatrix, colorModulator, new Vector3f(), new Matrix4f());
     }
 
-    public static SkyRenderFrame beginSkyFrame() {
+    /**
+     * Begins collecting sky draws for a render pass owned by vanilla.
+     *
+     * @param renderPass          the open pass that vanilla's sky renderer would have drawn into
+     * @param withDepthAttachment whether that pass has a depth attachment, which selects the pipeline variants
+     */
+    public static SkyRenderFrame beginSkyFrame(RenderPass renderPass, boolean withDepthAttachment) {
         if (activeSkyFrame != null) {
             throw new IllegalStateException("A Nuit sky render frame is already active");
         }
 
-        activeSkyFrame = new SkyRenderFrame();
+        releaseDeferredBuffers();
+        activeSkyFrame = new SkyRenderFrame(renderPass, withDepthAttachment);
         return activeSkyFrame;
     }
 
@@ -135,19 +139,6 @@ public final class NuitRenderBackend {
         });
     }
 
-    public static void drawWithoutScissor(RenderPipeline pipeline, GpuBuffer vertexBuffer, int vertexCount, GpuBufferSlice dynamicTransforms, String label) {
-        submitCommand(SkyDrawCommand.nonIndexed(
-                pipeline,
-                vertexBuffer,
-                vertexCount,
-                dynamicTransforms,
-                label,
-                _ -> {
-                },
-                ScissorSnapshot.DISABLED
-        ));
-    }
-
     public static void draw(RenderPipeline pipeline, GpuBuffer vertexBuffer, int vertexCount, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
         submitCommand(SkyDrawCommand.nonIndexed(
                 pipeline,
@@ -155,8 +146,7 @@ public final class NuitRenderBackend {
                 vertexCount,
                 dynamicTransforms,
                 label,
-                configureRenderPass,
-                ScissorSnapshot.capture()
+                configureRenderPass
         ));
     }
 
@@ -174,8 +164,7 @@ public final class NuitRenderBackend {
                 indexCount,
                 dynamicTransforms,
                 label,
-                configureRenderPass,
-                ScissorSnapshot.capture()
+                configureRenderPass
         ));
     }
 
@@ -192,57 +181,69 @@ public final class NuitRenderBackend {
                 indexCount,
                 dynamicTransforms,
                 label,
-                configureRenderPass,
-                ScissorSnapshot.capture()
+                configureRenderPass
         ));
     }
 
-    public static void drawSequentialIndexedWithoutScissor(RenderPipeline pipeline, GpuBuffer vertexBuffer, PrimitiveTopology primitiveTopology, int indexCount, GpuBufferSlice dynamicTransforms, String label) {
-        drawSequentialIndexedWithoutScissor(pipeline, vertexBuffer, primitiveTopology, indexCount, dynamicTransforms, label, _ -> {
-        });
+    /**
+     * Closes the transient buffers kept alive from the previous sky frame. Called when a frame begins, and when skyboxes
+     * are cleared so they are not kept around once Nuit stops rendering.
+     */
+    public static void releaseDeferredBuffers() {
+        if (activeSkyFrame != null) {
+            throw new IllegalStateException("Cannot release deferred buffers while a Nuit sky render frame is active");
+        }
+
+        Throwable closeFailure = null;
+        for (GpuBuffer buffer : PREVIOUS_FRAME_BUFFERS) {
+            try {
+                if (!buffer.isClosed()) {
+                    buffer.close();
+                }
+            } catch (RuntimeException | Error throwable) {
+                if (closeFailure == null) {
+                    closeFailure = throwable;
+                } else {
+                    closeFailure.addSuppressed(throwable);
+                }
+            }
+        }
+        PREVIOUS_FRAME_BUFFERS.clear();
+        if (closeFailure != null) {
+            SkyRenderFrame.rethrow(closeFailure);
+        }
     }
 
-    public static void drawSequentialIndexedWithoutScissor(RenderPipeline pipeline, GpuBuffer vertexBuffer, PrimitiveTopology primitiveTopology, int indexCount, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
-        submitCommand(SkyDrawCommand.sequentialIndexed(
+    /**
+     * Draws a full screen triangle generated in the vertex shader, without any vertex buffer.
+     */
+    public static void drawFullscreenTriangle(RenderPipeline pipeline, GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
+        submitCommand(SkyDrawCommand.nonIndexed(
                 pipeline,
-                vertexBuffer,
-                RenderSystem.getSequentialBuffer(primitiveTopology),
-                indexCount,
+                null,
+                3,
                 dynamicTransforms,
                 label,
-                configureRenderPass,
-                ScissorSnapshot.DISABLED
+                configureRenderPass
         ));
     }
 
     private static void submitCommand(RenderCommand command) {
-        if (activeSkyFrame != null) {
-            activeSkyFrame.enqueue(command);
-        } else {
-            renderCommands(List.of(command), command.label());
+        if (activeSkyFrame == null) {
+            throw new IllegalStateException("Nuit sky draws must be issued while a sky render frame is active: " + command.label());
         }
+
+        activeSkyFrame.enqueue(command);
     }
 
-    private static void renderCommands(List<RenderCommand> commands, String label) {
+    private static void renderCommands(List<RenderCommand> commands, RenderPass renderPass, boolean withDepthAttachment) {
         if (commands.isEmpty()) {
             return;
         }
 
         prepareSequentialIndexBuffers(commands);
-        RenderTarget renderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
-        GpuTextureView colorTexture = renderTarget.getColorTextureView();
-        GpuTextureView depthTexture = renderTarget.hasDepth() ? renderTarget.getDepthTextureView() : null;
-
-        try (RenderPass renderPass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-                () -> label,
-                colorTexture,
-                Optional.empty(),
-                depthTexture,
-                OptionalDouble.empty()
-        )) {
-            for (RenderCommand command : commands) {
-                command.draw(renderPass);
-            }
+        for (RenderCommand command : commands) {
+            command.draw(renderPass, withDepthAttachment);
         }
     }
 
@@ -252,7 +253,7 @@ public final class NuitRenderBackend {
             command.collectSequentialIndexBuffers(requiredIndexCounts);
         }
 
-        requiredIndexCounts.forEach((buffer, indexCount) -> buffer.requestIndexCount(indexCount));
+        requiredIndexCounts.forEach(RenderSystem.AutoStorageIndexBuffer::requestIndexCount);
         requiredIndexCounts.keySet().forEach(RenderSystem.AutoStorageIndexBuffer::resizeToRequestedIndexCount);
         for (RenderCommand command : commands) {
             command.resolveSequentialIndexBuffer();
@@ -267,23 +268,6 @@ public final class NuitRenderBackend {
     private record TextureBinding(String samplerName, GpuTextureView textureView, GpuSampler sampler) {
         private void bind(RenderPass renderPass) {
             renderPass.setUniform(this.samplerName, this.textureView, this.sampler);
-        }
-    }
-
-    private record ScissorSnapshot(boolean enabled, int x, int y, int width, int height) {
-        private static final ScissorSnapshot DISABLED = new ScissorSnapshot(false, 0, 0, 0, 0);
-
-        private static ScissorSnapshot capture() {
-            ScissorState scissorState = RenderSystem.getScissorStateForRenderTypeDraws();
-            return new ScissorSnapshot(scissorState.enabled(), scissorState.x(), scissorState.y(), scissorState.width(), scissorState.height());
-        }
-
-        private void apply(RenderPass renderPass) {
-            if (this.enabled) {
-                renderPass.enableScissor(this.x, this.y, this.width, this.height);
-            } else {
-                renderPass.disableScissor();
-            }
         }
     }
 
@@ -322,7 +306,7 @@ public final class NuitRenderBackend {
         default void resolveSequentialIndexBuffer() {
         }
 
-        void draw(RenderPass renderPass);
+        void draw(RenderPass renderPass, boolean withDepthAttachment);
     }
 
     private static final class SkyDrawCommand implements RenderCommand {
@@ -333,15 +317,13 @@ public final class NuitRenderBackend {
         private final GpuBufferSlice dynamicTransforms;
         private final String label;
         private final Consumer<RenderPass> configureRenderPass;
-        private final ScissorSnapshot scissorSnapshot;
         private final DefaultUniforms defaultUniforms;
         private GpuBuffer indexBuffer;
         private IndexType indexType;
 
         private SkyDrawCommand(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer, IndexType indexType,
                                RenderSystem.AutoStorageIndexBuffer sequentialIndexBuffer, int elementCount,
-                               GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass,
-                               ScissorSnapshot scissorSnapshot) {
+                               GpuBufferSlice dynamicTransforms, String label, Consumer<RenderPass> configureRenderPass) {
             this.pipeline = pipeline;
             this.vertexBuffer = vertexBuffer;
             this.indexBuffer = indexBuffer;
@@ -351,29 +333,26 @@ public final class NuitRenderBackend {
             this.dynamicTransforms = dynamicTransforms;
             this.label = label;
             this.configureRenderPass = configureRenderPass;
-            this.scissorSnapshot = scissorSnapshot;
             this.defaultUniforms = DefaultUniforms.capture();
         }
 
         private static SkyDrawCommand nonIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, int vertexCount,
                                                   GpuBufferSlice dynamicTransforms, String label,
-                                                  Consumer<RenderPass> configureRenderPass, ScissorSnapshot scissorSnapshot) {
-            return new SkyDrawCommand(pipeline, vertexBuffer, null, null, null, vertexCount, dynamicTransforms, label, configureRenderPass, scissorSnapshot);
+                                                  Consumer<RenderPass> configureRenderPass) {
+            return new SkyDrawCommand(pipeline, vertexBuffer, null, null, null, vertexCount, dynamicTransforms, label, configureRenderPass);
         }
 
         private static SkyDrawCommand indexed(RenderPipeline pipeline, GpuBuffer vertexBuffer, GpuBuffer indexBuffer,
                                                IndexType indexType, int indexCount, GpuBufferSlice dynamicTransforms,
-                                               String label, Consumer<RenderPass> configureRenderPass,
-                                               ScissorSnapshot scissorSnapshot) {
-            return new SkyDrawCommand(pipeline, vertexBuffer, indexBuffer, indexType, null, indexCount, dynamicTransforms, label, configureRenderPass, scissorSnapshot);
+                                               String label, Consumer<RenderPass> configureRenderPass) {
+            return new SkyDrawCommand(pipeline, vertexBuffer, indexBuffer, indexType, null, indexCount, dynamicTransforms, label, configureRenderPass);
         }
 
         private static SkyDrawCommand sequentialIndexed(RenderPipeline pipeline, GpuBuffer vertexBuffer,
                                                          RenderSystem.AutoStorageIndexBuffer sequentialIndexBuffer,
                                                          int indexCount, GpuBufferSlice dynamicTransforms, String label,
-                                                         Consumer<RenderPass> configureRenderPass,
-                                                         ScissorSnapshot scissorSnapshot) {
-            return new SkyDrawCommand(pipeline, vertexBuffer, null, null, sequentialIndexBuffer, indexCount, dynamicTransforms, label, configureRenderPass, scissorSnapshot);
+                                                         Consumer<RenderPass> configureRenderPass) {
+            return new SkyDrawCommand(pipeline, vertexBuffer, null, null, sequentialIndexBuffer, indexCount, dynamicTransforms, label, configureRenderPass);
         }
 
         @Override
@@ -397,16 +376,17 @@ public final class NuitRenderBackend {
         }
 
         @Override
-        public void draw(RenderPass renderPass) {
+        public void draw(RenderPass renderPass, boolean withDepthAttachment) {
             renderPass.pushDebugGroup(() -> this.label);
             try {
-                renderPass.setPipeline(RenderSystem.getCompiledPipeline(this.pipeline));
-                renderPass.setVertexBuffer(0, this.vertexBuffer.slice());
+                renderPass.setPipeline(RenderSystem.getCompiledPipeline(NuitRenderPipelines.forDepthAttachment(this.pipeline, withDepthAttachment)));
+                if (this.vertexBuffer != null) {
+                    renderPass.setVertexBuffer(0, this.vertexBuffer.slice());
+                }
                 if (this.indexBuffer != null) {
                     renderPass.setIndexBuffer(this.indexBuffer, this.indexType);
                 }
 
-                this.scissorSnapshot.apply(renderPass);
                 this.defaultUniforms.bind(renderPass);
                 renderPass.setUniform("DynamicTransforms", this.dynamicTransforms);
                 this.configureRenderPass.accept(renderPass);
@@ -423,10 +403,17 @@ public final class NuitRenderBackend {
     }
 
     public static final class SkyRenderFrame implements AutoCloseable {
+        private final RenderPass renderPass;
+        private final boolean withDepthAttachment;
         private final List<RenderCommand> commands = new ArrayList<>();
         private final List<GpuBuffer> buffersToClose = new ArrayList<>();
         private boolean submitting;
         private boolean finished;
+
+        private SkyRenderFrame(RenderPass renderPass, boolean withDepthAttachment) {
+            this.renderPass = renderPass;
+            this.withDepthAttachment = withDepthAttachment;
+        }
 
         private void enqueue(RenderCommand command) {
             if (this.finished) {
@@ -451,7 +438,12 @@ public final class NuitRenderBackend {
             Throwable renderFailure = null;
             this.submitting = true;
             try {
-                renderCommands(this.commands, "Nuit sky render pass");
+                this.renderPass.pushDebugGroup(() -> "Nuit sky");
+                try {
+                    renderCommands(this.commands, this.renderPass, this.withDepthAttachment);
+                } finally {
+                    this.renderPass.popDebugGroup();
+                }
             } catch (RuntimeException | Error throwable) {
                 renderFailure = throwable;
                 throw throwable;
@@ -490,22 +482,10 @@ public final class NuitRenderBackend {
         private Throwable finish() {
             this.finished = true;
             this.commands.clear();
-            Throwable closeFailure = null;
-            for (GpuBuffer buffer : this.buffersToClose) {
-                try {
-                    if (!buffer.isClosed()) {
-                        buffer.close();
-                    }
-                } catch (RuntimeException | Error throwable) {
-                    if (closeFailure == null) {
-                        closeFailure = throwable;
-                    } else {
-                        closeFailure.addSuppressed(throwable);
-                    }
-                }
-            }
+            // Draws may already be recorded into vanilla's still-open pass, so defer closing to the next frame.
+            PREVIOUS_FRAME_BUFFERS.addAll(this.buffersToClose);
             this.buffersToClose.clear();
-            return closeFailure;
+            return null;
         }
 
         private static void rethrow(Throwable throwable) {

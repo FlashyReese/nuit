@@ -1,6 +1,7 @@
 package me.flashyreese.mods.nuit.mixin;
 
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
@@ -15,8 +16,8 @@ public interface SkyRendererAccessor {
     @Accessor("topSkyBuffer")
     GpuBuffer getTopSkyBuffer();
 
-    @Accessor("bottomSkyBuffer")
-    GpuBuffer getBottomSkyBuffer();
+    @Accessor("skyOccluderUbo")
+    MappableRingBuffer getSkyOccluderUbo();
 
     @Accessor("starBuffer")
     GpuBuffer getStarBuffer();

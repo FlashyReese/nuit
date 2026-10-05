@@ -5,12 +5,15 @@ import com.google.common.collect.Iterables;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import com.mojang.math.Axis;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import me.flashyreese.mods.nuit.api.NuitApi;
+import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.RenderableSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderAccess;
@@ -32,10 +35,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.dimension.DimensionType;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -181,32 +186,46 @@ public class SkyboxManager implements NuitApi {
         this.celestialController = null;
         this.celestialControllerConflict = false;
         NuitStarRenderer.close();
+        NuitRenderBackend.releaseDeferredBuffers();
     }
 
     @Internal
-    public void renderSkyboxes(SkyRenderer skyRenderer, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
-        SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), skyModelViewStack, tickDelta, camera, fogParameters);
-        if (IrisCompat.isShaderPackInUse()) {
-            this.renderActiveSkyboxes(context);
-            return;
-        }
-
-        try (NuitRenderBackend.SkyRenderFrame skyRenderFrame = NuitRenderBackend.beginSkyFrame()) {
+    public void renderSkyboxes(SkyRenderer skyRenderer, SkyRenderState skyRenderState, RenderPass renderPass, Vector4fc fogColor,
+                               boolean withDepthAttachment, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera) {
+        SkyboxRenderContext context = new SkyboxRenderContext(
+                createRenderAccess(skyRenderer, skyRenderState, fogColor),
+                skyModelViewStack,
+                tickDelta,
+                camera,
+                RenderSystem.getShaderFog(),
+                fogColor
+        );
+        try (NuitRenderBackend.SkyRenderFrame skyRenderFrame = NuitRenderBackend.beginSkyFrame(renderPass, withDepthAttachment)) {
             this.renderActiveSkyboxes(context);
             skyRenderFrame.submit();
         }
     }
 
     private void renderActiveSkyboxes(SkyboxRenderContext context) {
+        float skyOccluderAlpha = 0.0F;
         for (Skybox skybox : this.activeSkyboxes) {
             if (skybox instanceof RenderableSkybox renderableSkybox) {
                 this.currentSkybox = skybox;
                 renderableSkybox.render(context);
             }
+            if (skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().occludeBelowHorizon()) {
+                skyOccluderAlpha = Math.max(skyOccluderAlpha, nuitSkybox.getAlpha());
+            }
+        }
+
+        // Drawn last so it also covers decorations sinking below the horizon, matching vanilla.
+        skyOccluderAlpha = Math.max(skyOccluderAlpha, context.requestedSkyOccluderAlpha());
+        if (skyOccluderAlpha > 0.0F) {
+            context.renderRequestedSkyOccluder(skyOccluderAlpha);
         }
     }
 
-    private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer) {
+    private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer, SkyRenderState skyRenderState, Vector4fc fogColor) {
         SkyRendererAccessor skyRendererAccessor = (SkyRendererAccessor) skyRenderer;
         return new SkyboxRenderAccess() {
             @Override
@@ -215,7 +234,7 @@ public class SkyboxManager implements NuitApi {
                         RenderSystem.getModelViewMatrixCopy(),
                         new Vector4f(color)
                 );
-                NuitRenderBackend.drawWithoutScissor(
+                NuitRenderBackend.draw(
                         NuitRenderPipelines.translucentSkyDisc(),
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
@@ -230,7 +249,7 @@ public class SkyboxManager implements NuitApi {
                         RenderSystem.getModelViewMatrixCopy(),
                         new Vector4f(color, 1.0F)
                 );
-                NuitRenderBackend.drawWithoutScissor(
+                NuitRenderBackend.draw(
                         RenderPipelines.SKY,
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
@@ -240,18 +259,22 @@ public class SkyboxManager implements NuitApi {
             }
 
             @Override
-            public void renderDarkDisc() {
-                Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrixCopy().translate(0.0F, 12.0F, 0.0F);
+            public void renderSkyOccluder(float alpha) {
+                // Vanilla only fills the occluder UBO (SkyRenderer#prepare) for overworld-style skies that have one.
+                if (skyRenderState.skybox != DimensionType.Skybox.OVERWORLD || !skyRenderState.hasSkyOccluder) {
+                    return;
+                }
+
                 GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
-                        modelViewMatrix,
-                        new Vector4f(0.0F, 0.0F, 0.0F, 1.0F)
+                        RenderSystem.getModelViewMatrixCopy(),
+                        new Vector4f(fogColor.x(), fogColor.y(), fogColor.z(), Mth.clamp(alpha, 0.0F, 1.0F))
                 );
-                NuitRenderBackend.drawWithoutScissor(
-                        RenderPipelines.SKY,
-                        skyRendererAccessor.getBottomSkyBuffer(),
-                        10,
+                GpuBuffer skyOccluderInfo = skyRendererAccessor.getSkyOccluderUbo().currentBuffer();
+                NuitRenderBackend.drawFullscreenTriangle(
+                        NuitRenderPipelines.skyOccluder(),
                         dynamicTransforms,
-                        "Nuit vanilla dark sky disc"
+                        "Nuit vanilla sky occluder",
+                        renderPass -> renderPass.setUniform("SkyOccluderInfo", skyOccluderInfo)
                 );
             }
 
@@ -262,7 +285,7 @@ public class SkyboxManager implements NuitApi {
                         modelViewMatrix,
                         new Vector4f(brightness, brightness, brightness, brightness)
                 );
-                NuitRenderBackend.drawSequentialIndexedWithoutScissor(
+                NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.STARS,
                         skyRendererAccessor.getStarBuffer(),
                         PrimitiveTopology.QUADS,
@@ -288,7 +311,7 @@ public class SkyboxManager implements NuitApi {
                 TextureAtlas celestialsAtlas = skyRendererAccessor.getCelestialsAtlas();
                 var celestialsTexture = celestialsAtlas.getTextureView();
                 var celestialsSampler = celestialsAtlas.getSampler();
-                NuitRenderBackend.drawSequentialIndexedWithoutScissor(
+                NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.CELESTIAL,
                         skyRendererAccessor.getEndFlashBuffer(),
                         PrimitiveTopology.QUADS,
