@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.world.level.dimension.DimensionType;
-import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
 import org.objectweb.asm.Opcodes;
@@ -73,10 +72,9 @@ public abstract class MixinLevelRenderer {
             return;
         }
 
-        Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrixCopy());
-        skyModelViewMatrix.setTranslation(0.0F, 0.0F, 0.0F);
-        Matrix4fStack skyModelViewStack = new Matrix4fStack(32);
-        skyModelViewStack.set(skyModelViewMatrix);
+        Matrix4fStack skyModelViewStack = new Matrix4fStack(16);
+        skyModelViewStack.set(RenderSystem.getModelViewStack());
+        skyModelViewStack.setTranslation(0.0F, 0.0F, 0.0F);
         Minecraft minecraft = Minecraft.getInstance();
         SkyboxManager.getInstance().renderSkyboxes(
                 skyRenderer,
