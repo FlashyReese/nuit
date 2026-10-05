@@ -34,6 +34,7 @@ Supported loaders:
 - Vanilla overworld/end skybox integration
 - Square textured, multi-textured, monocolor, and decoration skyboxes
 - Animated texture support with optional frame interpolation
+- Skybox sounds with fades, looping, and delays
 - Runtime API for mods to register and manage skyboxes
 - Multiloader architecture for Fabric and NeoForge
 
