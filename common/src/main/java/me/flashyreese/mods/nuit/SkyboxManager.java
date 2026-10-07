@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.serialization.JsonOps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import me.flashyreese.mods.nuit.api.NuitApi;
+import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.RenderableSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderAccess;
@@ -16,8 +17,10 @@ import me.flashyreese.mods.nuit.api.skyboxes.SkyboxTextureProvider;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxType;
 import me.flashyreese.mods.nuit.components.clock.ClockSource;
 import me.flashyreese.mods.nuit.components.Metadata;
+import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.Rotation;
 import me.flashyreese.mods.nuit.mixin.SkyRendererAccessor;
+import me.flashyreese.mods.nuit.render.NuitSkyRenderState;
 import me.flashyreese.mods.nuit.render.NuitStarRenderer;
 import me.flashyreese.mods.nuit.skybox.DefaultHandler;
 import me.flashyreese.mods.nuit.skybox.decorations.DecorationBox;
@@ -25,12 +28,17 @@ import me.flashyreese.mods.nuit.util.Utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.EndFlashState;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.attribute.EnvironmentAttributeProbe;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.jetbrains.annotations.ApiStatus.Internal;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4fStack;
+import org.joml.Quaternionf;
 
 import java.util.*;
 
@@ -172,15 +180,67 @@ public class SkyboxManager implements NuitApi {
         NuitStarRenderer.close();
     }
 
+    /**
+     * Captures everything sky rendering needs from the level for this frame. Runs during vanilla's extraction phase.
+     *
+     * @return the extracted state, or {@code null} when vanilla should render the sky
+     */
     @Internal
-    public void renderSkyboxes(SkyRenderer skyRenderer, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters) {
-        SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), skyModelViewStack, tickDelta, camera, fogParameters);
-        for (Skybox skybox : this.activeSkyboxes) {
-            if (skybox instanceof RenderableSkybox renderableSkybox) {
-                this.currentSkybox = skybox;
-                renderableSkybox.render(context);
-            }
+    public @Nullable NuitSkyRenderState extract(ClientLevel level, float partialTick, Camera camera) {
+        if (!this.isEnabled() || !this.hasActiveRenderableSkyboxes()) {
+            return null;
         }
+
+        NuitSkyRenderState state = new NuitSkyRenderState();
+        EnvironmentAttributeProbe attributeProbe = camera.attributeProbe();
+        state.partialTick = partialTick;
+        state.gameTime = level.getGameTime();
+        state.sunAngle = attributeProbe.getValue(EnvironmentAttributes.SUN_ANGLE, partialTick);
+        state.skyAngle = this.celestialController != null
+                ? (float) this.celestialController.getSkyAngleDegrees(level, partialTick)
+                : state.sunAngle;
+        state.skyColor = attributeProbe.getValue(EnvironmentAttributes.SKY_COLOR, partialTick);
+        state.sunriseAndSunsetColor = attributeProbe.getValue(EnvironmentAttributes.SUNRISE_SUNSET_COLOR, partialTick);
+        state.moonPhase = attributeProbe.getValue(EnvironmentAttributes.MOON_PHASE, partialTick);
+        state.starBrightness = attributeProbe.getValue(EnvironmentAttributes.STAR_BRIGHTNESS, partialTick);
+        state.belowHorizon = camera.entity().getEyePosition(partialTick).y < level.getLevelData().getHorizonHeight(level);
+        EndFlashState endFlashState = level.endFlashState();
+        if (endFlashState != null) {
+            state.endFlash = new NuitSkyRenderState.EndFlash(
+                    endFlashState.getIntensity(partialTick),
+                    endFlashState.getXAngle(),
+                    endFlashState.getYAngle()
+            );
+        }
+
+        for (Skybox skybox : this.activeSkyboxes) {
+            if (!(skybox instanceof RenderableSkybox renderableSkybox)) {
+                continue;
+            }
+
+            float alpha = 1.0F;
+            Quaternionf rotation = null;
+            if (skybox instanceof NuitSkybox nuitSkybox) {
+                alpha = nuitSkybox.getAlpha();
+                Properties properties = nuitSkybox.getProperties();
+                rotation = properties.rotation().computeRotation(level, properties.clock(), partialTick, state.sunAngle);
+            }
+            state.skyboxes.add(new NuitSkyRenderState.ExtractedSkybox(renderableSkybox, alpha, rotation));
+        }
+
+        return state;
+    }
+
+    @Internal
+    public void renderSkyboxes(SkyRenderer skyRenderer, NuitSkyRenderState renderState, Matrix4fStack skyModelViewStack, GpuBufferSlice fogParameters) {
+        SkyboxRenderContext context = new SkyboxRenderContext(createRenderAccess(skyRenderer), renderState, skyModelViewStack, fogParameters);
+        for (NuitSkyRenderState.ExtractedSkybox extractedSkybox : renderState.skyboxes) {
+            RenderableSkybox skybox = extractedSkybox.skybox();
+            this.currentSkybox = skybox;
+            context.setCurrentSkybox(extractedSkybox);
+            skybox.render(context);
+        }
+        context.setCurrentSkybox(null);
     }
 
     private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer) {
