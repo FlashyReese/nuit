@@ -64,6 +64,10 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             float tickDelta,
             double celestialAngle
     ) {
+        return matrix4f.rotate(this.computeRotation(level, clock, tickDelta, celestialAngle));
+    }
+
+    public Quaternionf computeRotation(ClientLevel level, ClockSource clock, float tickDelta, double celestialAngle) {
         final double currentTime = clock.getRenderCycleTicks(level, tickDelta, this.duration);
         Quaternionf resultRot = new Quaternionf();
 
@@ -96,7 +100,7 @@ public record Rotation(boolean skyboxRotation, Map<Long, Quaternionf> mapping, M
             resultRot.mul(mappingRot);
         });
 
-        return matrix4f.rotate(resultRot);
+        return resultRot;
     }
 
     public void apply(PoseStack poseStack, ClientLevel level) {

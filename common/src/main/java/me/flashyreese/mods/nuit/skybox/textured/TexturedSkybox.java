@@ -6,13 +6,9 @@ import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.components.Rotation;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import net.minecraft.client.Camera;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
-import java.util.Objects;
 
 public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTextureProvider {
     private final Rotation rotation;
@@ -33,24 +29,13 @@ public abstract class TexturedSkybox extends AbstractSkybox implements SkyboxTex
      */
     @Override
     public final void render(SkyboxRenderContext context) {
-        if (this.alpha <= 0.0F) {
+        float alpha = context.alpha();
+        if (alpha <= 0.0F) {
             return;
         }
 
-        Camera camera = context.camera();
-        ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
-        double celestialAngle = camera.attributeProbe().getValue(
-                EnvironmentAttributes.SUN_ANGLE,
-                context.tickDelta()
-        );
-        Vector4f colorModifier = this.properties.blend().getColorModifier(this.alpha);
-        Matrix4f modelViewMatrix = this.rotation.apply(
-                new Matrix4f(context.skyModelViewStack()),
-                level,
-                this.properties.clock(),
-                context.tickDelta(),
-                celestialAngle
-        );
+        Vector4f colorModifier = this.properties.blend().getColorModifier(alpha);
+        Matrix4f modelViewMatrix = context.rotatedModelViewMatrix();
         this.renderSkybox(context, modelViewMatrix, colorModifier);
     }
 

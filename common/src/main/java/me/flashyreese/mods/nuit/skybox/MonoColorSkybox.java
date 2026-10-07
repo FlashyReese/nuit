@@ -32,11 +32,12 @@ public class MonoColorSkybox extends AbstractSkybox {
     @Override
     public void render(SkyboxRenderContext context) {
         context.applyFog();
-        if (this.alpha <= 0.0F) {
+        float alpha = context.alpha();
+        if (alpha <= 0.0F) {
             return;
         }
 
-        Vector4f colorModifier = this.properties.blend().getColorModifier(this.alpha);
+        Vector4f colorModifier = this.properties.blend().getColorModifier(alpha);
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(new Matrix4f(context.skyModelViewStack()), colorModifier);
         RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(this.properties.blend().getBlendFunction());
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {

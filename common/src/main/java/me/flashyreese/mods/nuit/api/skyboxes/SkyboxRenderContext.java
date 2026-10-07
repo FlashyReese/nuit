@@ -3,34 +3,48 @@ package me.flashyreese.mods.nuit.api.skyboxes;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Camera;
+import me.flashyreese.mods.nuit.render.NuitSkyRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
+import net.minecraft.world.level.MoonPhase;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
+import org.joml.Quaternionf;
+import org.joml.Quaternionfc;
 import org.joml.Vector3fc;
 import org.joml.Vector4fc;
 
 /**
  * Frame-local state and stable helper methods for skybox rendering.
+ * <p>
+ * Level values are extracted before rendering starts, so skyboxes should read them from here rather than from the
+ * level, camera or player while rendering.
  */
 public final class SkyboxRenderContext {
+    private static final Quaternionfc IDENTITY_ROTATION = new Quaternionf();
+
     private final SkyboxRenderAccess skyboxRenderAccess;
+    private final NuitSkyRenderState renderState;
     private final Matrix4fStack skyModelViewStack;
-    private final float tickDelta;
-    private final Camera camera;
     private final GpuBufferSlice fogParameters;
     private final Vector4fc fogColor;
+    private @Nullable NuitSkyRenderState.ExtractedSkybox currentSkybox;
     private float requestedSkyOccluderAlpha;
 
     @ApiStatus.Internal
-    public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, Matrix4fStack skyModelViewStack, float tickDelta, Camera camera, GpuBufferSlice fogParameters, Vector4fc fogColor) {
+    public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, NuitSkyRenderState renderState, Matrix4fStack skyModelViewStack, GpuBufferSlice fogParameters, Vector4fc fogColor) {
         this.skyboxRenderAccess = skyboxRenderAccess;
+        this.renderState = renderState;
         this.skyModelViewStack = skyModelViewStack;
-        this.tickDelta = tickDelta;
-        this.camera = camera;
         this.fogParameters = fogParameters;
         this.fogColor = fogColor;
+    }
+
+    @ApiStatus.Internal
+    public void setCurrentSkybox(@Nullable NuitSkyRenderState.ExtractedSkybox currentSkybox) {
+        this.currentSkybox = currentSkybox;
     }
 
     /**
@@ -41,11 +55,73 @@ public final class SkyboxRenderContext {
     }
 
     public float tickDelta() {
-        return this.tickDelta;
+        return this.renderState.partialTick;
     }
 
-    public Camera camera() {
-        return this.camera;
+    public long gameTime() {
+        return this.renderState.gameTime;
+    }
+
+    public float sunAngle() {
+        return this.renderState.sunAngle;
+    }
+
+    public float skyAngle() {
+        return this.renderState.skyAngle;
+    }
+
+    public Vector3fc skyColor() {
+        return this.renderState.skyColor();
+    }
+
+    public Vector4fc sunriseAndSunsetColor() {
+        return this.renderState.sunriseAndSunsetColor();
+    }
+
+    public MoonPhase moonPhase() {
+        return this.renderState.moonPhase;
+    }
+
+    public float starBrightness() {
+        return this.renderState.starBrightness;
+    }
+
+    public float endFlashIntensity() {
+        NuitSkyRenderState.EndFlash endFlash = this.renderState.endFlash;
+        return endFlash != null ? endFlash.intensity() : 0.0F;
+    }
+
+    public float endFlashXAngle() {
+        NuitSkyRenderState.EndFlash endFlash = this.renderState.endFlash;
+        return endFlash != null ? endFlash.xAngle() : 0.0F;
+    }
+
+    public float endFlashYAngle() {
+        NuitSkyRenderState.EndFlash endFlash = this.renderState.endFlash;
+        return endFlash != null ? endFlash.yAngle() : 0.0F;
+    }
+
+    /**
+     * @return the alpha of the skybox being rendered, as extracted for this frame; {@code 1} for skyboxes without one.
+     */
+    public float alpha() {
+        return this.currentSkybox != null ? this.currentSkybox.alpha() : 1.0F;
+    }
+
+    /**
+     * @return the rotation of the skybox being rendered from its {@code properties.rotation}, as extracted for this
+     * frame; identity for skyboxes without properties.
+     */
+    public Quaternionfc rotation() {
+        Quaternionfc rotation = this.currentSkybox != null ? this.currentSkybox.rotation() : null;
+        return rotation != null ? rotation : IDENTITY_ROTATION;
+    }
+
+    /**
+     * @return a copy of {@link #skyModelViewStack()} with {@link #rotation()} applied.
+     */
+    public Matrix4f rotatedModelViewMatrix() {
+        return new Matrix4f(this.skyModelViewStack).rotate(this.rotation());
     }
 
     /**

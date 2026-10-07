@@ -13,8 +13,6 @@ import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.EndFlashState;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
@@ -32,14 +30,15 @@ public class EndSkybox extends AbstractSkybox {
 
     @Override
     public void render(SkyboxRenderContext context) {
-        if (this.alpha <= 0.0F) {
+        float alpha = context.alpha();
+        if (alpha <= 0.0F) {
             return;
         }
 
         RenderPipeline pipeline = RenderPipelines.END_SKY;
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
-            int color = ARGB.color((int) (255 * this.alpha), 0x282828);
+            int color = ARGB.color((int) (255 * alpha), 0x282828);
             for (int face = 0; face < 6; ++face) {
                 Matrix4f matrix4f = Utils.getMatrixForRotatedFace(face);
                 builder.addVertex(matrix4f, -100.0F, -100.0F, -100.0F).setUv(0.0F, 0.0F).setColor(color);
@@ -52,22 +51,9 @@ public class EndSkybox extends AbstractSkybox {
             NuitRenderBackend.drawTextured(pipeline, builder.buildOrThrow(), dynamicTransforms, NuitRenderBackend.SAMPLER0_NAME, context.endSkyTexture());
         }
 
-        this.renderEndFlash(context);
-    }
-
-    private void renderEndFlash(SkyboxRenderContext context) {
-        if (!(context.camera().entity().level() instanceof ClientLevel level)) {
-            return;
-        }
-
-        EndFlashState endFlashState = level.endFlashState();
-        if (endFlashState == null) {
-            return;
-        }
-
-        float intensity = endFlashState.getIntensity(context.tickDelta()) * this.alpha;
+        float intensity = context.endFlashIntensity() * alpha;
         if (intensity > MIN_END_FLASH_INTENSITY) {
-            context.renderEndFlash(intensity, endFlashState.getXAngle(), endFlashState.getYAngle());
+            context.renderEndFlash(intensity, context.endFlashXAngle(), context.endFlashYAngle());
         }
     }
 }

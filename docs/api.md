@@ -116,12 +116,31 @@ public interface SkyboxTextureProvider {
 
 ## Render Context
 
-`SkyboxRenderContext` is the public render boundary. It exposes the frame state and stable vanilla helpers Nuit supports:
+`SkyboxRenderContext` is the public render boundary. It exposes the frame state and stable vanilla helpers Nuit supports.
+
+Level values are extracted during vanilla's extraction phase, before rendering starts. Read them from the context instead of the level, camera or player while rendering: Minecraft is moving towards rendering on a separate thread from the one that extracts.
 
 ```java
-context.skyModelViewStack();
+// Extracted frame state
 context.tickDelta();
-context.camera();
+context.gameTime();
+context.sunAngle();              // vanilla sun angle, degrees
+context.skyAngle();              // sun angle following the active sun decoration's celestial controller
+context.skyColor();
+context.sunriseAndSunsetColor();
+context.moonPhase();
+context.starBrightness();
+context.endFlashIntensity();     // 0 without an End flash
+context.endFlashXAngle();
+context.endFlashYAngle();
+
+// The skybox being rendered, as extracted for this frame
+context.alpha();                 // 1 for skyboxes without an alpha
+context.rotation();              // from properties.rotation; identity without properties
+context.rotatedModelViewMatrix();
+
+context.skyModelViewStack();
+context.fogColor();
 context.applyFog();
 context.renderSkyDisc(rgbColor);
 context.renderSkyDisc(rgbaColor);

@@ -5,7 +5,9 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "MixinAtmosphericFogEnvironment",
+    "MixinLevelExtractor",
     "MixinLevelRenderer",
+    "MixinSkyRenderState",
     "SkyRendererAccessor"
   ],
   "injectors": {
