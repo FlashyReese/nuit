@@ -2,30 +2,23 @@ package me.flashyreese.mods.nuit.skybox.vanilla;
 
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.math.Axis;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import me.flashyreese.mods.nuit.SkyboxManager;
 import me.flashyreese.mods.nuit.api.skyboxes.SkyboxRenderContext;
 import me.flashyreese.mods.nuit.components.Conditions;
 import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import net.minecraft.client.Camera;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector4f;
-
-import java.util.Optional;
 
 public class OverworldSkybox extends AbstractSkybox {
     public static Codec<OverworldSkybox> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -41,36 +34,19 @@ public class OverworldSkybox extends AbstractSkybox {
     public void render(SkyboxRenderContext context) {
         context.applyFog();
 
-        Camera camera = context.camera();
-        float tickDelta = context.tickDelta();
-        ClientLevel level = (ClientLevel) camera.entity().level();
-        float sunAngleDegrees = camera.attributeProbe().getValue(EnvironmentAttributes.SUN_ANGLE, tickDelta);
-        int sunriseOrSunsetColor = camera.attributeProbe().getValue(
-                EnvironmentAttributes.SUNRISE_SUNSET_COLOR,
-                tickDelta
-        );
-        int skyColor = camera.attributeProbe().getValue(EnvironmentAttributes.SKY_COLOR, tickDelta);
-
-        Optional<SkyboxManager.CelestialController> celestialController = SkyboxManager.getInstance()
-                .getCelestialController();
-        if (celestialController.isPresent()) {
-            SkyboxManager.CelestialController controller = celestialController.get();
-            sunAngleDegrees = (float) controller.getSkyAngleDegrees(level, tickDelta);
-        }
-
-        context.renderSkyDisc(skyColor);
+        int sunriseOrSunsetColor = context.sunriseAndSunsetColor();
+        context.renderSkyDisc(context.skyColor());
         if (ARGB.alphaFloat(sunriseOrSunsetColor) > 0.0F) {
-            float sunAngle = sunAngleDegrees * Mth.DEG_TO_RAD;
-            this.renderSunriseAndSunset(context.skyModelViewStack(), sunAngle, sunriseOrSunsetColor);
+            float sunAngle = context.skyAngle() * Mth.DEG_TO_RAD;
+            this.renderSunriseAndSunset(context.skyModelViewStack(), sunAngle, sunriseOrSunsetColor, context.alpha());
         }
 
-        double eyeHeight = camera.entity().getEyePosition(tickDelta).y - level.getLevelData().getHorizonHeight(level);
-        if (eyeHeight < 0.0) {
+        if (context.belowHorizon()) {
             context.renderDarkDisc();
         }
     }
 
-    private void renderSunriseAndSunset(Matrix4fStack matrix4fStack, float sunAngle, int sunriseOrSunsetColor) {
+    private void renderSunriseAndSunset(Matrix4fStack matrix4fStack, float sunAngle, int sunriseOrSunsetColor, float skyboxAlpha) {
         Matrix4f matrix = new Matrix4f(matrix4fStack);
         matrix.rotate(Axis.XP.rotationDegrees(90.0F));
         float zRotation = Mth.sin(sunAngle) < 0.0F ? 180.0F : 0.0F;
@@ -81,7 +57,7 @@ public class OverworldSkybox extends AbstractSkybox {
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 18)) {
             BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
 
-            float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * this.alpha;
+            float alpha = ARGB.alphaFloat(sunriseOrSunsetColor) * skyboxAlpha;
             bufferBuilder.addVertex(0.0F, 100.0F, 0.0F).setColor(sunriseOrSunsetColor);
 
             int transparentColor = ARGB.transparent(sunriseOrSunsetColor);

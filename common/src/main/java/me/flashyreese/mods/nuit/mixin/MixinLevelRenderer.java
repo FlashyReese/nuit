@@ -3,21 +3,20 @@ package me.flashyreese.mods.nuit.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import me.flashyreese.mods.nuit.SkyboxManager;
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.Minecraft;
+import me.flashyreese.mods.nuit.render.NuitSkyRenderState;
+import me.flashyreese.mods.nuit.render.NuitSkyRenderStateHolder;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SkyRenderer;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4fStack;
 import org.joml.Matrix4fc;
-import org.joml.Vector4f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -32,20 +31,16 @@ public abstract class MixinLevelRenderer {
     @Shadow
     private SkyRenderer skyRenderer;
 
-    @Unique
-    private static float nuit$tickDelta;
+    @Shadow
+    @Final
+    private LevelRenderState levelRenderState;
+
     @Unique
     private static boolean nuit$skipNeoForgeVanillaSky;
 
-    @Inject(method = "render", at = @At("HEAD"))
-    private void nuit$captureTickDelta(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, CameraRenderState cameraRenderState, Matrix4fc projectionMatrix, GpuBufferSlice fogParameters, Vector4f shaderFogColor, boolean renderSky, CallbackInfo ci) {
-        nuit$tickDelta = deltaTracker.getGameTimeDeltaPartialTick(false);
-    }
-
     @ModifyVariable(method = "render", at = @At("HEAD"), argsOnly = true, ordinal = 1)
     private boolean nuit$allowCustomSkyPass(boolean renderSky) {
-        SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        return renderSky || skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes();
+        return renderSky || this.nuit$hasCustomSkyboxes();
     }
 
     @ModifyExpressionValue(
@@ -54,7 +49,7 @@ public abstract class MixinLevelRenderer {
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/level/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
     )
     private DimensionType.Skybox nuit$allowFabricSkyPassForNoneSkybox(DimensionType.Skybox original) {
-        return nuit$skyboxForPass(original);
+        return this.nuit$skyboxForPass(original);
     }
 
     @ModifyExpressionValue(
@@ -63,7 +58,7 @@ public abstract class MixinLevelRenderer {
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/state/level/SkyRenderState;skybox:Lnet/minecraft/world/level/dimension/DimensionType$Skybox;")
     )
     private DimensionType.Skybox nuit$allowNeoForgeSkyPassForNoneSkybox(DimensionType.Skybox original) {
-        return nuit$skyboxForPass(original);
+        return this.nuit$skyboxForPass(original);
     }
 
     /**
@@ -77,7 +72,7 @@ public abstract class MixinLevelRenderer {
             cancellable = true
     )
     private void nuit$renderCustomSkyboxesFabric(GpuBufferSlice fogParameters, SkyRenderState skyRenderState, CallbackInfo ci) {
-        if (nuit$renderCustomSkyboxes(fogParameters, this.skyRenderer)) {
+        if (nuit$renderCustomSkyboxes(fogParameters, this.skyRenderer, skyRenderState)) {
             ci.cancel();
         }
     }
@@ -98,7 +93,7 @@ public abstract class MixinLevelRenderer {
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderFog(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V", shift = At.Shift.AFTER)
     )
     private void nuit$renderCustomSkyboxesNeoForge(SkyRenderState skyRenderState, Matrix4fc projectionMatrix, GpuBufferSlice fogParameters, CallbackInfo ci) {
-        nuit$skipNeoForgeVanillaSky = nuit$renderCustomSkyboxes(fogParameters, this.skyRenderer);
+        nuit$skipNeoForgeVanillaSky = nuit$renderCustomSkyboxes(fogParameters, this.skyRenderer, skyRenderState);
     }
 
     @WrapWithCondition(
@@ -156,30 +151,29 @@ public abstract class MixinLevelRenderer {
     }
 
     @Unique
-    private static boolean nuit$renderCustomSkyboxes(GpuBufferSlice fogParameters, SkyRenderer skyRenderer) {
-        SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
-            Matrix4fStack skyModelViewStack = new Matrix4fStack(16);
-            skyModelViewStack.set(RenderSystem.getModelViewStack());
-            skyModelViewStack.setTranslation(0.0F, 0.0F, 0.0F);
-            skyboxManager.renderSkyboxes(
-                    skyRenderer,
-                    skyModelViewStack,
-                    nuit$tickDelta,
-                    Minecraft.getInstance().gameRenderer.mainCamera(),
-                    fogParameters
-            );
-            return true;
+    private static boolean nuit$renderCustomSkyboxes(GpuBufferSlice fogParameters, SkyRenderer skyRenderer, SkyRenderState skyRenderState) {
+        NuitSkyRenderState renderState = ((NuitSkyRenderStateHolder) skyRenderState).nuit$getRenderState();
+        if (renderState == null) {
+            return false;
         }
-        return false;
+
+        Matrix4fStack skyModelViewStack = new Matrix4fStack(16);
+        skyModelViewStack.set(RenderSystem.getModelViewStack());
+        skyModelViewStack.setTranslation(0.0F, 0.0F, 0.0F);
+        SkyboxManager.getInstance().renderSkyboxes(skyRenderer, renderState, skyModelViewStack, fogParameters);
+        return true;
     }
 
     @Unique
-    private static DimensionType.Skybox nuit$skyboxForPass(DimensionType.Skybox original) {
-        SkyboxManager skyboxManager = SkyboxManager.getInstance();
-        if (original == DimensionType.Skybox.NONE && skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
+    private DimensionType.Skybox nuit$skyboxForPass(DimensionType.Skybox original) {
+        if (original == DimensionType.Skybox.NONE && this.nuit$hasCustomSkyboxes()) {
             return DimensionType.Skybox.OVERWORLD;
         }
         return original;
+    }
+
+    @Unique
+    private boolean nuit$hasCustomSkyboxes() {
+        return ((NuitSkyRenderStateHolder) this.levelRenderState.skyRenderState).nuit$getRenderState() != null;
     }
 }
