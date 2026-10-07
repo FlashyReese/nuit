@@ -23,8 +23,6 @@ import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -52,18 +50,13 @@ public class MultiTexturedSkybox extends TexturedSkybox {
     @Override
     public void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, Vector4f colorModifier) {
         context.applyFog();
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level == null) {
-            return;
-        }
-
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
         BlendFunction blendFunction = this.properties.blend().getBlendFunction();
         RenderPipeline texturedPipeline = null;
         RenderPipeline frameBlendedPipeline = null;
         boolean shaderPackStateQueried = false;
         boolean shaderPackInUse = false;
-        long gameTime = level.getGameTime();
+        long gameTime = context.gameTime();
         float tickDelta = context.tickDelta();
 
         for (AnimatableTexture animatableTexture : this.animatableTextures) {

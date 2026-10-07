@@ -6,7 +6,9 @@
   "client": [
     "MixinAtmosphericFogEnvironment",
     "MixinFogRenderer",
+    "MixinLevelExtractor",
     "MixinLevelRenderer",
+    "MixinSkyRenderState",
     "SkyRendererAccessor"
   ],
   "injectors": {
