@@ -3,18 +3,19 @@ package me.flashyreese.mods.nuit.neoforge.mixin;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import me.flashyreese.mods.nuit.render.NuitSkyboxRenderHooks;
-import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.client.renderer.state.SkyRenderState;
 import net.minecraft.world.level.MoonPhase;
 import net.minecraft.world.level.dimension.DimensionType;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Dynamic;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,27 +24,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 900)
 public abstract class MixinLevelRendererNeoForge {
-    @Unique
-    private static float nuit$tickDelta;
+    @Shadow
+    @Final
+    private LevelRenderState levelRenderState;
 
     @Unique
     private boolean nuit$skipVanillaSky;
-
-    @Dynamic("NeoForge calls this sky pass overload directly")
-    @Inject(
-            method = "addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/Camera;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Matrix4f;)V",
-            remap = false,
-            at = @At("HEAD")
-    )
-    private void nuit$captureTickDelta(
-            FrameGraphBuilder frameGraphBuilder,
-            Camera camera,
-            GpuBufferSlice fogParameters,
-            Matrix4f projectionMatrix,
-            CallbackInfo ci
-    ) {
-        nuit$tickDelta = camera.getPartialTickTime();
-    }
 
     @ModifyVariable(method = "renderLevel", at = @At("HEAD"), argsOnly = true, ordinal = 1)
     private boolean nuit$allowCustomSkyPass(boolean renderSky) {
@@ -61,7 +47,7 @@ public abstract class MixinLevelRendererNeoForge {
             )
     )
     private DimensionType.Skybox nuit$allowSkyPassForNoneSkybox(DimensionType.Skybox original) {
-        return NuitSkyboxRenderHooks.skyboxForPass(original);
+        return NuitSkyboxRenderHooks.skyboxForPass(original, this.levelRenderState.skyRenderState);
     }
 
     @Dynamic("NeoForge replaces the vanilla sky pass body with this synthetic lambda")
@@ -101,7 +87,7 @@ public abstract class MixinLevelRendererNeoForge {
         this.nuit$skipVanillaSky = NuitSkyboxRenderHooks.renderCustomSkyboxes(
                 fogParameters,
                 skyRenderer,
-                nuit$tickDelta
+                skyRenderState
         );
     }
 

@@ -15,11 +15,7 @@ import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.render.NuitStarRenderer;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import net.minecraft.client.Camera;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.EndFlashState;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.MoonPhase;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
@@ -27,7 +23,6 @@ import org.joml.Vector4f;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvider {
     private static final float MIN_END_FLASH_INTENSITY = 0.00001F;
@@ -75,13 +70,11 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
     @Override
     public void render(SkyboxRenderContext context) {
         context.applyFog();
-        if (this.alpha <= 0.0F) {
+        float alpha = context.alpha();
+        if (alpha <= 0.0F) {
             return;
         }
 
-        Camera camera = context.camera();
-        float tickDelta = context.tickDelta();
-        ClientLevel level = Objects.requireNonNull((ClientLevel) camera.entity().level());
         BlendFunction blendFunction = this.properties.blend().getBlendFunction();
         RenderPipeline texturedPipeline = null;
 
@@ -89,15 +82,8 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         Vector4f colorModifier = null;
         GpuBufferSlice dynamicTransforms = null;
         if (this.sunEnabled || this.moonEnabled || this.starsEnabled) {
-            double celestialAngle = camera.attributeProbe().getValue(EnvironmentAttributes.SUN_ANGLE, tickDelta);
-            decorationMatrix = this.properties.rotation().apply(
-                    new Matrix4f(context.skyModelViewStack()),
-                    level,
-                    this.properties.clock(),
-                    tickDelta,
-                    celestialAngle
-            );
-            colorModifier = this.properties.blend().getColorModifier(this.alpha);
+            decorationMatrix = context.rotatedModelViewMatrix();
+            colorModifier = this.properties.blend().getColorModifier(alpha);
             dynamicTransforms = NuitRenderBackend.createDynamicTransforms(decorationMatrix, colorModifier);
         }
 
@@ -120,19 +106,18 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
                 texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
             }
 
-            MoonPhase moonPhase = camera.attributeProbe().getValue(EnvironmentAttributes.MOON_PHASE, tickDelta);
-            this.renderMoon(texturedPipeline, moonPhase, dynamicTransforms);
+            this.renderMoon(texturedPipeline, context.moonPhase(), dynamicTransforms);
         }
 
         if (this.starsEnabled) {
-            float starBrightness = camera.attributeProbe().getValue(EnvironmentAttributes.STAR_BRIGHTNESS, tickDelta);
+            float starBrightness = context.starBrightness();
             if (starBrightness > 0.0F) {
                 NuitStarRenderer.render(decorationMatrix, new Vector4f(colorModifier).mul(starBrightness), blendFunction);
             }
         }
 
         if (this.endFlashEnabled) {
-            this.renderEndFlash(context, level);
+            this.renderEndFlash(context, alpha);
         }
     }
 
@@ -176,15 +161,10 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
         }
     }
 
-    private void renderEndFlash(SkyboxRenderContext context, ClientLevel level) {
-        EndFlashState endFlashState = level.endFlashState();
-        if (endFlashState == null) {
-            return;
-        }
-
-        float intensity = endFlashState.getIntensity(context.tickDelta()) * this.alpha;
+    private void renderEndFlash(SkyboxRenderContext context, float alpha) {
+        float intensity = context.endFlashIntensity() * alpha;
         if (intensity > MIN_END_FLASH_INTENSITY) {
-            context.renderEndFlash(intensity, endFlashState.getXAngle(), endFlashState.getYAngle());
+            context.renderEndFlash(intensity, context.endFlashXAngle(), context.endFlashYAngle());
         }
     }
 
