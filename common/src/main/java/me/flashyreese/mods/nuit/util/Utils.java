@@ -430,7 +430,7 @@ public class Utils {
         } else {
             float alphaChange = (maxAlpha - minAlpha) / duration;
             float result = in ? lastAlpha + alphaChange : lastAlpha - alphaChange;
-            return Mth.clamp(result, minAlpha, maxAlpha);
+            return Math.clamp(result, minAlpha, maxAlpha);
         }
     }
 

@@ -11,7 +11,7 @@ import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import com.mojang.renderpearl.api.textures.GpuSampler;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureHandle;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -261,8 +261,8 @@ public final class NuitRenderBackend {
     }
 
     private static TextureBinding resolveTextureBinding(String samplerName, Identifier texture) {
-        AbstractTexture abstractTexture = Minecraft.getInstance().getTextureManager().getTexture(texture);
-        return new TextureBinding(samplerName, abstractTexture.getTextureView(), abstractTexture.getSampler());
+        TextureHandle textureHandle = Minecraft.getInstance().getTextureManager().getTexture(texture);
+        return new TextureBinding(samplerName, textureHandle.textureView(), textureHandle.sampler());
     }
 
     private record TextureBinding(String samplerName, GpuTextureView textureView, GpuSampler sampler) {

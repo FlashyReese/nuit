@@ -39,8 +39,8 @@ import net.minecraft.client.renderer.EndFlashState;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
-import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureProvider2d;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributeProbe;
@@ -324,7 +324,7 @@ public class SkyboxManager implements NuitApi {
 
                 GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
                         RenderSystem.getModelViewMatrixCopy(),
-                        new Vector4f(fogColor.x(), fogColor.y(), fogColor.z(), Mth.clamp(alpha, 0.0F, 1.0F))
+                        new Vector4f(fogColor.x(), fogColor.y(), fogColor.z(), Math.clamp(alpha, 0.0F, 1.0F))
                 );
                 GpuBuffer skyOccluderInfo = skyRendererAccessor.getSkyOccluderUbo().currentBuffer();
                 NuitRenderBackend.drawFullscreenTriangle(
@@ -366,8 +366,8 @@ public class SkyboxManager implements NuitApi {
                         new Vector4f(intensity, intensity, intensity, intensity)
                 );
                 TextureAtlas celestialsAtlas = skyRendererAccessor.getCelestialsAtlas();
-                var celestialsTexture = celestialsAtlas.getTextureView();
-                var celestialsSampler = celestialsAtlas.getSampler();
+                var celestialsTexture = celestialsAtlas.getTexture().textureView();
+                var celestialsSampler = celestialsAtlas.getTexture().sampler();
                 NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.CELESTIAL,
                         skyRendererAccessor.getEndFlashBuffer(),
@@ -493,7 +493,7 @@ public class SkyboxManager implements NuitApi {
     private void registerTextures(Skybox skybox) {
         if (skybox instanceof SkyboxTextureProvider textureProvider) {
             textureProvider.getTexturesToRegister().forEach((theIdentifier) -> {
-                Minecraft.getInstance().getTextureManager().registerAndLoad(theIdentifier, new SimpleTexture(theIdentifier));
+                Minecraft.getInstance().getTextureManager().registerAndLoad(theIdentifier, new TextureProvider2d());
                 this.preloadedTextures.add(theIdentifier);
             });
         }
