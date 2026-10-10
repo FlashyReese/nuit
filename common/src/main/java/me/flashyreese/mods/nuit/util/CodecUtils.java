@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.util.Mth;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -16,21 +15,21 @@ public class CodecUtils {
         if (min > max) {
             throw new UnsupportedOperationException("Maximum value was lesser than than the minimum value");
         }
-        return Codec.LONG.xmap(f -> Mth.clamp(f, min, max), Function.identity());
+        return Codec.LONG.xmap(f -> Math.clamp(f, min, max), Function.identity());
     }
 
     public static Codec<Integer> getClampedInteger(int min, int max) {
         if (min > max) {
             throw new UnsupportedOperationException("Maximum value was lesser than than the minimum value");
         }
-        return Codec.INT.xmap(f -> Mth.clamp(f, min, max), Function.identity());
+        return Codec.INT.xmap(f -> Math.clamp(f, min, max), Function.identity());
     }
 
     public static Codec<Float> getClampedFloat(float min, float max) {
         if (min > max) {
             throw new UnsupportedOperationException("Maximum value was lesser than than the minimum value");
         }
-        return Codec.FLOAT.xmap(f -> Mth.clamp(f, min, max), Function.identity());
+        return Codec.FLOAT.xmap(f -> Math.clamp(f, min, max), Function.identity());
     }
 
     public static <K extends Number, V> Codec<Map<K, V>> unboundedMapFixed(Class<K> clazz, Codec<V> valueCodec, Supplier<Map<K, V>> mapSupplier) {
