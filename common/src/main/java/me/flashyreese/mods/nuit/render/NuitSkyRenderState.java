@@ -6,9 +6,7 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
-import org.joml.Vector3fc;
 import org.joml.Vector4f;
-import org.joml.Vector4fc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,14 +23,6 @@ public final class NuitSkyRenderState {
     public float starBrightness;
     public @Nullable EndFlash endFlash;
     public final List<ExtractedSkybox> skyboxes = new ArrayList<>();
-
-    public Vector3fc skyColor() {
-        return this.skyColor;
-    }
-
-    public Vector4fc sunriseAndSunsetColor() {
-        return this.sunriseAndSunsetColor;
-    }
 
     public record EndFlash(float intensity, float xAngle, float yAngle) {
     }

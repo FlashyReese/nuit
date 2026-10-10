@@ -71,11 +71,11 @@ public final class SkyboxRenderContext {
     }
 
     public Vector3fc skyColor() {
-        return this.renderState.skyColor();
+        return this.renderState.skyColor;
     }
 
     public Vector4fc sunriseAndSunsetColor() {
-        return this.renderState.sunriseAndSunsetColor();
+        return this.renderState.sunriseAndSunsetColor;
     }
 
     public MoonPhase moonPhase() {
