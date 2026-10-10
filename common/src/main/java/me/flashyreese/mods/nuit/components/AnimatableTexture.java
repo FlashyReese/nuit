@@ -89,7 +89,7 @@ public class AnimatableTexture {
             long frameDuration = this.getFrameDurationMillis(frameIndex);
             long frameEnd = saturatingAdd(frameStart, frameDuration);
             if (cycleTime < frameEnd || frameIndex == this.frameCount - 1) {
-                float frameBlend = this.interpolate ? (float) Mth.clamp((cycleTime - frameStart) / (double) frameDuration, 0.0D, 1.0D) : 0.0F;
+                float frameBlend = this.interpolate ? (float) Math.clamp((cycleTime - frameStart) / (double) frameDuration, 0.0D, 1.0D) : 0.0F;
                 this.setCurrentFrame(frameIndex, frameBlend);
                 return;
             }
@@ -135,7 +135,7 @@ public class AnimatableTexture {
     }
 
     private static int calculateFrameCount(int gridColumns, int gridRows) {
-        return (int) Mth.clamp((long) gridRows * gridColumns, 1L, Integer.MAX_VALUE);
+        return Math.clamp((long) gridRows * gridColumns, 1, Integer.MAX_VALUE);
     }
 
     private long getFrameDurationMillis(int frameIndex) {
