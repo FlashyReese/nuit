@@ -28,7 +28,7 @@ public class NuitClientFabric implements ClientModInitializer {
         ClientTickEvents.END_LEVEL_TICK.register(client -> SkyboxManager.getInstance().tick(client));
         ClientTickEvents.END_CLIENT_TICK.register(client -> NuitClient.config().getKeyBinding().tick(client));
         SkyboxDebugScreen screen = new SkyboxDebugScreen(Component.nullToEmpty("Skybox Debug Screen"));
-        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_debug_hud"), (drawContext, tickCounter) -> screen.renderHud(drawContext));
+        HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "skybox_debug_hud"), screen::renderHud);
         KeyMappingHelper.registerKeyMapping(NuitClient.config().getKeyBinding().toggleNuit);
         KeyMappingHelper.registerKeyMapping(NuitClient.config().getKeyBinding().toggleSkyboxDebugHud);
         NuitClient.init();

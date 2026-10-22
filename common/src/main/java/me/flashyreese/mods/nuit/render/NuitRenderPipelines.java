@@ -13,7 +13,8 @@ import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
 import net.minecraft.client.renderer.BindGroupLayouts;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.pipeline.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
@@ -49,14 +50,8 @@ public final class NuitRenderPipelines {
      * Pipelines drawn into a pass with a depth attachment (the main pass when improved transparency is off) must declare a
      * depth stencil state, while the sky target used with improved transparency has no depth attachment at all.
      */
-    private static final Map<RenderPipeline, RenderPipeline> DEPTH_ATTACHMENT_VARIANTS = new IdentityHashMap<>(Map.of(
-            RenderPipelines.SKY, RenderPipelines.SKY_WITH_DEPTH_ATTACHMENT,
-            RenderPipelines.SKY_OCCLUDER, RenderPipelines.SKY_OCCLUDER_WITH_DEPTH_ATTACHMENT,
-            RenderPipelines.END_SKY, RenderPipelines.END_SKY_WITH_DEPTH_ATTACHMENT,
-            RenderPipelines.SUNRISE_SUNSET, RenderPipelines.SUNRISE_SUNSET_WITH_DEPTH_ATTACHMENT,
-            RenderPipelines.STARS, RenderPipelines.STARS_WITH_DEPTH_ATTACHMENT,
-            RenderPipelines.CELESTIAL, RenderPipelines.CELESTIAL_WITH_DEPTH_ATTACHMENT
-    ));
+    private static final Map<RenderPipeline, RenderPipeline> DEPTH_ATTACHMENT_VARIANTS =
+            createVanillaDepthAttachmentVariants();
 
     private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINE =
             Util.memoize(NuitRenderPipelines::buildMonoColorSkyboxPipeline);
@@ -70,6 +65,17 @@ public final class NuitRenderPipelines {
     private static RenderPipeline monoColorSkyboxNoBlendPipeline;
     private static RenderPipeline texturedSkyboxNoBlendPipeline;
     private static RenderPipeline frameBlendedTexturedSkyboxNoBlendPipeline;
+
+    private static Map<RenderPipeline, RenderPipeline> createVanillaDepthAttachmentVariants() {
+        Map<RenderPipeline, RenderPipeline> variants = new IdentityHashMap<>();
+        for (SkyRenderer.SkyElement element : SkyRenderer.SkyElement.values()) {
+            variants.put(
+                    RenderPipelines.sky(new RenderPipelines.SkyParameters(element, false)),
+                    RenderPipelines.sky(new RenderPipelines.SkyParameters(element, true))
+            );
+        }
+        return variants;
+    }
 
     public static RenderPipeline translucentSkyDisc() {
         if (translucentSkyDiscPipeline == null) {

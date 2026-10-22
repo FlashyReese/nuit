@@ -13,7 +13,8 @@ import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
 import me.flashyreese.mods.nuit.util.Utils;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.pipeline.RenderPipelines;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix4f;
 
@@ -35,7 +36,8 @@ public class EndSkybox extends AbstractSkybox {
             return;
         }
 
-        RenderPipeline pipeline = RenderPipelines.END_SKY;
+        RenderPipeline pipeline = RenderPipelines.sky(
+                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.END_SKY, false));
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             int color = ARGB.color((int) (255 * alpha), 0x282828);

@@ -13,7 +13,8 @@ import me.flashyreese.mods.nuit.components.Properties;
 import me.flashyreese.mods.nuit.render.NuitRenderBackend;
 import me.flashyreese.mods.nuit.render.NuitRenderPipelines;
 import me.flashyreese.mods.nuit.skybox.AbstractSkybox;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.pipeline.RenderPipelines;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
@@ -58,7 +59,8 @@ public class OverworldSkybox extends AbstractSkybox {
         matrix.rotate(Axis.ZP.rotationDegrees(zRotation));
         matrix.rotate(Axis.ZP.rotationDegrees(90.0F));
 
-        RenderPipeline pipeline = RenderPipelines.SUNRISE_SUNSET;
+        RenderPipeline pipeline = RenderPipelines.sky(
+                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.SUNRISE_SUNSET, false));
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 18)) {
             BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
 

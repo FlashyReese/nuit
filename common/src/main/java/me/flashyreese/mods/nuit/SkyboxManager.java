@@ -36,8 +36,8 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.EndFlashState;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.pipeline.RenderPipelines;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureProvider2d;
@@ -307,7 +307,8 @@ public class SkyboxManager implements NuitApi {
                         new Vector4f(color, 1.0F)
                 );
                 NuitRenderBackend.draw(
-                        RenderPipelines.SKY,
+                        RenderPipelines.sky(
+                                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.SKY_DISC, false)),
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
                         dynamicTransforms,
@@ -343,7 +344,8 @@ public class SkyboxManager implements NuitApi {
                         new Vector4f(brightness, brightness, brightness, brightness)
                 );
                 NuitRenderBackend.drawSequentialIndexed(
-                        RenderPipelines.STARS,
+                        RenderPipelines.sky(
+                                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.STARS, false)),
                         skyRendererAccessor.getStarBuffer(),
                         PrimitiveTopology.QUADS,
                         skyRendererAccessor.getStarIndexCount(),
@@ -369,7 +371,8 @@ public class SkyboxManager implements NuitApi {
                 var celestialsTexture = celestialsAtlas.getTexture().textureView();
                 var celestialsSampler = celestialsAtlas.getTexture().sampler();
                 NuitRenderBackend.drawSequentialIndexed(
-                        RenderPipelines.CELESTIAL,
+                        RenderPipelines.sky(
+                                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.CELESTIAL, false)),
                         skyRendererAccessor.getEndFlashBuffer(),
                         PrimitiveTopology.QUADS,
                         6,
