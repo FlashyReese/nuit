@@ -38,7 +38,8 @@ public class SquareTexturedSkybox extends TexturedSkybox {
     @Override
     public void renderSkybox(SkyboxRenderContext context, Matrix4f modelViewMatrix, Vector4f colorModifier) {
         context.applyFog();
-        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(this.properties.blend().getBlendFunction());
+        RenderPipeline pipeline = NuitRenderPipelines.texturedSkybox(
+                this.properties.blend().getBlendFunction(), NuitRenderBackend.hasDepthAttachment());
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);

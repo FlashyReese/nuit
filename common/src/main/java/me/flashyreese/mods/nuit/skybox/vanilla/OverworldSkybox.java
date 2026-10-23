@@ -60,7 +60,8 @@ public class OverworldSkybox extends AbstractSkybox {
         matrix.rotate(Axis.ZP.rotationDegrees(90.0F));
 
         RenderPipeline pipeline = RenderPipelines.sky(
-                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.SUNRISE_SUNSET, false));
+                new RenderPipelines.SkyParameters(
+                        SkyRenderer.SkyElement.SUNRISE_SUNSET, NuitRenderBackend.hasDepthAttachment()));
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 18)) {
             BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
 

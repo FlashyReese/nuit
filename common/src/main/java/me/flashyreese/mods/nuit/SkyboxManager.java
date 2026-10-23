@@ -292,7 +292,7 @@ public class SkyboxManager implements NuitApi {
                         new Vector4f(color)
                 );
                 NuitRenderBackend.draw(
-                        NuitRenderPipelines.translucentSkyDisc(),
+                        NuitRenderPipelines.translucentSkyDisc(NuitRenderBackend.hasDepthAttachment()),
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
                         dynamicTransforms,
@@ -308,7 +308,8 @@ public class SkyboxManager implements NuitApi {
                 );
                 NuitRenderBackend.draw(
                         RenderPipelines.sky(
-                                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.SKY_DISC, false)),
+                                new RenderPipelines.SkyParameters(
+                                        SkyRenderer.SkyElement.SKY_DISC, NuitRenderBackend.hasDepthAttachment())),
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
                         dynamicTransforms,
@@ -329,7 +330,7 @@ public class SkyboxManager implements NuitApi {
                 );
                 GpuBuffer skyOccluderInfo = skyRendererAccessor.getSkyOccluderUbo().currentBuffer();
                 NuitRenderBackend.drawFullscreenTriangle(
-                        NuitRenderPipelines.skyOccluder(),
+                        NuitRenderPipelines.skyOccluder(NuitRenderBackend.hasDepthAttachment()),
                         dynamicTransforms,
                         "Nuit vanilla sky occluder",
                         renderPass -> renderPass.setUniform("SkyOccluderInfo", skyOccluderInfo)
@@ -345,7 +346,8 @@ public class SkyboxManager implements NuitApi {
                 );
                 NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.sky(
-                                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.STARS, false)),
+                                new RenderPipelines.SkyParameters(
+                                        SkyRenderer.SkyElement.STARS, NuitRenderBackend.hasDepthAttachment())),
                         skyRendererAccessor.getStarBuffer(),
                         PrimitiveTopology.QUADS,
                         skyRendererAccessor.getStarIndexCount(),
@@ -372,7 +374,8 @@ public class SkyboxManager implements NuitApi {
                 var celestialsSampler = celestialsAtlas.getTexture().sampler();
                 NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.sky(
-                                new RenderPipelines.SkyParameters(SkyRenderer.SkyElement.CELESTIAL, false)),
+                                new RenderPipelines.SkyParameters(
+                                        SkyRenderer.SkyElement.CELESTIAL, NuitRenderBackend.hasDepthAttachment())),
                         skyRendererAccessor.getEndFlashBuffer(),
                         PrimitiveTopology.QUADS,
                         6,

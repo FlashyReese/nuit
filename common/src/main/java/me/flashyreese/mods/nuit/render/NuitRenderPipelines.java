@@ -13,17 +13,11 @@ import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
 import net.minecraft.client.renderer.BindGroupLayouts;
-import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.pipeline.RenderPipelines;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.IdentityHashMap;
 import java.util.Locale;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public final class NuitRenderPipelines {
     private static final Identifier MONO_COLOR_SKYBOX_SHADER = Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "core/mono_color_skybox");
@@ -46,171 +40,94 @@ public final class NuitRenderPipelines {
             .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
             .buildSnippet();
 
-    /**
-     * Pipelines drawn into a pass with a depth attachment (the main pass when improved transparency is off) must declare a
-     * depth stencil state, while the sky target used with improved transparency has no depth attachment at all.
-     */
-    private static final Map<RenderPipeline, RenderPipeline> DEPTH_ATTACHMENT_VARIANTS =
-            createVanillaDepthAttachmentVariants();
-
-    private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINE =
-            Util.memoize(NuitRenderPipelines::buildMonoColorSkyboxPipeline);
-    private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINE =
-            Util.memoize(blend -> buildTexturedSkyboxPipeline(blend, false));
-    private static final Function<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINE =
-            Util.memoize(blend -> buildTexturedSkyboxPipeline(blend, true));
-
-    private static RenderPipeline translucentSkyDiscPipeline;
-    private static RenderPipeline skyOccluderPipeline;
-    private static RenderPipeline monoColorSkyboxNoBlendPipeline;
-    private static RenderPipeline texturedSkyboxNoBlendPipeline;
-    private static RenderPipeline frameBlendedTexturedSkyboxNoBlendPipeline;
-
-    private static Map<RenderPipeline, RenderPipeline> createVanillaDepthAttachmentVariants() {
-        Map<RenderPipeline, RenderPipeline> variants = new IdentityHashMap<>();
-        for (SkyRenderer.SkyElement element : SkyRenderer.SkyElement.values()) {
-            variants.put(
-                    RenderPipelines.sky(new RenderPipelines.SkyParameters(element, false)),
-                    RenderPipelines.sky(new RenderPipelines.SkyParameters(element, true))
-            );
-        }
-        return variants;
-    }
-
-    public static RenderPipeline translucentSkyDisc() {
-        if (translucentSkyDiscPipeline == null) {
-            translucentSkyDiscPipeline = buildTranslucentSkyDiscPipeline();
-        }
-
-        return translucentSkyDiscPipeline;
+    public static RenderPipeline translucentSkyDisc(boolean hasDepthAttachment) {
+        return sky(new SkyParameters(SkyType.TRANSLUCENT_SKY_DISC, BlendFunction.TRANSLUCENT, hasDepthAttachment));
     }
 
     /**
      * Vanilla's sky occluder, except that it fades with the color modulator's alpha.
      */
-    public static RenderPipeline skyOccluder() {
-        if (skyOccluderPipeline == null) {
-            skyOccluderPipeline = buildSkyOccluderPipeline();
-        }
-
-        return skyOccluderPipeline;
+    public static RenderPipeline skyOccluder(boolean hasDepthAttachment) {
+        return sky(new SkyParameters(SkyType.SKY_OCCLUDER, BlendFunction.TRANSLUCENT, hasDepthAttachment));
     }
 
-    public static RenderPipeline monoColorSkybox(@Nullable BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (monoColorSkyboxNoBlendPipeline == null) {
-                monoColorSkyboxNoBlendPipeline = buildMonoColorSkyboxPipeline(null);
-            }
-
-            return monoColorSkyboxNoBlendPipeline;
-        }
-
-        return MONO_COLOR_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
+    public static RenderPipeline monoColorSkybox(@Nullable BlendFunction blendFunction, boolean hasDepthAttachment) {
+        return sky(new SkyParameters(SkyType.MONO_COLOR, blendFunction, hasDepthAttachment));
     }
 
-    public static RenderPipeline texturedSkybox(@Nullable BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (texturedSkyboxNoBlendPipeline == null) {
-                texturedSkyboxNoBlendPipeline = buildTexturedSkyboxPipeline(null, false);
-            }
-
-            return texturedSkyboxNoBlendPipeline;
-        }
-
-        return TEXTURED_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
+    public static RenderPipeline texturedSkybox(@Nullable BlendFunction blendFunction, boolean hasDepthAttachment) {
+        return sky(new SkyParameters(SkyType.TEXTURED, blendFunction, hasDepthAttachment));
     }
 
-    public static RenderPipeline frameBlendedTexturedSkybox(@Nullable BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (frameBlendedTexturedSkyboxNoBlendPipeline == null) {
-                frameBlendedTexturedSkyboxNoBlendPipeline = buildTexturedSkyboxPipeline(null, true);
-            }
-
-            return frameBlendedTexturedSkyboxNoBlendPipeline;
-        }
-
-        return FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
+    public static RenderPipeline frameBlendedTexturedSkybox(@Nullable BlendFunction blendFunction,
+                                                           boolean hasDepthAttachment) {
+        return sky(new SkyParameters(SkyType.FRAME_BLENDED_TEXTURED, blendFunction, hasDepthAttachment));
     }
 
     /**
-     * Returns the variant of {@code pipeline} that matches the depth attachment of the render pass it is drawn into.
+     * Returns the cached permutation for the requested sky type, blend and render-pass attachments.
      */
-    public static RenderPipeline forDepthAttachment(RenderPipeline pipeline, boolean withDepthAttachment) {
-        if (!withDepthAttachment) {
-            return pipeline;
-        }
-
-        RenderPipeline variant = DEPTH_ATTACHMENT_VARIANTS.get(pipeline);
-        if (variant == null) {
-            throw new IllegalStateException("No depth attachment variant registered for pipeline " + pipeline.getLocation());
-        }
-
-        return variant;
+    public static RenderPipeline sky(SkyParameters parameters) {
+        return RenderPipelines.dynamicPipeline(parameters, NuitClient.MOD_ID + ":sky",
+                NuitRenderPipelines::buildSkyPipeline);
     }
 
-    private static RenderPipeline buildTranslucentSkyDiscPipeline() {
-        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET)
-                .withBindGroupLayout(BindGroupLayouts.FOG)
-                .withVertexShader("core/sky")
-                .withFragmentShader("core/sky")
-                .withVertexBinding(0, DefaultVertexFormat.POSITION)
-                .withPrimitiveTopology(PrimitiveTopology.TRIANGLE_FAN)
-                .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT));
-        return buildWithDepthAttachmentVariant(builder, "pipeline/translucent_sky_disc", IrisCompat::assignSkyBasicPipeline);
-    }
-
-    private static RenderPipeline buildSkyOccluderPipeline() {
-        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET)
-                .withBindGroupLayout(BindGroupLayouts.FOG)
-                .withBindGroupLayout(BindGroupLayouts.SKY_OCCLUDER_INFO)
-                .withVertexShader("core/sky_occluder")
-                .withFragmentShader(SKY_OCCLUDER_FRAGMENT_SHADER)
-                .withPrimitiveTopology(PrimitiveTopology.TRIANGLES)
-                .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT));
-        return buildWithDepthAttachmentVariant(builder, "pipeline/sky_occluder", IrisCompat::assignSkyBasicPipeline);
-    }
-
-    private static RenderPipeline buildMonoColorSkyboxPipeline(@Nullable BlendFunction blendFunction) {
+    private static RenderPipeline buildSkyPipeline(SkyParameters parameters) {
         RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET);
-        builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER);
-        builder.withFragmentShader(MONO_COLOR_SKYBOX_SHADER);
-        applyBlend(builder, blendFunction);
-        builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR);
-        builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
-        return buildWithDepthAttachmentVariant(builder, "pipeline/mono_color_skybox/" + pipelineSuffix(blendFunction), IrisCompat::assignSkyBasicPipeline);
-    }
-
-    private static RenderPipeline buildTexturedSkyboxPipeline(@Nullable BlendFunction blendFunction, boolean frameBlended) {
-        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET);
-        if (frameBlended) {
-            builder.withVertexShader(MULTI_TEXTURED_SKYBOX_SHADER);
-            builder.withFragmentShader(MULTI_TEXTURED_SKYBOX_SHADER);
-            builder.withVertexBinding(0, FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT);
-            builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
-        } else {
-            builder.withVertexShader(TEXTURED_SKYBOX_SHADER);
-            builder.withFragmentShader(TEXTURED_SKYBOX_SHADER);
-            builder.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX);
-            builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
+        String location = switch (parameters.type()) {
+            case TRANSLUCENT_SKY_DISC -> {
+                builder.withBindGroupLayout(BindGroupLayouts.FOG)
+                        .withVertexShader("core/sky")
+                        .withFragmentShader("core/sky")
+                        .withVertexBinding(0, DefaultVertexFormat.POSITION)
+                        .withPrimitiveTopology(PrimitiveTopology.TRIANGLE_FAN);
+                yield "pipeline/translucent_sky_disc";
+            }
+            case SKY_OCCLUDER -> {
+                builder.withBindGroupLayout(BindGroupLayouts.FOG)
+                        .withBindGroupLayout(BindGroupLayouts.SKY_OCCLUDER_INFO)
+                        .withVertexShader("core/sky_occluder")
+                        .withFragmentShader(SKY_OCCLUDER_FRAGMENT_SHADER)
+                        .withPrimitiveTopology(PrimitiveTopology.TRIANGLES);
+                yield "pipeline/sky_occluder";
+            }
+            case MONO_COLOR -> {
+                builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER)
+                        .withFragmentShader(MONO_COLOR_SKYBOX_SHADER)
+                        .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+                        .withPrimitiveTopology(PrimitiveTopology.QUADS);
+                yield "pipeline/mono_color_skybox";
+            }
+            case TEXTURED, FRAME_BLENDED_TEXTURED -> {
+                boolean frameBlended = parameters.type() == SkyType.FRAME_BLENDED_TEXTURED;
+                Identifier shader = frameBlended ? MULTI_TEXTURED_SKYBOX_SHADER : TEXTURED_SKYBOX_SHADER;
+                VertexFormat vertexFormat = frameBlended
+                        ? FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT : DefaultVertexFormat.POSITION_TEX;
+                builder.withVertexShader(shader)
+                        .withFragmentShader(shader)
+                        .withVertexBinding(0, vertexFormat)
+                        .withPrimitiveTopology(PrimitiveTopology.QUADS)
+                        .withCull(false)
+                        .withBindGroupLayout(BindGroupLayouts.SAMPLER0);
+                yield frameBlended ? "pipeline/textured_skybox_frame_blend" : "pipeline/textured_skybox";
+            }
+        };
+        applyBlend(builder, parameters.blendFunction());
+        location += "/" + pipelineSuffix(parameters.blendFunction());
+        // The classic main pass has a depth attachment; the improved-transparency sky pass does not.
+        if (parameters.hasDepthAttachment()) {
+            builder.withDepthStencilState(DepthStencilState.OFF);
+            location += "_with_depth_attachment";
         }
-        builder.withCull(false);
-        applyBlend(builder, blendFunction);
-        builder.withBindGroupLayout(BindGroupLayouts.SAMPLER0);
-        String location = (frameBlended ? "pipeline/textured_skybox_frame_blend/" : "pipeline/textured_skybox/") + pipelineSuffix(blendFunction);
-        return buildWithDepthAttachmentVariant(builder, location, IrisCompat::assignSkyTexturedPipeline);
-    }
 
-    private static RenderPipeline buildWithDepthAttachmentVariant(RenderPipeline.Builder builder, String location, Consumer<RenderPipeline> irisAssignment) {
         RenderPipeline pipeline = builder
                 .withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, location))
                 .build();
-        RenderPipeline depthAttachmentPipeline = builder
-                .withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, location + "_with_depth_attachment"))
-                .withDepthStencilState(DepthStencilState.OFF)
-                .build();
-        irisAssignment.accept(pipeline);
-        irisAssignment.accept(depthAttachmentPipeline);
-        DEPTH_ATTACHMENT_VARIANTS.put(pipeline, depthAttachmentPipeline);
+        if (parameters.type() == SkyType.TEXTURED || parameters.type() == SkyType.FRAME_BLENDED_TEXTURED) {
+            IrisCompat.assignSkyTexturedPipeline(pipeline);
+        } else {
+            IrisCompat.assignSkyBasicPipeline(pipeline);
+        }
         return pipeline;
     }
 
@@ -255,5 +172,16 @@ public final class NuitRenderPipelines {
 
     public static BufferBuilder bufferBuilder(ByteBufferBuilder byteBufferBuilder, RenderPipeline pipeline) {
         return new BufferBuilder(byteBufferBuilder, pipeline.getPrimitiveTopology(), vertexFormat(pipeline));
+    }
+
+    public enum SkyType {
+        MONO_COLOR,
+        TEXTURED,
+        FRAME_BLENDED_TEXTURED,
+        TRANSLUCENT_SKY_DISC,
+        SKY_OCCLUDER
+    }
+
+    public record SkyParameters(SkyType type, @Nullable BlendFunction blendFunction, boolean hasDepthAttachment) {
     }
 }

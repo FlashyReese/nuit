@@ -76,7 +76,8 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                 float frameBlend = animatableTexture.getFrameBlend();
                 if (shaderPackInUse) {
                     if (texturedPipeline == null) {
-                        texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
+                        texturedPipeline = NuitRenderPipelines.texturedSkybox(
+                                blendFunction, NuitRenderBackend.hasDepthAttachment());
                     }
 
                     this.renderIrisCompatibleInterpolatedTexture(
@@ -90,7 +91,8 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                     );
                 } else {
                     if (frameBlendedPipeline == null) {
-                        frameBlendedPipeline = NuitRenderPipelines.frameBlendedTexturedSkybox(blendFunction);
+                        frameBlendedPipeline = NuitRenderPipelines.frameBlendedTexturedSkybox(
+                                blendFunction, NuitRenderBackend.hasDepthAttachment());
                     }
 
                     this.renderTextureFrame(
@@ -106,7 +108,8 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             }
 
             if (texturedPipeline == null) {
-                texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
+                texturedPipeline = NuitRenderPipelines.texturedSkybox(
+                        blendFunction, NuitRenderBackend.hasDepthAttachment());
             }
 
             this.renderTextureFrame(

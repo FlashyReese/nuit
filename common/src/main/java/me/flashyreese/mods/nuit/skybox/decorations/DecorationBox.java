@@ -95,7 +95,8 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
 
         if (this.sunEnabled) {
             if (texturedPipeline == null) {
-                texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
+                texturedPipeline = NuitRenderPipelines.texturedSkybox(
+                        blendFunction, NuitRenderBackend.hasDepthAttachment());
             }
 
             this.renderSun(texturedPipeline, dynamicTransforms);
@@ -103,7 +104,8 @@ public class DecorationBox extends AbstractSkybox implements SkyboxTextureProvid
 
         if (this.moonEnabled) {
             if (texturedPipeline == null) {
-                texturedPipeline = NuitRenderPipelines.texturedSkybox(blendFunction);
+                texturedPipeline = NuitRenderPipelines.texturedSkybox(
+                        blendFunction, NuitRenderBackend.hasDepthAttachment());
             }
 
             this.renderMoon(texturedPipeline, context.moonPhase(), dynamicTransforms);

@@ -52,6 +52,16 @@ public final class NuitRenderBackend {
         return activeSkyFrame;
     }
 
+    /**
+     * Returns whether the active sky pass has a depth attachment, for selecting its pipeline permutations.
+     */
+    public static boolean hasDepthAttachment() {
+        if (activeSkyFrame == null) {
+            throw new IllegalStateException("Nuit sky pipelines must be selected while a sky render frame is active");
+        }
+        return activeSkyFrame.withDepthAttachment;
+    }
+
     public static void draw(RenderPipeline pipeline, MeshData meshData, GpuBufferSlice dynamicTransforms) {
         draw(pipeline, meshData, dynamicTransforms, _ -> {
         });
@@ -236,14 +246,14 @@ public final class NuitRenderBackend {
         activeSkyFrame.enqueue(command);
     }
 
-    private static void renderCommands(List<RenderCommand> commands, RenderPass renderPass, boolean withDepthAttachment) {
+    private static void renderCommands(List<RenderCommand> commands, RenderPass renderPass) {
         if (commands.isEmpty()) {
             return;
         }
 
         prepareSequentialIndexBuffers(commands);
         for (RenderCommand command : commands) {
-            command.draw(renderPass, withDepthAttachment);
+            command.draw(renderPass);
         }
     }
 
@@ -306,7 +316,7 @@ public final class NuitRenderBackend {
         default void resolveSequentialIndexBuffer() {
         }
 
-        void draw(RenderPass renderPass, boolean withDepthAttachment);
+        void draw(RenderPass renderPass);
     }
 
     private static final class SkyDrawCommand implements RenderCommand {
@@ -376,10 +386,10 @@ public final class NuitRenderBackend {
         }
 
         @Override
-        public void draw(RenderPass renderPass, boolean withDepthAttachment) {
+        public void draw(RenderPass renderPass) {
             renderPass.pushDebugGroup(() -> this.label);
             try {
-                renderPass.setPipeline(RenderSystem.getCompiledPipeline(NuitRenderPipelines.forDepthAttachment(this.pipeline, withDepthAttachment)));
+                renderPass.setPipeline(RenderSystem.getCompiledPipeline(this.pipeline));
                 if (this.vertexBuffer != null) {
                     renderPass.setVertexBuffer(0, this.vertexBuffer.slice());
                 }
@@ -440,7 +450,7 @@ public final class NuitRenderBackend {
             try {
                 this.renderPass.pushDebugGroup(() -> "Nuit sky");
                 try {
-                    renderCommands(this.commands, this.renderPass, this.withDepthAttachment);
+                    renderCommands(this.commands, this.renderPass);
                 } finally {
                     this.renderPass.popDebugGroup();
                 }

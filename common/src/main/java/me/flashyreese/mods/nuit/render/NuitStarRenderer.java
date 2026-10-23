@@ -27,7 +27,8 @@ public final class NuitStarRenderer {
     public static void render(Matrix4f modelViewMatrix, Vector4f colorModifier, @Nullable BlendFunction blendFunction) {
         ensureStarsBuilt();
 
-        RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(blendFunction);
+        RenderPipeline pipeline = NuitRenderPipelines.monoColorSkybox(
+                blendFunction, NuitRenderBackend.hasDepthAttachment());
         GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(modelViewMatrix, colorModifier);
         NuitRenderBackend.drawSequentialIndexed(
                 pipeline,
