@@ -39,113 +39,68 @@ public final class NuitRenderPipelines {
             .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
             .buildSnippet();
 
-    private static final Function<BlendFunction, RenderPipeline> MONO_COLOR_SKYBOX_BLEND_PIPELINE =
-            Util.memoize(NuitRenderPipelines::buildMonoColorSkyboxPipeline);
-    private static final Function<BlendFunction, RenderPipeline> TEXTURED_SKYBOX_BLEND_PIPELINE =
-            Util.memoize(blend -> buildTexturedSkyboxPipeline(blend, false));
-    private static final Function<BlendFunction, RenderPipeline> FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINE =
-            Util.memoize(blend -> buildTexturedSkyboxPipeline(blend, true));
-
-    private static RenderPipeline translucentSkyDiscPipeline;
-    private static RenderPipeline monoColorSkyboxNoBlendPipeline;
-    private static RenderPipeline texturedSkyboxNoBlendPipeline;
-    private static RenderPipeline frameBlendedTexturedSkyboxNoBlendPipeline;
+    private static final Function<SkyParameters, RenderPipeline> SKY_PIPELINES =
+            Util.memoize(NuitRenderPipelines::buildSkyPipeline);
 
     public static RenderPipeline translucentSkyDisc() {
-        if (translucentSkyDiscPipeline == null) {
-            translucentSkyDiscPipeline = buildTranslucentSkyDiscPipeline();
-        }
-
-        return translucentSkyDiscPipeline;
+        return SKY_PIPELINES.apply(new SkyParameters(SkyType.TRANSLUCENT_SKY_DISC, BlendFunction.TRANSLUCENT));
     }
 
     public static RenderPipeline monoColorSkybox(@Nullable BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (monoColorSkyboxNoBlendPipeline == null) {
-                monoColorSkyboxNoBlendPipeline = buildMonoColorSkyboxPipeline(null);
-            }
-
-            return monoColorSkyboxNoBlendPipeline;
-        }
-
-        return MONO_COLOR_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
+        return SKY_PIPELINES.apply(new SkyParameters(SkyType.MONO_COLOR, blendFunction));
     }
 
     public static RenderPipeline texturedSkybox(@Nullable BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (texturedSkyboxNoBlendPipeline == null) {
-                texturedSkyboxNoBlendPipeline = buildTexturedSkyboxPipeline(null, false);
-            }
-
-            return texturedSkyboxNoBlendPipeline;
-        }
-
-        return TEXTURED_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
+        return SKY_PIPELINES.apply(new SkyParameters(SkyType.TEXTURED, blendFunction));
     }
 
     public static RenderPipeline frameBlendedTexturedSkybox(@Nullable BlendFunction blendFunction) {
-        if (blendFunction == null) {
-            if (frameBlendedTexturedSkyboxNoBlendPipeline == null) {
-                frameBlendedTexturedSkyboxNoBlendPipeline = buildTexturedSkyboxPipeline(null, true);
+        return SKY_PIPELINES.apply(new SkyParameters(SkyType.FRAME_BLENDED_TEXTURED, blendFunction));
+    }
+
+    private static RenderPipeline buildSkyPipeline(SkyParameters parameters) {
+        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET);
+        String location = switch (parameters.type()) {
+            case TRANSLUCENT_SKY_DISC -> {
+                builder.withBindGroupLayout(BindGroupLayouts.FOG)
+                        .withVertexShader("core/sky")
+                        .withFragmentShader("core/sky")
+                        .withVertexBinding(0, DefaultVertexFormat.POSITION)
+                        .withPrimitiveTopology(PrimitiveTopology.TRIANGLE_FAN);
+                yield "pipeline/translucent_sky_disc";
             }
+            case MONO_COLOR -> {
+                builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER)
+                        .withFragmentShader(MONO_COLOR_SKYBOX_SHADER)
+                        .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+                        .withPrimitiveTopology(PrimitiveTopology.QUADS);
+                yield "pipeline/mono_color_skybox/" + pipelineSuffix(parameters.blendFunction());
+            }
+            case TEXTURED, FRAME_BLENDED_TEXTURED -> {
+                boolean frameBlended = parameters.type() == SkyType.FRAME_BLENDED_TEXTURED;
+                Identifier shader = frameBlended ? MULTI_TEXTURED_SKYBOX_SHADER : TEXTURED_SKYBOX_SHADER;
+                VertexFormat vertexFormat = frameBlended
+                        ? FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT : DefaultVertexFormat.POSITION_TEX;
+                builder.withVertexShader(shader)
+                        .withFragmentShader(shader)
+                        .withVertexBinding(0, vertexFormat)
+                        .withPrimitiveTopology(PrimitiveTopology.QUADS)
+                        .withCull(false)
+                        .withBindGroupLayout(BindGroupLayouts.SAMPLER0);
+                String path = frameBlended ? "pipeline/textured_skybox_frame_blend/" : "pipeline/textured_skybox/";
+                yield path + pipelineSuffix(parameters.blendFunction());
+            }
+        };
+        applyBlend(builder, parameters.blendFunction());
 
-            return frameBlendedTexturedSkyboxNoBlendPipeline;
-        }
-
-        return FRAME_BLENDED_TEXTURED_SKYBOX_BLEND_PIPELINE.apply(blendFunction);
-    }
-
-    private static RenderPipeline buildTranslucentSkyDiscPipeline() {
-        RenderPipeline pipeline = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET)
-                .withBindGroupLayout(BindGroupLayouts.FOG)
-                .withLocation(Identifier.fromNamespaceAndPath(
-                        NuitClient.MOD_ID, "pipeline/translucent_sky_disc"
-                ))
-                .withVertexShader("core/sky")
-                .withFragmentShader("core/sky")
-                .withVertexBinding(0, DefaultVertexFormat.POSITION)
-                .withPrimitiveTopology(PrimitiveTopology.TRIANGLE_FAN)
-                .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+        RenderPipeline pipeline = builder
+                .withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, location))
                 .build();
-        IrisCompat.assignSkyBasicPipeline(pipeline);
-        return pipeline;
-    }
-
-    private static RenderPipeline buildMonoColorSkyboxPipeline(@Nullable BlendFunction blendFunction) {
-        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET);
-        builder.withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, "pipeline/mono_color_skybox/" + pipelineSuffix(blendFunction)));
-        builder.withVertexShader(MONO_COLOR_SKYBOX_SHADER);
-        builder.withFragmentShader(MONO_COLOR_SKYBOX_SHADER);
-        applyBlend(builder, blendFunction);
-        builder.withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR);
-        builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
-        RenderPipeline pipeline = builder.build();
-        IrisCompat.assignSkyBasicPipeline(pipeline);
-        return pipeline;
-    }
-
-    private static RenderPipeline buildTexturedSkyboxPipeline(@Nullable BlendFunction blendFunction, boolean frameBlended) {
-        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET);
-        builder.withLocation(Identifier.fromNamespaceAndPath(
-                NuitClient.MOD_ID,
-                (frameBlended ? "pipeline/textured_skybox_frame_blend/" : "pipeline/textured_skybox/") + pipelineSuffix(blendFunction)
-        ));
-        if (frameBlended) {
-            builder.withVertexShader(MULTI_TEXTURED_SKYBOX_SHADER);
-            builder.withFragmentShader(MULTI_TEXTURED_SKYBOX_SHADER);
-            builder.withVertexBinding(0, FRAME_BLENDED_TEXTURED_SKYBOX_VERTEX_FORMAT);
-            builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
+        if (parameters.type() == SkyType.TEXTURED || parameters.type() == SkyType.FRAME_BLENDED_TEXTURED) {
+            IrisCompat.assignSkyTexturedPipeline(pipeline);
         } else {
-            builder.withVertexShader(TEXTURED_SKYBOX_SHADER);
-            builder.withFragmentShader(TEXTURED_SKYBOX_SHADER);
-            builder.withVertexBinding(0, DefaultVertexFormat.POSITION_TEX);
-            builder.withPrimitiveTopology(PrimitiveTopology.QUADS);
+            IrisCompat.assignSkyBasicPipeline(pipeline);
         }
-        builder.withCull(false);
-        applyBlend(builder, blendFunction);
-        builder.withBindGroupLayout(BindGroupLayouts.SAMPLER0);
-        RenderPipeline pipeline = builder.build();
-        IrisCompat.assignSkyTexturedPipeline(pipeline);
         return pipeline;
     }
 
@@ -190,5 +145,15 @@ public final class NuitRenderPipelines {
 
     public static BufferBuilder bufferBuilder(ByteBufferBuilder byteBufferBuilder, RenderPipeline pipeline) {
         return new BufferBuilder(byteBufferBuilder, pipeline.getPrimitiveTopology(), vertexFormat(pipeline));
+    }
+
+    private enum SkyType {
+        MONO_COLOR,
+        TEXTURED,
+        FRAME_BLENDED_TEXTURED,
+        TRANSLUCENT_SKY_DISC
+    }
+
+    private record SkyParameters(SkyType type, @Nullable BlendFunction blendFunction) {
     }
 }
