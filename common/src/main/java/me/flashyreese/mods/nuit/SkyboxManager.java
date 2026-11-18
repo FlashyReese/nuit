@@ -249,7 +249,7 @@ public class SkyboxManager implements NuitApi {
     public void renderSkyboxes(SkyRenderer skyRenderer, SkyRenderState skyRenderState, NuitSkyRenderState renderState, RenderPass renderPass,
                                Vector4fc fogColor, Matrix4fStack skyModelViewStack) {
         SkyboxRenderContext context = new SkyboxRenderContext(
-                createRenderAccess(skyRenderer, skyRenderState, fogColor),
+                createRenderAccess(skyRenderer, skyRenderState),
                 renderState,
                 skyModelViewStack,
                 RenderSystem.getShaderFog(),
@@ -262,26 +262,22 @@ public class SkyboxManager implements NuitApi {
     }
 
     private void renderExtractedSkyboxes(SkyboxRenderContext context, NuitSkyRenderState renderState) {
-        float skyOccluderAlpha = 0.0F;
         for (NuitSkyRenderState.ExtractedSkybox extractedSkybox : renderState.skyboxes) {
             RenderableSkybox skybox = extractedSkybox.skybox();
             this.currentSkybox = skybox;
             context.setCurrentSkybox(extractedSkybox);
             skybox.render(context);
-            if (skybox instanceof NuitSkybox nuitSkybox && nuitSkybox.getProperties().occludeBelowHorizon()) {
-                skyOccluderAlpha = Math.max(skyOccluderAlpha, extractedSkybox.alpha());
+            if (skybox instanceof NuitSkybox nuitSkybox) {
+                context.renderSkyOccluder(nuitSkybox.getProperties().occluder());
             }
         }
         context.setCurrentSkybox(null);
 
         // Drawn last so it also covers decorations sinking below the horizon, matching vanilla.
-        skyOccluderAlpha = Math.max(skyOccluderAlpha, context.requestedSkyOccluderAlpha());
-        if (skyOccluderAlpha > 0.0F) {
-            context.renderRequestedSkyOccluder(skyOccluderAlpha);
-        }
+        context.renderRequestedSkyOccluder();
     }
 
-    private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer, SkyRenderState skyRenderState, Vector4fc fogColor) {
+    private static SkyboxRenderAccess createRenderAccess(SkyRenderer skyRenderer, SkyRenderState skyRenderState) {
         SkyRendererAccessor skyRendererAccessor = (SkyRendererAccessor) skyRenderer;
         return new SkyboxRenderAccess() {
             @Override
@@ -317,7 +313,7 @@ public class SkyboxManager implements NuitApi {
             }
 
             @Override
-            public void renderSkyOccluder(float alpha) {
+            public void renderSkyOccluder(Vector4fc color) {
                 // Vanilla only fills the occluder UBO (SkyRenderer#prepare) for overworld-style skies that have one.
                 if (skyRenderState.skybox != DimensionType.Skybox.OVERWORLD || !skyRenderState.hasSkyOccluder) {
                     return;
@@ -325,13 +321,13 @@ public class SkyboxManager implements NuitApi {
 
                 GpuBufferSlice dynamicTransforms = NuitRenderBackend.createDynamicTransforms(
                         RenderSystem.getModelViewMatrixCopy(),
-                        new Vector4f(fogColor.x(), fogColor.y(), fogColor.z(), Math.clamp(alpha, 0.0F, 1.0F))
+                        new Vector4f(color)
                 );
                 GpuBuffer skyOccluderInfo = skyRendererAccessor.getSkyOccluderUbo().currentBuffer();
                 NuitRenderBackend.drawFullscreenTriangle(
                         NuitRenderPipelines.skyOccluder(),
                         dynamicTransforms,
-                        "Nuit vanilla sky occluder",
+                        "Nuit sky occluder",
                         renderPass -> renderPass.setUniform("SkyOccluderInfo", skyOccluderInfo)
                 );
             }

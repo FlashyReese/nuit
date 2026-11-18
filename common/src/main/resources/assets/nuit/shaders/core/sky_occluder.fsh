@@ -13,7 +13,7 @@ layout(location = 0) in vec3 viewDirection;
 
 layout(location = 0) out vec4 fragColor;
 
-// Copy of minecraft:core/sky_occluder that also honours ColorModulator.a, so the occluder fades with skybox transitions.
+// Vanilla's horizon mask with configurable color and opacity, including skybox transitions.
 void main() {
     vec3 worldDirection = normalize(transpose(mat3(ModelViewMat)) * viewDirection);
     float fragmentAngle = degrees(asin(clamp(worldDirection.y, -1.0, 1.0)));

@@ -12,7 +12,7 @@ public interface SkyboxRenderAccess {
 
     void renderSkyDisc(Vector3fc color);
 
-    void renderSkyOccluder(float alpha);
+    void renderSkyOccluder(Vector4fc color);
 
     void renderStars(float brightness, PoseStack poseStack);
 

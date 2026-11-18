@@ -3,6 +3,8 @@ package me.flashyreese.mods.nuit.api.skyboxes;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import me.flashyreese.mods.nuit.components.Occluder;
+import me.flashyreese.mods.nuit.render.NuitSkyOccluderState;
 import me.flashyreese.mods.nuit.render.NuitSkyRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
@@ -14,6 +16,7 @@ import org.joml.Matrix4fStack;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 import org.joml.Vector3fc;
+import org.joml.Vector4f;
 import org.joml.Vector4fc;
 
 /**
@@ -31,7 +34,7 @@ public final class SkyboxRenderContext {
     private final GpuBufferSlice fogParameters;
     private final Vector4fc fogColor;
     private @Nullable NuitSkyRenderState.ExtractedSkybox currentSkybox;
-    private float requestedSkyOccluderAlpha;
+    private final NuitSkyOccluderState skyOccluder = new NuitSkyOccluderState();
 
     @ApiStatus.Internal
     public SkyboxRenderContext(SkyboxRenderAccess skyboxRenderAccess, NuitSkyRenderState renderState, Matrix4fStack skyModelViewStack, GpuBufferSlice fogParameters, Vector4fc fogColor) {
@@ -125,7 +128,7 @@ public final class SkyboxRenderContext {
     }
 
     /**
-     * @return the frame's fog color, which the sky target is cleared to and the sky occluder fades towards.
+     * @return the frame's fog color, used by occluders without a custom color.
      */
     public Vector4fc fogColor() {
         return this.fogColor;
@@ -164,21 +167,28 @@ public final class SkyboxRenderContext {
      * for the camera being below the world's minimum height or underwater.
      * <p>
      * The occluder is drawn once, after every active skybox, like vanilla draws it after the sun, moon and stars. Nuit
-     * skyboxes request it through the {@code occludeBelowHorizon} property instead. Does nothing in dimensions without
+     * skyboxes request it through the {@code properties.occluder} object instead. Does nothing in dimensions without
      * a sky occluder.
      */
     public void renderSkyOccluder() {
-        this.requestedSkyOccluderAlpha = 1.0F;
+        this.skyOccluder.request(Occluder.of(), 1.0F, this.fogColor);
+    }
+
+    /**
+     * Requests a configurable sky occluder. Its opacity follows the current skybox's extracted alpha; an omitted color
+     * uses the frame's fog color. Multiple requests blend their colors by effective opacity and use the strongest
+     * effective opacity for the final draw.
+     */
+    public void renderSkyOccluder(Occluder occluder) {
+        this.skyOccluder.request(occluder, this.alpha(), this.fogColor);
     }
 
     @ApiStatus.Internal
-    public float requestedSkyOccluderAlpha() {
-        return this.requestedSkyOccluderAlpha;
-    }
-
-    @ApiStatus.Internal
-    public void renderRequestedSkyOccluder(float alpha) {
-        this.skyboxRenderAccess.renderSkyOccluder(alpha);
+    public void renderRequestedSkyOccluder() {
+        Vector4f color = this.skyOccluder.resolveColor();
+        if (color != null) {
+            this.skyboxRenderAccess.renderSkyOccluder(color);
+        }
     }
 
     /**
