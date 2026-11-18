@@ -8,7 +8,6 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
-import com.mojang.renderpearl.api.pipeline.DepthStencilState;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
 import me.flashyreese.mods.nuit.IrisCompat;
 import me.flashyreese.mods.nuit.NuitClient;
@@ -40,32 +39,31 @@ public final class NuitRenderPipelines {
             .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
             .buildSnippet();
 
-    public static RenderPipeline translucentSkyDisc(boolean hasDepthAttachment) {
-        return sky(new SkyParameters(SkyType.TRANSLUCENT_SKY_DISC, BlendFunction.TRANSLUCENT, hasDepthAttachment));
+    public static RenderPipeline translucentSkyDisc() {
+        return sky(new SkyParameters(SkyType.TRANSLUCENT_SKY_DISC, BlendFunction.TRANSLUCENT));
     }
 
     /**
      * Vanilla's sky occluder, except that it fades with the color modulator's alpha.
      */
-    public static RenderPipeline skyOccluder(boolean hasDepthAttachment) {
-        return sky(new SkyParameters(SkyType.SKY_OCCLUDER, BlendFunction.TRANSLUCENT, hasDepthAttachment));
+    public static RenderPipeline skyOccluder() {
+        return sky(new SkyParameters(SkyType.SKY_OCCLUDER, BlendFunction.TRANSLUCENT));
     }
 
-    public static RenderPipeline monoColorSkybox(@Nullable BlendFunction blendFunction, boolean hasDepthAttachment) {
-        return sky(new SkyParameters(SkyType.MONO_COLOR, blendFunction, hasDepthAttachment));
+    public static RenderPipeline monoColorSkybox(@Nullable BlendFunction blendFunction) {
+        return sky(new SkyParameters(SkyType.MONO_COLOR, blendFunction));
     }
 
-    public static RenderPipeline texturedSkybox(@Nullable BlendFunction blendFunction, boolean hasDepthAttachment) {
-        return sky(new SkyParameters(SkyType.TEXTURED, blendFunction, hasDepthAttachment));
+    public static RenderPipeline texturedSkybox(@Nullable BlendFunction blendFunction) {
+        return sky(new SkyParameters(SkyType.TEXTURED, blendFunction));
     }
 
-    public static RenderPipeline frameBlendedTexturedSkybox(@Nullable BlendFunction blendFunction,
-                                                           boolean hasDepthAttachment) {
-        return sky(new SkyParameters(SkyType.FRAME_BLENDED_TEXTURED, blendFunction, hasDepthAttachment));
+    public static RenderPipeline frameBlendedTexturedSkybox(@Nullable BlendFunction blendFunction) {
+        return sky(new SkyParameters(SkyType.FRAME_BLENDED_TEXTURED, blendFunction));
     }
 
     /**
-     * Returns the cached permutation for the requested sky type, blend and render-pass attachments.
+     * Returns the cached permutation for the requested sky type and blend.
      */
     public static RenderPipeline sky(SkyParameters parameters) {
         return RenderPipelines.dynamicPipeline(parameters, NuitClient.MOD_ID + ":sky",
@@ -114,11 +112,6 @@ public final class NuitRenderPipelines {
         };
         applyBlend(builder, parameters.blendFunction());
         location += "/" + pipelineSuffix(parameters.blendFunction());
-        // The classic main pass has a depth attachment; the improved-transparency sky pass does not.
-        if (parameters.hasDepthAttachment()) {
-            builder.withDepthStencilState(DepthStencilState.OFF);
-            location += "_with_depth_attachment";
-        }
 
         RenderPipeline pipeline = builder
                 .withLocation(Identifier.fromNamespaceAndPath(NuitClient.MOD_ID, location))
@@ -182,6 +175,6 @@ public final class NuitRenderPipelines {
         SKY_OCCLUDER
     }
 
-    public record SkyParameters(SkyType type, @Nullable BlendFunction blendFunction, boolean hasDepthAttachment) {
+    public record SkyParameters(SkyType type, @Nullable BlendFunction blendFunction) {
     }
 }

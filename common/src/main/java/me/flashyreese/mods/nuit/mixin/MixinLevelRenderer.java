@@ -63,7 +63,7 @@ public abstract class MixinLevelRenderer {
             method = {"lambda$addSkyPass$0", "lambda$addMainPass$0"},
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/SkyRenderer;render(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lcom/mojang/renderpearl/api/commands/RenderPass;Lorg/joml/Vector4f;Z)V"
+                    target = "Lnet/minecraft/client/renderer/SkyRenderer;render(Lnet/minecraft/client/renderer/state/level/SkyRenderState;Lcom/mojang/renderpearl/api/commands/RenderPass;Lorg/joml/Vector4f;)V"
             ),
             require = 2
     )
@@ -72,12 +72,11 @@ public abstract class MixinLevelRenderer {
             SkyRenderState state,
             RenderPass renderPass,
             Vector4f fogColor,
-            boolean withDepthAttachment,
             Operation<Void> original
     ) {
         NuitSkyRenderState renderState = ((NuitSkyRenderStateHolder) state).nuit$getRenderState();
         if (renderState == null) {
-            original.call(skyRenderer, state, renderPass, fogColor, withDepthAttachment);
+            original.call(skyRenderer, state, renderPass, fogColor);
             return;
         }
 
@@ -90,7 +89,6 @@ public abstract class MixinLevelRenderer {
                 renderState,
                 renderPass,
                 fogColor,
-                withDepthAttachment,
                 skyModelViewStack
         );
     }

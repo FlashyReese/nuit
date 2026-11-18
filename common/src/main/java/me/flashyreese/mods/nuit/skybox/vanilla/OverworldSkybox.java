@@ -61,7 +61,7 @@ public class OverworldSkybox extends AbstractSkybox {
 
         RenderPipeline pipeline = RenderPipelines.sky(
                 new RenderPipelines.SkyParameters(
-                        SkyRenderer.SkyElement.SUNRISE_SUNSET, NuitRenderBackend.hasDepthAttachment()));
+                        SkyRenderer.SkyElement.SUNRISE_SUNSET));
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 18)) {
             BufferBuilder bufferBuilder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
 

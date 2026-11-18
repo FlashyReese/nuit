@@ -38,7 +38,7 @@ public class EndSkybox extends AbstractSkybox {
 
         RenderPipeline pipeline = RenderPipelines.sky(
                 new RenderPipelines.SkyParameters(
-                        SkyRenderer.SkyElement.END_SKY, NuitRenderBackend.hasDepthAttachment()));
+                        SkyRenderer.SkyElement.END_SKY));
         try (ByteBufferBuilder byteBufferBuilder = NuitRenderPipelines.byteBufferBuilder(pipeline, 24)) {
             BufferBuilder builder = NuitRenderPipelines.bufferBuilder(byteBufferBuilder, pipeline);
             int color = ARGB.color((int) (255 * alpha), 0x282828);

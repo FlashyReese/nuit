@@ -40,7 +40,6 @@ import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.client.renderer.pipeline.RenderPipelines;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureProvider2d;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributeProbe;
@@ -248,7 +247,7 @@ public class SkyboxManager implements NuitApi {
 
     @Internal
     public void renderSkyboxes(SkyRenderer skyRenderer, SkyRenderState skyRenderState, NuitSkyRenderState renderState, RenderPass renderPass,
-                               Vector4fc fogColor, boolean withDepthAttachment, Matrix4fStack skyModelViewStack) {
+                               Vector4fc fogColor, Matrix4fStack skyModelViewStack) {
         SkyboxRenderContext context = new SkyboxRenderContext(
                 createRenderAccess(skyRenderer, skyRenderState, fogColor),
                 renderState,
@@ -256,7 +255,7 @@ public class SkyboxManager implements NuitApi {
                 RenderSystem.getShaderFog(),
                 fogColor
         );
-        try (NuitRenderBackend.SkyRenderFrame skyRenderFrame = NuitRenderBackend.beginSkyFrame(renderPass, withDepthAttachment)) {
+        try (NuitRenderBackend.SkyRenderFrame skyRenderFrame = NuitRenderBackend.beginSkyFrame(renderPass)) {
             this.renderExtractedSkyboxes(context, renderState);
             skyRenderFrame.submit();
         }
@@ -292,7 +291,7 @@ public class SkyboxManager implements NuitApi {
                         new Vector4f(color)
                 );
                 NuitRenderBackend.draw(
-                        NuitRenderPipelines.translucentSkyDisc(NuitRenderBackend.hasDepthAttachment()),
+                        NuitRenderPipelines.translucentSkyDisc(),
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
                         dynamicTransforms,
@@ -309,7 +308,7 @@ public class SkyboxManager implements NuitApi {
                 NuitRenderBackend.draw(
                         RenderPipelines.sky(
                                 new RenderPipelines.SkyParameters(
-                                        SkyRenderer.SkyElement.SKY_DISC, NuitRenderBackend.hasDepthAttachment())),
+                                        SkyRenderer.SkyElement.SKY_DISC)),
                         skyRendererAccessor.getTopSkyBuffer(),
                         10,
                         dynamicTransforms,
@@ -330,7 +329,7 @@ public class SkyboxManager implements NuitApi {
                 );
                 GpuBuffer skyOccluderInfo = skyRendererAccessor.getSkyOccluderUbo().currentBuffer();
                 NuitRenderBackend.drawFullscreenTriangle(
-                        NuitRenderPipelines.skyOccluder(NuitRenderBackend.hasDepthAttachment()),
+                        NuitRenderPipelines.skyOccluder(),
                         dynamicTransforms,
                         "Nuit vanilla sky occluder",
                         renderPass -> renderPass.setUniform("SkyOccluderInfo", skyOccluderInfo)
@@ -347,7 +346,7 @@ public class SkyboxManager implements NuitApi {
                 NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.sky(
                                 new RenderPipelines.SkyParameters(
-                                        SkyRenderer.SkyElement.STARS, NuitRenderBackend.hasDepthAttachment())),
+                                        SkyRenderer.SkyElement.STARS)),
                         skyRendererAccessor.getStarBuffer(),
                         PrimitiveTopology.QUADS,
                         skyRendererAccessor.getStarIndexCount(),
@@ -375,7 +374,7 @@ public class SkyboxManager implements NuitApi {
                 NuitRenderBackend.drawSequentialIndexed(
                         RenderPipelines.sky(
                                 new RenderPipelines.SkyParameters(
-                                        SkyRenderer.SkyElement.CELESTIAL, NuitRenderBackend.hasDepthAttachment())),
+                                        SkyRenderer.SkyElement.CELESTIAL)),
                         skyRendererAccessor.getEndFlashBuffer(),
                         PrimitiveTopology.QUADS,
                         6,
@@ -499,7 +498,7 @@ public class SkyboxManager implements NuitApi {
     private void registerTextures(Skybox skybox) {
         if (skybox instanceof SkyboxTextureProvider textureProvider) {
             textureProvider.getTexturesToRegister().forEach((theIdentifier) -> {
-                Minecraft.getInstance().getTextureManager().registerAndLoad(theIdentifier, new TextureProvider2d());
+                Minecraft.getInstance().getTextureManager().getTexture(theIdentifier);
                 this.preloadedTextures.add(theIdentifier);
             });
         }

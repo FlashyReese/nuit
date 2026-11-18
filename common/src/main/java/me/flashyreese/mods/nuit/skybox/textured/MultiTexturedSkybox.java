@@ -77,7 +77,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                 if (shaderPackInUse) {
                     if (texturedPipeline == null) {
                         texturedPipeline = NuitRenderPipelines.texturedSkybox(
-                                blendFunction, NuitRenderBackend.hasDepthAttachment());
+                                blendFunction);
                     }
 
                     this.renderIrisCompatibleInterpolatedTexture(
@@ -92,7 +92,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
                 } else {
                     if (frameBlendedPipeline == null) {
                         frameBlendedPipeline = NuitRenderPipelines.frameBlendedTexturedSkybox(
-                                blendFunction, NuitRenderBackend.hasDepthAttachment());
+                                blendFunction);
                     }
 
                     this.renderTextureFrame(
@@ -109,7 +109,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
 
             if (texturedPipeline == null) {
                 texturedPipeline = NuitRenderPipelines.texturedSkybox(
-                        blendFunction, NuitRenderBackend.hasDepthAttachment());
+                        blendFunction);
             }
 
             this.renderTextureFrame(
@@ -266,7 +266,7 @@ public class MultiTexturedSkybox extends TexturedSkybox {
             int indexCount = PrimitiveTopology.QUADS.indexCount(this.vertexCount);
             return new MeshData(
                     this.byteBufferBuilder.build(),
-                    new MeshData.DrawState(this.vertexFormat, this.vertexCount, indexCount, PrimitiveTopology.QUADS, IndexType.least(indexCount))
+                    new MeshData.DrawState(this.vertexCount, indexCount, PrimitiveTopology.QUADS, IndexType.least(indexCount))
             );
         }
     }

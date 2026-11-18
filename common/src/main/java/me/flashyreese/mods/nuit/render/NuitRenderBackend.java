@@ -40,26 +40,15 @@ public final class NuitRenderBackend {
      * Begins collecting sky draws for a render pass owned by vanilla.
      *
      * @param renderPass          the open pass that vanilla's sky renderer would have drawn into
-     * @param withDepthAttachment whether that pass has a depth attachment, which selects the pipeline variants
      */
-    public static SkyRenderFrame beginSkyFrame(RenderPass renderPass, boolean withDepthAttachment) {
+    public static SkyRenderFrame beginSkyFrame(RenderPass renderPass) {
         if (activeSkyFrame != null) {
             throw new IllegalStateException("A Nuit sky render frame is already active");
         }
 
         releaseDeferredBuffers();
-        activeSkyFrame = new SkyRenderFrame(renderPass, withDepthAttachment);
+        activeSkyFrame = new SkyRenderFrame(renderPass);
         return activeSkyFrame;
-    }
-
-    /**
-     * Returns whether the active sky pass has a depth attachment, for selecting its pipeline permutations.
-     */
-    public static boolean hasDepthAttachment() {
-        if (activeSkyFrame == null) {
-            throw new IllegalStateException("Nuit sky pipelines must be selected while a sky render frame is active");
-        }
-        return activeSkyFrame.withDepthAttachment;
     }
 
     public static void draw(RenderPipeline pipeline, MeshData meshData, GpuBufferSlice dynamicTransforms) {
@@ -389,7 +378,7 @@ public final class NuitRenderBackend {
         public void draw(RenderPass renderPass) {
             renderPass.pushDebugGroup(() -> this.label);
             try {
-                renderPass.setPipeline(RenderSystem.getCompiledPipeline(this.pipeline));
+                renderPass.setPipeline(RenderSystem.getCompiledPipeline(this.pipeline, renderPass.activeSubpass()));
                 if (this.vertexBuffer != null) {
                     renderPass.setVertexBuffer(0, this.vertexBuffer.slice());
                 }
@@ -414,15 +403,13 @@ public final class NuitRenderBackend {
 
     public static final class SkyRenderFrame implements AutoCloseable {
         private final RenderPass renderPass;
-        private final boolean withDepthAttachment;
         private final List<RenderCommand> commands = new ArrayList<>();
         private final List<GpuBuffer> buffersToClose = new ArrayList<>();
         private boolean submitting;
         private boolean finished;
 
-        private SkyRenderFrame(RenderPass renderPass, boolean withDepthAttachment) {
+        private SkyRenderFrame(RenderPass renderPass) {
             this.renderPass = renderPass;
-            this.withDepthAttachment = withDepthAttachment;
         }
 
         private void enqueue(RenderCommand command) {
