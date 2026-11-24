@@ -126,12 +126,10 @@ public class BlendTest {
         assertEquals("normal", Blend.normal().getType());
     }
 
-    @Test
-    public void propertiesReadBlendFromPropertiesObject() {
-        Properties properties = Properties.CODEC.parse(
-                JsonOps.INSTANCE,
-                JsonParser.parseString("{\"blend\":{\"type\":\"add\"}}")
-        ).getOrThrow();
+    @ParameterizedTest
+    @ValueSource(strings = {"{\"blend\":\"add\"}", "{\"blend\":{\"type\":\"add\"}}"})
+    public void propertiesReadStringAndObjectBlend(String json) {
+        Properties properties = Properties.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(json)).getOrThrow();
 
         assertEquals("add", properties.blend().getType());
     }

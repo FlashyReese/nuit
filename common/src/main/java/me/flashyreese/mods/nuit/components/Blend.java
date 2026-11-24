@@ -9,10 +9,14 @@ import me.flashyreese.mods.nuit.NuitClient;
 import java.util.function.Consumer;
 
 public class Blend {
-    public static Codec<Blend> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.STRING.optionalFieldOf("type", "").forGetter(Blend::getType),
-            Blender.CODEC.optionalFieldOf("blender", Blender.normal()).forGetter(Blend::getBlender)
-    ).apply(instance, Blend::new));
+    public static Codec<Blend> CODEC = Codec.withAlternative(
+            RecordCodecBuilder.create(instance -> instance.group(
+                    Codec.STRING.optionalFieldOf("type", "").forGetter(Blend::getType),
+                    Blender.CODEC.optionalFieldOf("blender", Blender.normal()).forGetter(Blend::getBlender)
+            ).apply(instance, Blend::new)),
+            Codec.STRING,
+            type -> new Blend(type, Blender.normal())
+    );
 
     private final String type;
     private final Blender blender;

@@ -225,7 +225,9 @@ Range objects include the minimum and exclude the maximum:
 | `snow` | Snowing in a snow biome. |
 | `snow_thunder` | Thunderstorm in a snow biome. |
 
-## Blend Object
+## Blend Mode
+
+Named blend modes can use a string such as `"blend": "normal"` or the object form below.
 
 ```json
 {
@@ -267,7 +269,7 @@ behavior notes.
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `color` | RGBA object | no | `{ red: 0, green: 0, blue: 0, alpha: 0 }` |
-| `properties.blend` | blend object | no | `normal` |
+| `properties.blend` | string or blend object | no | `normal` |
 
 RGBA `red`, `green`, `blue`, and optional `alpha` are floats from `0.0` to `1.0`.
 
@@ -289,7 +291,7 @@ RGBA `red`, `green`, `blue`, and optional `alpha` are floats from `0.0` to `1.0`
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `texture` | identifier | yes | none |
-| `properties.blend` | blend object | no | `normal` |
+| `properties.blend` | string or blend object | no | `normal` |
 
 The texture is interpreted as a 3 by 2 face grid. See [square-textured.md](square-textured.md).
 
@@ -329,7 +331,7 @@ The texture is interpreted as a 3 by 2 face grid. See [square-textured.md](squar
 | Field | Type | Required | Default |
 |-------|------|----------|---------|
 | `animatableTextures` | array of animatable texture objects | no | empty |
-| `properties.blend` | blend object | no | `normal` |
+| `properties.blend` | string or blend object | no | `normal` |
 
 #### Animatable Texture
 
@@ -384,7 +386,7 @@ UV values are clamped from `0.0` to `1.0`.
 | `showSun` | boolean | no | `false` |
 | `showMoon` | boolean | no | `false` |
 | `showStars` | boolean | no | `false` |
-| `properties.blend` | blend object | no | `decorations` |
+| `properties.blend` | string or blend object | no | `decorations` |
 
 Decoration rotation is controlled through `properties.rotation`. When `properties` is omitted entirely, decorations
 follow vanilla celestial rotation (`skyboxRotation: false`). An explicit `properties` object without `rotation` uses
