@@ -1,5 +1,7 @@
 package me.flashyreese.mods.nuit.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.systems.RenderSystem;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
@@ -15,7 +17,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -72,34 +73,34 @@ public class MixinFogRenderer {
         }
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "setupColor",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/multiplayer/ClientLevel;getTimeOfDay(F)F"
             )
     )
-    private static float nuit$redirectSkyAngle(ClientLevel level, float tickDelta) {
+    private static float nuit$modifySkyAngle(ClientLevel level, float tickDelta, Operation<Float> original) {
         SkyboxManager.CelestialController controller = nuit$getCelestialController();
         if (controller != null) {
             return (float) (controller.getSkyAngleDegrees(level, tickDelta) / 360.0D);
         }
-        return level.getTimeOfDay(tickDelta);
+        return original.call(level, tickDelta);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "setupColor",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/multiplayer/ClientLevel;getSunAngle(F)F"
             )
     )
-    private static float nuit$redirectSkyAngleRadians(ClientLevel level, float tickDelta) {
+    private static float nuit$modifySkyAngleRadians(ClientLevel level, float tickDelta, Operation<Float> original) {
         SkyboxManager.CelestialController controller = nuit$getCelestialController();
         if (controller != null) {
             return (float) Math.toRadians(controller.getSkyAngleDegrees(level, tickDelta));
         }
-        return level.getSunAngle(tickDelta);
+        return original.call(level, tickDelta);
     }
 
     @ModifyConstant(
