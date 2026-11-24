@@ -16,7 +16,6 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.MoonPhase;
-import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Matrix4fc;
 import org.joml.Vector4f;
@@ -157,10 +156,9 @@ public abstract class MixinLevelRenderer {
     private static boolean nuit$renderCustomSkyboxes(GpuBufferSlice fogParameters, SkyRenderer skyRenderer) {
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled() && skyboxManager.hasActiveRenderableSkyboxes()) {
-            Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
-            skyModelViewMatrix.setTranslation(0.0F, 0.0F, 0.0F);
-            Matrix4fStack skyModelViewStack = new Matrix4fStack(32);
-            skyModelViewStack.set(skyModelViewMatrix);
+            Matrix4fStack skyModelViewStack = new Matrix4fStack(16);
+            skyModelViewStack.set(RenderSystem.getModelViewStack());
+            skyModelViewStack.setTranslation(0.0F, 0.0F, 0.0F);
             skyboxManager.renderSkyboxes(
                     skyRenderer,
                     skyModelViewStack,
