@@ -1,5 +1,7 @@
 package me.flashyreese.mods.nuit.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.flashyreese.mods.nuit.SkyboxManager;
 import me.flashyreese.mods.nuit.api.skyboxes.NuitSkybox;
 import me.flashyreese.mods.nuit.api.skyboxes.Skybox;
@@ -17,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(AtmosphericFogEnvironment.class)
 public abstract class MixinAtmosphericFogEnvironment {
-    @Redirect(
+    @WrapOperation(
             method = "getBaseColor",
             at = @At(
                     value = "INVOKE",
@@ -26,16 +28,17 @@ public abstract class MixinAtmosphericFogEnvironment {
             )
     )
     @SuppressWarnings("unchecked")
-    private <Value> Value nuit$redirectSkyAngle(
+    private <Value> Value nuit$modifySkyAngle(
             EnvironmentAttributeProbe instance,
             EnvironmentAttribute<Value> attribute,
             float tickDelta,
+            Operation<Value> original,
             ClientLevel clientLevel,
             Camera camera,
             int distance,
             float partialTick
     ) {
-        final Value sunAngle = instance.getValue(attribute, tickDelta);
+        final Value sunAngle = original.call(instance, attribute, tickDelta);
         SkyboxManager skyboxManager = SkyboxManager.getInstance();
         if (skyboxManager.isEnabled()) {
             SkyboxManager.CelestialController controller = skyboxManager.getCelestialController().orElse(null);
