@@ -6,7 +6,6 @@ import me.flashyreese.mods.nuit.SkyboxManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SkyRenderer;
 import net.minecraft.world.level.dimension.DimensionType;
-import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 public final class NuitSkyboxRenderHooks {
@@ -36,10 +35,9 @@ public final class NuitSkyboxRenderHooks {
             return false;
         }
 
-        Matrix4f skyModelViewMatrix = new Matrix4f(RenderSystem.getModelViewMatrix());
-        skyModelViewMatrix.setTranslation(0.0F, 0.0F, 0.0F);
-        Matrix4fStack skyModelViewStack = new Matrix4fStack(32);
-        skyModelViewStack.set(skyModelViewMatrix);
+        Matrix4fStack skyModelViewStack = new Matrix4fStack(16);
+        skyModelViewStack.set(RenderSystem.getModelViewStack());
+        skyModelViewStack.setTranslation(0.0F, 0.0F, 0.0F);
         skyboxManager.renderSkyboxes(
                 skyRenderer,
                 skyModelViewStack,
